@@ -73,7 +73,6 @@ IGHV = [
         'IGHV5-a',
         'IGHV6-1',
         'IGHV7-4-1',
-        'IGHV4-61',
         'IGHV4/OR15-8',
         'IGHV7-81'
        ]
