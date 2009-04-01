@@ -192,7 +192,9 @@ def VJCDR3ref(data):
 	
 	return VJCDR3refdata
 
-
+# ====================================
+# = Methods to manage reference sets =
+# ====================================
 
 # after downloading fresh imgtrefseq.fasta, process it into
 # files for use by ABACUS
