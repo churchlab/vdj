@@ -366,9 +366,9 @@ class Repertoire(object):
 	def __iter__(self):
 		return self.chains.__iter__()
 	
-	# ==============
-	# = Statistics =
-	# ==============
+	# ============
+	# = Counting =
+	# ============
 	
 	def countsVJ(self):
 		cn = np.zeros( (NV,NJ) )
@@ -411,9 +411,12 @@ class Repertoire(object):
 	# = Utilities =
 	# =============
 	
-	def set_tags(self,tag):
-		for chain in self.chains:
-			chain.tags.update(tag)
+	def set_tags(self,tagset):
+		for (i,chain) in enumerate(self.chains):
+			chain.tags.update(tagset)
+			for tag in tagset:
+				try: self.tags[tag] += [i]
+				except KeyError,e: self.tags[tag] = [i]
 		return
 	
 	def __str__(self):
