@@ -13,8 +13,6 @@ cmdlineparse.add_option('--barcodefile', action='store', type='string', dest='ba
 cmdlineparse.add_option('--outputname', action='store', type='string', dest='outputname')
 options, files = cmdlineparse.parse_args()
 
-barcodefile = options.barcodefile
-
 # what files am i operating on?
 inputfilelist = []
 for filename in files:
