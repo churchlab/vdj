@@ -11,8 +11,8 @@ from Bio import SeqIO
 
 # process command line
 cmdlineparse = optparse.OptionParser()
-cmdlineparse.add_option('--minreadlen', action='store', type='int', default=0,      dest='minreadlen')
-cmdlineparse.add_option('--maxreadlen', action='store', type='int', default=np.inf, dest='maxreadlen')
+cmdlineparse.add_option('--minreadlen', action='store', type='float',   default=0,      dest='minreadlen')
+cmdlineparse.add_option('--maxreadlen', action='store', type='float', default=np.inf, dest='maxreadlen')
 cmdlineparse.add_option('--outputname', action='store', type='string', dest='outputname')
 options, files = cmdlineparse.parse_args()
 
