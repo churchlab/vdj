@@ -2,6 +2,9 @@
 
 # VDJ package for analysis and visualization functions
 
+import numpy as np
+import pylab
+import matplotlib
 
 # define hot colormap for counts.  it can be log-normalized
 hotcounts = matplotlib.colors.LinearSegmentedColormap('hotcounts',matplotlib.cm.datad['hot'],256)
