@@ -18,6 +18,9 @@ from Bio.SeqRecord import SeqRecord
 import cPickle
 import operator
 import countdata
+from xml.sax.saxutils import escape, unescape
+import xml.sax
+import xml.sax.handler
 
 spearmanr = scipy.stats.spearmanr
 pearsonr  = scipy.stats.pearsonr
@@ -29,6 +32,8 @@ IGHJ = refseq.IGHJ
 NV = len(IGHV)
 ND = len(IGHD)
 NJ = len(IGHJ)
+
+#===============================================================================
 
 # ===================
 # = DATA STRUCTURES =
@@ -52,7 +57,7 @@ class ImmuneChain(object):
 		'''
 		self.seq = seq.upper()
 		self.descr = descr
-		self.tags = tags	# tag for sample number/experiment etc
+		self.tags = set(tags)	# tag for sample number/experiment etc
 		self.v = v
 		self.d = d
 		self.j = j
@@ -65,26 +70,302 @@ class ImmuneChain(object):
 		return self.__repr__()
 	
 	def __repr__(self):
-		callstring = 'ImmuneChain{'
-		callstring += self.seq + ','
-		callstring += self.func + ','
-		callstring += self.v + ',' + self.d + ',' + self.j + ','
-		callstring += self.ighc + ','
-		callstring += str(self.cdr3) + ','
-		callstring += self.junction + ','
-		callstring += self.descr
-		for tag in self.tags: callstring += ',' + tag
-		callstring += '}'
-		return callstring
+		return self.getXML()
+	
+	def getXML(self):
+		xmlstring = ''
+		xmlstring += '<ImmuneChain>\n'
+		xmlstring += '\t<descr>' 	+ escape(self.descr) + 		'</descr>\n'
+		xmlstring += '\t<seq>' 		+ escape(self.seq) + 		'</seq>\n'
+		xmlstring += '\t<v>' 		+ escape(self.v) + 			'</v>\n' 
+		xmlstring += '\t<d>' 		+ escape(self.d) + 			'</d>\n'
+		xmlstring += '\t<j>' 		+ escape(self.j) + 			'</j>\n'
+		xmlstring += '\t<ighc>' 	+ escape(self.ighc) + 		'</ighc>\n'
+		xmlstring += '\t<cdr3>' 	+ escape(self.cdr3) + 		'</cdr3>\n'	# measured in nt
+		xmlstring += '\t<junction>' + escape(self.junction) + 	'</junction>\n'
+		xmlstring += '\t<func>' 	+ escape(self.func) + 		'</func>\n'
+		for tag in self.tags:
+			xmlstring += '\t<tag>' + escape(tag) + '</tag>\n'
+		xmlstring += '</ImmuneChain>\n'
+		return xmlstring
+
+
+# ====================
+# = Repertoire class =
+# ====================
+
+class Repertoire(object):
+		
+	def __init__( self, chains=[], metatags=[] ):
+		'''
+		must provide list of ImmuneChain objects
+		they don't have to have full information
+		'''
+		if isinstance(chains,ImmuneChain):
+			chains = [chains]
+		
+		if isinstance(chains,parseImmuneChains):
+			chains = list(chains)
+		
+		# set global tags for repertoire
+		self.metatags = set(metatags)
+		
+		# init primary datatype
+		self.chains = np.array(chains,dtype=np.object)
+		
+		# collect all the tags in the set of ImmuneChains
+		self.tags = {}
+		
+		# ensure that at least, all identifiers in refseq are present
+		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ:
+			self.tags[ident] = []
+		
+		for (i,chain) in enumerate(self.chains):
+			self.processTags(i,chain)
+		
+		self.uniqueifyTags()
+		
+		return
+	
+	
+	# ======================
+	# = Indexing/retrieval =
+	# ======================
+		
+	def __getitem__(self,keys):
+		'''
+		get ImmuneChains out of this object
+		takes anything that numpy arrays can take
+		'''
+		# num dim
+		if not isinstance(keys,list) and not isinstance(keys,tuple):
+			keys = (keys,)
+		
+		if isinstance(keys[0],int) or isinstance(keys[0],slice):
+			keys = list(keys)
+			if len(keys)==1 and isinstance(keys[0],int):
+				return self.chains[keys[0]]
+			if len(keys)==1 and isinstance(keys[0],slice):
+				return Repertoire(self.chains[keys[0]],self.metatags)
+			
+			return Repertoire(self.chains[keys],self.metatags)
+		
+		raise IndexError, "you must've indexed incorrectly because you shouldn't be here"
+		
+	def get_chains_AND(self,args):
+		idxs = self.get_idxs_AND(args)
+		return Repertoire(self.chains[idxs],self.metatags)
+	
+	def get_chains_OR(self,args):
+		idxs = self.get_idxs_OR(args)		
+		return Repertoire(self.chains[idxs],self.metatags)
+		
+	def get_idxs_AND(self,args):
+		identifiers = self.tags.keys()	  # all valid identifiers
+		for key in args:	# check for all valid identifiers
+			if key not in identifiers:
+				print 'WARNING: ' + key + ' is not a recognized identifier'
+				return []
+		
+		idxs = range(len(self.chains))
+		for key in args:
+			idxs = list(set(idxs) & set(self.tags[key]))
+		
+		return idxs
+	
+	def get_idxs_OR(self,args):
+		args = list(args)	# necessary bc of pop operation below
+		identifiers = self.tags.keys()
+		for (i,key) in enumerate(args):
+			if key not in identifiers:
+				print 'WARNING: ' + key + ' is not a recognized identifier'
+				args.pop(i)
+				
+		idxs = set([])
+		for key in args:
+			idxs.update(self.tags[key])
+		idxs = list(idxs)
+		
+		return idxs
+	
+	def get_idxs_fullVDJ(self):
+		# indexing of reference lists starts at 1 bc the first elt is ''
+		Vs = set(self.get_idxs_OR(refseq.IGHV[1:]))
+		Ds = set(self.get_idxs_OR(refseq.IGHD[1:]))
+		Js = set(self.get_idxs_OR(refseq.IGHJ[1:]))
+		idxs = list(Vs & Ds & Js)
+		idxs.sort()
+		return idxs
+	
+	def get_idxs_fullVJ(self):
+		Vs = set(self.get_idxs_OR(refseq.IGHV[1:]))
+		Js = set(self.get_idxs_OR(refseq.IGHJ[1:]))
+		idxs = list(Vs & Js)
+		idxs.sort()
+		return idxs
+	
+	def get_idxs_fullVJCDR3(self):
+		VJs   = set(self.get_idxs_fullVJ())
+		CDR3s = set([i for (i,chain) in enumerate(self.chains) if chain.cdr3 % 3 == 0 and chain.cdr3 > 0])
+		idxs = list(VJs & CDR3s)
+		idxs.sort()
+		return idxs		
+	
+	def get_chains_fullVDJ(self):
+		return self[ self.get_idxs_fullVDJ() ]
+	
+	def get_chains_fullVJ(self):
+		return self[ self.get_idxs_fullVJ() ]
+	
+	def get_chains_fullVJCDR3(self):
+		return self[ self.get_idxs_fullVJCDR3() ]
+	
+	# ==================================
+	# = Appending/extending repertoire =
+	# ==================================
+	
+	def __add__(self,other):
+			'''
+			combine two repertoires
+			'''
+			# chain objects must be concatenated
+			# tags object must be updated
+			return Repertoire(np.append(self.chains,other.chains), (self.metatags | other.metatags) )
+	
+	def __radd__(self,other):
+		return Repertoire.__add__(other,self)
+	
+	def __iadd__(self,other):
+		for chain in other:
+			self.append(chain)
+		return self
+	
+	def __len__(self):
+		return len(self.chains)
+	
+	def append(self,chain):
+		i = len(self.chains)
+		self.chains = np.append(self.chains,chain)
+		self.processTags(i,chain)
+		
+		# not necessary to uniqueify the tags as each
+		# time i add another one it's a higher unrepresented
+		# number
+		
+		return self
+		
+	def extend(self,rep):
+		return self.__iadd__(rep)
+	
+	# ======================
+	# = Iterator interface =
+	# ======================
+	
+	def __iter__(self):
+		return self.chains.__iter__()
+	
+	# =============
+	# = Utilities =
+	# =============
+	
+	def add_tags(self,tagset):
+		for (i,chain) in enumerate(self.chains):
+			chain.tags.update(tagset)
+			for tag in tagset:
+				try: self.tags[tag] += [i]
+				except KeyError,e: self.tags[tag] = [i]
+		return
+	
+	def del_tags(self,tagset):
+		for tag in tagset:
+			if tag not in self.tags.keys():
+				print 'WARNING: ' + tag + 'is not a recognized tag'
+				continue
+			idxs = self.tags[tag]
+			for chain in self.chains[idxs]
+				chain.tags.remove(tag)
+			del self.tags[tag]
+		return
+	
+	def add_metatags(self,metatagset):
+		self.metatags.update(metatagset)
+		return
+	
+	def del_metatags(self,metatagset):
+		for tag in metatagset:
+			if tag not in self.metatags:
+				print 'WARNING: ' + tag + 'is not a recognized tag'
+				continue
+			self.metatags.remove(tag)
+		return
+		
+	def processTags(self,i,chain):
+		# given ImmuneChain and position in array, get tags and add
+		# them to the tags dict
+		for tag in chain.tags:
+			try: self.tags[tag] += [i]
+			except KeyError,e: self.tags[tag] = [i]
+		
+		try: self.tags[chain.v] += [i]
+		except KeyError,e: self.tags[chain.v] = [i]
+		
+		try: self.tags[chain.d] += [i]
+		except KeyError,e: self.tags[chain.d] = [i]
+		
+		try: self.tags[chain.j] += [i]
+		except KeyError,e: self.tags[chain.j] = [i]
+		
+		try: self.tags[chain.descr] += [i]
+		except KeyError,e: self.tags[chain.descr] = [i]
+		
+		return
+	
+	def uniqueifyTags(self):
+		for tag in self.tags.keys():
+			self.tags[tag] = list(set(self.tags[tag]))
+		return
+	
+	def __str__(self):
+		return self.__repr__()
+	
+	def __repr__(self):
+		return self.getXML()
+	
+	def getXML(self):
+		xmlstring = ''
+		xmlstring += '<Repertoire>\n\n'
+		xmlstring += '<Meta>\n'
+		for tag in self.metatags:
+			xmlstring += '\t<metatag>' + escape(tag) + '</metatag>\n'
+		xmlstring += '</Meta>\n\n'
+		xmlstring += '<Data>\n'
+		for chain in self.chains:
+			xmlstring += chain.getXML() + '\n'
+		xmlstring += '</Data>\n\n'
+		xmlstring += '</Repertoire>\n'
+		return xmlstring
+
+#===============================================================================
+
+# ================
+# = Input/Output =
+# ================
+
+
 
 class parseImmuneChains(object):
 	'''
 	returns iterator for use in parsing output of different aligners
 	'''
 	
-	def __init__(self,handle,format='ImmuneChain'):
+	def __init__(self,handle,format='VDJXML'):
 		self.ip = handle
-		if format == 'ImmuneChain': self.next_impl = self.read_immunechain
+		if format   == 'VDJXML':
+			self.next_impl = self.read_repXML
+			handler = RepertoireXMLhandler()
+			saxparser = xml.sax.make_parser()
+			saxparser.setContentHandler(handler)
+		elif format == 'ImmuneChain': self.next_impl = self.read_immunechain
 		elif format == 'abacus': self.next_impl = self.read_abacus		# less important
 		elif format == 'V-QUEST': self.next_impl = self.read_v_quest	# less important
 	
@@ -93,6 +374,27 @@ class parseImmuneChains(object):
 	
 	def next(self):
 		return self.next_impl()
+	
+	
+	class RepertoireXMLhandler(xml.sax.handler.ContentHandler):
+		def startElement(self,name,attrs):
+			if name == 'metatag':
+				self.inMetatag = True
+				self.saveData = True
+			elif name == 'ImmuneChain':
+				self.inImmuneChain = True
+				self.saveData = False
+				
+		def characters(self,content):
+			pass
+
+		def endElement(self,name):
+			if name == 'metatag':
+				self.inMetatag = False
+				self.saveData = False
+	
+	def read_repXML(self):
+		
 	
 	def read_immunechain(self):
 		# clean data
@@ -143,289 +445,45 @@ def writeImmuneChains(chains, handle):
 	for chain in chains:
 		print >>handle, chain
 
+#===============================================================================
 
-# ====================
-# = Repertoire class =
-# ====================
+# ============
+# = Counting =
+# ============
 
-class Repertoire(object):
-		
-	def __init__( self, chains=[] ):
-		'''
-		must provide list of ImmuneChain objects
-		they don't have to have full information
-		'''
-		if isinstance(chains,ImmuneChain):
-			chains = [chains]
-		
-		if isinstance(chains,parseImmuneChains):
-			chains = list(chains)
-		
-		# init primary datatype
-		self.chains = np.array(chains,dtype=np.object)
-		
-		# collect all the tags in the set of ImmuneChains
-		tags = {}
-		
-		# ensure that at least, all identifiers in refseq are present
-		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ:
-			tags[ident] = []
-		
-		for (i,chain) in enumerate(chains):
-			for tag in chain.tags:
-				try: tags[tag] += [i]
-				except KeyError,e: tags[tag] = [i]
-			
-			try: tags[chain.v] += [i]
-			except KeyError,e: tags[chain.v] = [i]
-			
-			try: tags[chain.d] += [i]
-			except KeyError,e: tags[chain.d] = [i]
-			
-			try: tags[chain.j] += [i]
-			except KeyError,e: tags[chain.j] = [i]
-			
-			try: tags[chain.descr] += [i]
-			except KeyError,e: tags[chain.descr] = [i]
-		
-		# unique-ify the lists for all tags
-		for tag in tags.keys():
-			tags[tag] = list(set(tags[tag]))
-		
-		self.tags = tags
-		
-		return
-	
-	# ======================
-	# = Indexing/retrieval =
-	# ======================
-		
-	def __getitem__(self,keys):
-		'''
-		get ImmuneChains out of this object
-		
-		if given a tuple of strings, it returns all chains that
-		match ALL identifiers in the tuple
-		the string can also match the tags that identify ImmuneChains
-		'''
-		# num dim
-		if not isinstance(keys,list) and not isinstance(keys,tuple):
-			keys = (keys,)
-		
-		# convert to string interface if necessary
-		if isinstance(keys[0],int) or isinstance(keys[0],slice):
-			keys = list(keys)
-			
-			# if obj[:]
-			if len(keys)==1 and isinstance(keys[0],int):
-				return self.chains[keys[0]]
-			if len(keys)==1 and isinstance(keys[0],slice):
-				return Repertoire(self.chains[keys[0]])
-			
-			return Repertoire(self.chains[keys])
-			
-		if isinstance(keys[0],str):
-			# process keys
-			identifiers = self.tags.keys()	  # all valid identifiers
-			for key in keys:	# check for all valid identifiers
-				if key not in identifiers:
-					raise KeyError, key+' is not a recognized identifier'
-			
-			idxs = range(len(self.chains))
-			for key in keys:
-				idxs = list(set(idxs) & set(self.tags[key]))
-			
-			return Repertoire(self.chains[idxs])
-		
-		raise IndexError, "you must've indexed incorrectly because you shouldn't be here"
-		
-	def get_chains_AND(self,args):
-		return self.__getitem__(args)
-	
-	def get_chains_OR(self,args):
-		identifiers = self.tags.keys()
-		for key in args:
-			if key not in identifiers:
-				raise KeyError, key+' is not a recognized identifier'
-		
-		idxs = set([])
-		for key in args:
-			idxs.update(self.tags[key])
-		idxs = list(idxs)
-		
-		return Repertoire(self.chains[idxs])
-		
-	def get_idxs_AND(self,args):
-		identifiers = self.tags.keys()	  # all valid identifiers
-		for key in args:	# check for all valid identifiers
-			if key not in identifiers:
-				raise KeyError, key+' is not a recognized identifier'
-		
-		idxs = range(len(self.chains))
-		for key in args:
-			idxs = list(set(idxs) & set(self.tags[key]))
-		
-		return idxs
-	
-	def get_idxs_OR(self,args):
-		identifiers = self.tags.keys()
-		for key in args:
-			if key not in identifiers:
-				raise KeyError, key+' is not a recognized identifier'
-		
-		idxs = set([])
-		for key in args:
-			idxs.update(self.tags[key])
-		idxs = list(idxs)
-		
-		return idxs
-	
-	def get_idxs_fullVDJ(self):
-		Vs = set(self.get_idxs_OR(refseq.IGHV[1:]))
-		Ds = set(self.get_idxs_OR(refseq.IGHD[1:]))
-		Js = set(self.get_idxs_OR(refseq.IGHJ[1:]))
-		idxs = list(Vs & Ds & Js)
-		idxs.sort()
-		return idxs
-	
-	def get_idxs_fullVJ(self):
-		Vs = set(self.get_idxs_OR(refseq.IGHV[1:]))
-		Js = set(self.get_idxs_OR(refseq.IGHJ[1:]))
-		idxs = list(Vs & Js)
-		idxs.sort()
-		return idxs
-	
-	def get_rep_fullVDJ(self):
-		return self[ self.get_idxs_fullVDJ() ]
-	
-	def get_rep_fullVJ(self):
-		return self[ self.get_idxs_fullVJ() ]
-	
-	def get_rep_fullVJCDR3(self):
-		return Repertoire([chain for chain in self if chain.v in refseq.IGHV[1:] and chain.j in refseq.IGHJ[1:] and chain.cdr3 % 3 == 0 and chain.cdr3 > 0])
-	
-	# ==================================
-	# = Appending/extending repertoire =
-	# ==================================
-	
-	def __add__(self,other):
-			'''
-			combine two repertoires
-			'''
-			# chain objects must be concatenated
-			# tags object must be updated
-			return Repertoire(np.append(self.chains,other.chains))
-	
-	def __radd__(self,other):
-		return Repertoire.__add__(other,self)
-	
-	def __iadd__(self,other):
-		n = len(self.chains)
-		m = len(other.chains)
-		self.chains = np.append(self.chains,other.chains)
-		
-		tags = self.tags
-		for (j,chain) in enumerate(other.chains):
-			i = n+j
-			for tag in chain.tags:
-				try: tags[tag] += [i]
-				except KeyError,e: tags[tag] = [i]
-			
-			try: tags[chain.v] += [i]
-			except KeyError,e: tags[chain.v] = [i]
-			
-			try: tags[chain.d] += [i]
-			except KeyError,e: tags[chain.d] = [i]
-			
-			try: tags[chain.j] += [i]
-			except KeyError,e: tags[chain.j] = [i]
-			
-			try: tags[chain.descr] += [i]
-			except KeyError,e: tags[chain.descr] = [i]
-		
-		# unique-ify the lists for all tags
-		for tag in tags.keys():
-			tags[tag] = list(set(tags[tag]))
-		
-		self.tags = tags
-		
-		return self
-	
-	def __len__(self):
-		return len(self.chains)
-	
-	def append(self,chain):
-		return self.__iadd__(self,Repertoire(chain))
-	
-	def extend(self,rep):
-		return self.__iadd__(rep)
-	
-	# ======================
-	# = Iterator interface =
-	# ======================
-	
-	def __iter__(self):
-		return self.chains.__iter__()
-	
-	# ============
-	# = Counting =
-	# ============
-	
-	def countsVJ(self):
-		cn = np.zeros( (NV,NJ) )
-		for chain in self.chains:
-			cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j]] += 1
-		return cn
-	
-	def countsVJ_1D(self):
-		return self.countsVJ().ravel()
-	
-	def countsVDJ(self):
-		cn = np.zeros( (NV,ND,NJ) )
-		for chain in self.chains:
-			cn[refseq.IGHVdict[chain.v],refseq.IGHDdict[chain.d],refseq.IGHJdict[chain.j]] += 1
-		return cn
-	
-	def countsVDJ_2D(self):
-		cn = self.countsVDJ()
-		return cn.reshape(NV,ND*NJ)
-	
-	def countsVDJ_1D(self):
-		return self.countsVDJ().ravel()
-	
-	def countsVJCDR3(self,cdrlow=3,cdrhigh=99):
-		numlens = (cdrhigh-cdrlow)/3 + 1
-		cn = np.zeros( (NV,NJ,numlens) )
-		for chain in self.chains:
-			if chain.cdr3 >= cdrlow and chain.cdr3 <= cdrhigh and chain.cdr3 % 3 == 0:
-				cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j],(chain.cdr3-cdrlow)/3] += 1
-		return cn
-	
-	def countsVJCDR3_2D(self,cdrlow=3,cdrhigh=99):
-		cn = self.countsVJCDR3(cdrlow,cdrhigh)
-		return cn.reshape(NV,cn.shape[1]*cn.shape[2])
-	
-	def countsVJCDR3_1D(self,cdrlow=3,cdrhigh=99):
-		return self.countsVJCDR3(cdrlow,cdrhigh).ravel()
-	
-	# =============
-	# = Utilities =
-	# =============
-	
-	def set_tags(self,tagset):
-		for (i,chain) in enumerate(self.chains):
-			chain.tags.update(tagset)
-			for tag in tagset:
-				try: self.tags[tag] += [i]
-				except KeyError,e: self.tags[tag] = [i]
-		return
-	
-	def __str__(self):
-		return self.__repr__()
-	
-	def __repr__(self):
-		strrep = ''
-		for chain in self.chains:
-			strrep += str(chain) + '\n'
-		return strrep
-	
+def countsVJ(rep):
+	cn = np.zeros( (NV,NJ) )
+	for chain in rep.chains:
+		cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j]] += 1
+	return cn
+
+def countsVJ_1D(rep):
+	return countsVJ(rep).ravel()
+
+def countsVDJ(rep):
+	cn = np.zeros( (NV,ND,NJ) )
+	for chain in rep.chains:
+		cn[refseq.IGHVdict[chain.v],refseq.IGHDdict[chain.d],refseq.IGHJdict[chain.j]] += 1
+	return cn
+
+def countsVDJ_2D(rep):
+	cn = countsVDJ(rep)
+	return cn.reshape(NV,ND*NJ)
+
+def countsVDJ_1D(rep):
+	return countsVDJ(rep).ravel()
+
+def countsVJCDR3(rep,cdrlow=3,cdrhigh=99):
+	numlens = (cdrhigh-cdrlow)/3 + 1
+	cn = np.zeros( (NV,NJ,numlens) )
+	for chain in rep.chains:
+		if chain.cdr3 >= cdrlow and chain.cdr3 <= cdrhigh and chain.cdr3 % 3 == 0:
+			cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j],(chain.cdr3-cdrlow)/3] += 1
+	return cn
+
+def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
+	cn = countsVJCDR3(rep,cdrlow,cdrhigh)
+	return cn.reshape(NV,cn.shape[1]*cn.shape[2])
+
+def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
+	return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
