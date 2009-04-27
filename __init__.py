@@ -269,6 +269,7 @@ class Repertoire(object):
 	# =============
 	
 	def add_tags(self,tagset):
+		if isinstance(tagset,str): tagset = [tagset]
 		for (i,chain) in enumerate(self.chains):
 			chain.tags.update(tagset)
 			for tag in tagset:
@@ -277,6 +278,7 @@ class Repertoire(object):
 		return
 	
 	def del_tags(self,tagset):
+		if isinstance(tagset,str): tagset = [tagset]
 		for tag in tagset:
 			if tag not in self.tags.keys():
 				print 'WARNING: ' + tag + 'is not a recognized tag'
@@ -288,10 +290,12 @@ class Repertoire(object):
 		return
 	
 	def add_metatags(self,metatagset):
+		if isinstance(metatagset,str): metatagset = [metatagset]
 		self.metatags.update(metatagset)
 		return
 	
 	def del_metatags(self,metatagset):
+		if isinstance(metatagset,str): metatagset = [metatagset]
 		for tag in metatagset:
 			if tag not in self.metatags:
 				print 'WARNING: ' + tag + 'is not a recognized tag'
@@ -351,7 +355,90 @@ class Repertoire(object):
 # = Input/Output =
 # ================
 
+class VDJXMLhandler(xml.sax.handler.ContentHandler):
+	def __init__(self,dataobject):
+		# container for data
+		self.data = dataobject
+		if isinstance(self.data,Repertoire):
+			self.mode = 'Repertoire'
+		elif isinstance(self.data,list):
+			self.mode = 'ImmuneChain'
+		else:
+			raise TypeError, 'you provided the wrong type of container to VDJXMLhandler'
+		
+		self.buffer = ''
+		self.numChains = 0
+	
+	def startElement(self,name,attrs):
+		elif name == 'ImmuneChain':
+			self.currentChain = ImmuneChain()
+	
+	def characters(self,content):
+		if saveData == True:
+			self.buffer += unescape(content)
+	
+	def endElement(self,name):
+		if name == 'metatag':
+			if mode == 'Repertoire':
+				self.data.add_metatags(self.buffer)
+		elif name == 'ImmuneChain':
+			self.data.append(self.currentChain)
+			self.numChains += 1
+		elif name == 'descr':
+			self.currentChain.descr = self.buffer
+		elif name == 'seq':
+			self.currentChain.seq = self.buffer
+		elif name == 'v':
+			self.currentChain.v = self.buffer
+		elif name == 'd':
+			self.currentChain.d = self.buffer
+		elif name == 'j':
+			self.currentChain.j = self.buffer
+		elif name == 'ighc':
+			self.currentChain.ighc = self.buffer
+		elif name == 'cdr3':
+			self.currentChain.cdr3 = eval(self.buffer)
+		elif name == 'junction':
+			self.currentChain.junction = self.buffer
+		elif name == 'func':
+			self.currentChain.func = self.buffer
+		elif name == 'tag':
+			self.currentChain.tags.update([self.buffer])
+		else:
+			self.buffer = ''
+		self.buffer = ''
+	
+	def endDocument(self):
+		print "Mode is: " + self.mode
+		if mode == 'Repertoire':
+			print "Repertoire Metatags:"
+			for tag in self.data.metatags:
+				print tag
+		print "Number of ImmuneChain objects read: " + str(self.numChains)
 
+def readVDJ(inputfile,mode='Repertoire'):
+	'''
+	function to load a Repertoire and return it in a Repertoire object
+	or a list of ImmuneChains
+	'''
+	if isinstance(inputfile,str):
+		ip = open(inputfile,'r')
+	elif isinstance(inputfile,file):
+		ip = inputfile
+	
+	if mode == 'Repertoire':
+		data = Repertoire()
+	elif mode == 'ImmuneChain':
+		data = []
+	handler = VDJXMLhandler(data)
+	saxparser = xml.sax.make_parser()
+	saxparser.setContentHandler(handler)
+	saxparser.parse(ip)
+	
+	if isinstance(inputfile,str):
+		ip.close()
+	
+	return data
 
 class parseImmuneChains(object):
 	'''
@@ -387,7 +474,7 @@ class parseImmuneChains(object):
 				
 		def characters(self,content):
 			pass
-
+		
 		def endElement(self,name):
 			if name == 'metatag':
 				self.inMetatag = False
