@@ -440,97 +440,13 @@ def readVDJ(inputfile,mode='Repertoire'):
 	
 	return data
 
-class parseImmuneChains(object):
-	'''
-	returns iterator for use in parsing output of different aligners
-	'''
-	
-	def __init__(self,handle,format='VDJXML'):
-		self.ip = handle
-		if format   == 'VDJXML':
-			self.next_impl = self.read_repXML
-			handler = RepertoireXMLhandler()
-			saxparser = xml.sax.make_parser()
-			saxparser.setContentHandler(handler)
-		elif format == 'ImmuneChain': self.next_impl = self.read_immunechain
-		elif format == 'abacus': self.next_impl = self.read_abacus		# less important
-		elif format == 'V-QUEST': self.next_impl = self.read_v_quest	# less important
-	
-	def __iter__(self):
-		return self
-	
-	def next(self):
-		return self.next_impl()
-	
-	
-	class RepertoireXMLhandler(xml.sax.handler.ContentHandler):
-		def startElement(self,name,attrs):
-			if name == 'metatag':
-				self.inMetatag = True
-				self.saveData = True
-			elif name == 'ImmuneChain':
-				self.inImmuneChain = True
-				self.saveData = False
-				
-		def characters(self,content):
-			pass
-		
-		def endElement(self,name):
-			if name == 'metatag':
-				self.inMetatag = False
-				self.saveData = False
-	
-	def read_repXML(self):
-		
-	
-	def read_immunechain(self):
-		# clean data
-		line = self.ip.next().strip()
-		data = line.strip('ImmuneChain').strip('{}').split(',')
-		numtags = len(data) - 9		# there are 9 req'd fields before tags are included
-		
-		# build ImmuneChain
-		return ImmuneChain( seq=data[0],\
-							func=data[1],\
-							v=data[2],\
-							d=data[3],\
-							j=data[4],\
-							ighc=data[5],\
-							cdr3=eval(data[6]),\
-							junction=data[7],\
-							descr=data[8],\
-							tags=set(data[9:]) )
-	
-	def read_abacus(self):
-		line = self.ip.next()
-		name = line.split('|')[0].strip()
-		rawvdj = line.split('|')[1:]
-		v = ''
-		d = ''
-		j = ''
-		for segment in rawvdj:
-			if segment.split('*')[0][3] == 'V':
-				v = segment.split('*')[0]
-			elif segment.split('*')[0][3] == 'D':
-				d = segment.split('*')[0]
-			elif segment.split('*')[0][3] == 'J':
-				j = segment.split('*')[0]
-		parsedvdj = ( v, d, j )
-		return ImmuneChain(descr = name, vdj = parsedvdj)
-	
-	def read_v_quest(self):
-		line = self.ip.next()
-		rawdata = line.split(',')
-		return ImmuneChain( seq		 = rawdata[0][13:], \
-							func	 = rawdata[1], \
-							vdj		 = (rawdata[2][2:-1],rawdata[3][2:-1],rawdata[4][2:-2]), \
-							cdr3	 = eval(rawdata[5]), \
-							junction = rawdata[6], \
-							descr	 = rawdata[7][:-4] )	# for the ');\n'
-
-def writeImmuneChains(chains, handle):
-	for chain in chains:
-		print >>handle, chain
+def writeVDJ(data, handle):
+	print >>handle, '<?xml version="1.0"?>'
+	if isinstance(data,Repertoire):
+		print >>handle, data
+	elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
+		for chain in data:
+			print >>handle, chain
 
 #===============================================================================
 
