@@ -66,6 +66,13 @@ class ImmuneChain(object):
 		self.junction = junction
 		self.func = func
 	
+	def add_tags(self,tagset):
+		if isinstance(tagset,str): tagset = [tagset]
+		chain.tags.update(tagset)
+	
+	def __len__(self):
+		return len(self.seq)
+	
 	def __str__(self):
 		return self.__repr__()
 	
@@ -327,6 +334,15 @@ class Repertoire(object):
 	def uniqueifyTags(self):
 		for tag in self.tags.keys():
 			self.tags[tag] = list(set(self.tags[tag]))
+		return
+	
+	def reprocessTags(self):
+		self.tags = {}
+		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ:
+			self.tags[ident] = []
+		for (i,chain) in enumerate(self.chains):
+			self.processTags(i,chain)
+		self.uniqueifyTags()
 		return
 	
 	def __str__(self):
