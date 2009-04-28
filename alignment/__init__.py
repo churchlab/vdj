@@ -10,6 +10,9 @@ from vdj import vdjexcept
 import abacuscore
 import Bio
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Alphabet  import IUPAC
 import numpy as np
 import seqtools
 
@@ -35,10 +38,21 @@ class ABACUSer(object):
 				if refdirectory[-1] != '/': refdirectory += '/'
 				if outputdir[-1] != '/': outputdir += '/'
 				abacuscore.set_params(refdirectory,outputdir,vref,dref,jref)
-
+		
 		def alignseq(self,seq):
 				return self.alignseqlist([seq])[0]
-
+		
+		def alignchainlist(self,chainlist):
+			seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),description=chain.descr) for chain in chainlist]
+			alignedchains = self.alignseqlist(seqlist)
+			if len(chainlist) != len(alignedchains):
+				raise Exception, "Alignment error."
+			for (aligned,chain) in zip(alignedchains,chainlist):
+				chain.v = aligned.v
+				chain.d = aligned.d
+				chain.j = aligned.j
+			return
+		
 		def alignseqlist(self,seqlist):
 				# diagnostic
 				print "number seqs to align:",len(seqlist)
@@ -135,7 +149,17 @@ def seqlist2positiveseqlist(seqlist):
 						neg += 1
 		print 'Total:', str(len(seqlist)), 'Revcomped:', str(neg)								 
 		return seqlist
-						
+
+def chainlist2strandlist(chainlist):
+	'''
+	Takes a list of ImmuneChains or a Repertoire object, and returns
+	a list of +1 or -1 for positive or negative strand at the same
+	position
+	'''
+	seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),description=chain.descr) for chain in chainlist]
+	strands = abacuscore.seqlist2positiveseqids(abacuscore.uriseqlist2erezseqlist(seqlist))
+	return strands
+
 
 ################################
 ##
