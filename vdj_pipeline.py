@@ -126,8 +126,9 @@ elif operation == 'align_rep':
 elif operation == 'full':
 	rep = vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags)
 	#DEBUG
-	print "post initial import: " + str(type(rep))
-	print "post initial import: len of rep: " + str(len(rep))
+	#print "post initial import: " + str(type(rep))
+	#print "post initial import: len of rep: " + str(len(rep))
+	#print rep
 	rep = vdj.size_select(rep,options.readlensizes)
 	rep = vdj.barcode_id(rep,options.barcodefile)
 	if options.LSFargs is not None: # if dispatching to LSF
