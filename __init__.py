@@ -648,13 +648,13 @@ def split_into_parts(rep,outputname,packetsize):
 		# split into multiple parts; append .partNNN to filename
 		currfilename = outputname + '.part%03i' % i
 		parts.append(currfilename)
-		vdj.writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
+		writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
 	return parts
 
 def load_parts(parts):
 	rep = Repertoire()
 	for part in parts:
-		rep_part = vdj.readVDJ(part,mode='Repertoire')
+		rep_part = readVDJ(part,mode='Repertoire')
 		rep += rep_part
 	return rep
 
