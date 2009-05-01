@@ -3,35 +3,20 @@
 # VDJ package: toolset for vdj manipulations
 
 import numpy as np
-from numpy import ma
-import pylab
-import scipy
-import scipy.stats
-import matplotlib
 import seqtools
 import refseq
-import clones
-import vdjexcept
+import clones	#CDR3 extraction
 import alignment
-import analysis
-from Bio.SeqRecord import SeqRecord
-import cPickle
-import operator
-import countdata
-from xml.sax.saxutils import escape, unescape
+import types
 import xml.sax
 import xml.sax.handler
+from xml.sax.saxutils import escape, unescape
+from Bio.Seq import reverse_complement
+from datetime import datetime
 
-spearmanr = scipy.stats.spearmanr
-pearsonr  = scipy.stats.pearsonr
-
-IGHV = refseq.IGHV
-IGHD = refseq.IGHD
-IGHJ = refseq.IGHJ
-
-NV = len(IGHV)
-ND = len(IGHD)
-NJ = len(IGHJ)
+NV = len(refseq.IGHV)
+ND = len(refseq.IGHD)
+NJ = len(refseq.IGHJ)
 
 #===============================================================================
 
@@ -67,8 +52,8 @@ class ImmuneChain(object):
 		self.func = func
 	
 	def add_tags(self,tagset):
-		if isinstance(tagset,str): tagset = [tagset]
-		chain.tags.update(tagset)
+		if isinstance(tagset,types.StringTypes): tagset = [tagset]
+		self.tags.update(tagset)
 	
 	def __len__(self):
 		return len(self.seq)
@@ -82,17 +67,17 @@ class ImmuneChain(object):
 	def getXML(self):
 		xmlstring = ''
 		xmlstring += '<ImmuneChain>\n'
-		xmlstring += '\t<descr>' 	+ escape(self.descr) + 		'</descr>\n'
-		xmlstring += '\t<seq>' 		+ escape(self.seq) + 		'</seq>\n'
-		xmlstring += '\t<v>' 		+ escape(self.v) + 			'</v>\n' 
-		xmlstring += '\t<d>' 		+ escape(self.d) + 			'</d>\n'
-		xmlstring += '\t<j>' 		+ escape(self.j) + 			'</j>\n'
-		xmlstring += '\t<ighc>' 	+ escape(self.ighc) + 		'</ighc>\n'
-		xmlstring += '\t<cdr3>' 	+ escape(self.cdr3) + 		'</cdr3>\n'	# measured in nt
-		xmlstring += '\t<junction>' + escape(self.junction) + 	'</junction>\n'
-		xmlstring += '\t<func>' 	+ escape(self.func) + 		'</func>\n'
+		xmlstring += '\t<descr>' 	+ self.descr + 		'</descr>\n'
+		xmlstring += '\t<seq>' 		+ self.seq + 		'</seq>\n'
+		xmlstring += '\t<v>' 		+ self.v + 			'</v>\n' 
+		xmlstring += '\t<d>' 		+ self.d + 			'</d>\n'
+		xmlstring += '\t<j>' 		+ self.j + 			'</j>\n'
+		xmlstring += '\t<ighc>' 	+ self.ighc + 		'</ighc>\n'
+		xmlstring += '\t<cdr3>' 	+ str(self.cdr3) + 	'</cdr3>\n'	# measured in nt
+		xmlstring += '\t<junction>' + self.junction + 	'</junction>\n'
+		xmlstring += '\t<func>' 	+ self.func + 		'</func>\n'
 		for tag in self.tags:
-			xmlstring += '\t<tag>' + escape(tag) + '</tag>\n'
+			xmlstring += '\t<tag>' + tag + '</tag>\n'
 		xmlstring += '</ImmuneChain>\n'
 		return xmlstring
 
@@ -111,9 +96,6 @@ class Repertoire(object):
 		if isinstance(chains,ImmuneChain):
 			chains = [chains]
 		
-		if isinstance(chains,parseImmuneChains):
-			chains = list(chains)
-		
 		# set global tags for repertoire
 		self.metatags = set(metatags)
 		
@@ -124,7 +106,7 @@ class Repertoire(object):
 		self.tags = {}
 		
 		# ensure that at least, all identifiers in refseq are present
-		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ:
+		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ + refseq.IGHC:
 			self.tags[ident] = []
 		
 		for (i,chain) in enumerate(self.chains):
@@ -144,9 +126,13 @@ class Repertoire(object):
 		get ImmuneChains out of this object
 		takes anything that numpy arrays can take
 		'''
+		
 		# num dim
 		if not isinstance(keys,list) and not isinstance(keys,tuple):
 			keys = (keys,)
+		
+		if len(keys) == 0:
+			return Repertoire([],self.metatags)
 		
 		if isinstance(keys[0],int) or isinstance(keys[0],slice):
 			keys = list(keys)
@@ -168,6 +154,7 @@ class Repertoire(object):
 		return Repertoire(self.chains[idxs],self.metatags)
 		
 	def get_idxs_AND(self,args):
+		if isinstance(args,types.StringTypes): args = [args]
 		identifiers = self.tags.keys()	  # all valid identifiers
 		for key in args:	# check for all valid identifiers
 			if key not in identifiers:
@@ -181,6 +168,7 @@ class Repertoire(object):
 		return idxs
 	
 	def get_idxs_OR(self,args):
+		if isinstance(args,types.StringTypes): args = [args]
 		args = list(args)	# necessary bc of pop operation below
 		identifiers = self.tags.keys()
 		for (i,key) in enumerate(args):
@@ -276,7 +264,7 @@ class Repertoire(object):
 	# =============
 	
 	def add_tags(self,tagset):
-		if isinstance(tagset,str): tagset = [tagset]
+		if isinstance(tagset,types.StringTypes): tagset = [tagset]
 		for (i,chain) in enumerate(self.chains):
 			chain.tags.update(tagset)
 			for tag in tagset:
@@ -285,24 +273,25 @@ class Repertoire(object):
 		return
 	
 	def del_tags(self,tagset):
-		if isinstance(tagset,str): tagset = [tagset]
+		if isinstance(tagset,types.StringTypes): tagset = [tagset]
 		for tag in tagset:
 			if tag not in self.tags.keys():
 				print 'WARNING: ' + tag + 'is not a recognized tag'
 				continue
 			idxs = self.tags[tag]
-			for chain in self.chains[idxs]
+			print idxs
+			for chain in self.chains[idxs]:
 				chain.tags.remove(tag)
 			del self.tags[tag]
 		return
 	
 	def add_metatags(self,metatagset):
-		if isinstance(metatagset,str): metatagset = [metatagset]
+		if isinstance(metatagset,types.StringTypes): metatagset = [metatagset]
 		self.metatags.update(metatagset)
 		return
 	
 	def del_metatags(self,metatagset):
-		if isinstance(metatagset,str): metatagset = [metatagset]
+		if isinstance(metatagset,types.StringTypes): metatagset = [metatagset]
 		for tag in metatagset:
 			if tag not in self.metatags:
 				print 'WARNING: ' + tag + 'is not a recognized tag'
@@ -326,6 +315,9 @@ class Repertoire(object):
 		try: self.tags[chain.j] += [i]
 		except KeyError,e: self.tags[chain.j] = [i]
 		
+		try: self.tags[chain.ighc] += [i]
+		except KeyError,e: self.tags[chain.ighc] = [i]
+		
 		try: self.tags[chain.descr] += [i]
 		except KeyError,e: self.tags[chain.descr] = [i]
 		
@@ -338,7 +330,7 @@ class Repertoire(object):
 	
 	def reprocessTags(self):
 		self.tags = {}
-		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ:
+		for ident in refseq.IGHV + refseq.IGHD + refseq.IGHJ + refseq.IGHC:
 			self.tags[ident] = []
 		for (i,chain) in enumerate(self.chains):
 			self.processTags(i,chain)
@@ -356,7 +348,7 @@ class Repertoire(object):
 		xmlstring += '<Repertoire>\n\n'
 		xmlstring += '<Meta>\n'
 		for tag in self.metatags:
-			xmlstring += '\t<metatag>' + escape(tag) + '</metatag>\n'
+			xmlstring += '\t<metatag>' + tag + '</metatag>\n'
 		xmlstring += '</Meta>\n\n'
 		xmlstring += '<Data>\n'
 		for chain in self.chains:
@@ -384,49 +376,67 @@ class VDJXMLhandler(xml.sax.handler.ContentHandler):
 		
 		self.buffer = ''
 		self.numChains = 0
+		self.saveData = False
+		
+		self.chain_elements = [
+							'descr',
+							'seq',
+							'v',
+							'd',
+							'j',
+							'ighc',
+							'cdr3',
+							'junction',
+							'func',
+							'tag'
+							  ]
 	
 	def startElement(self,name,attrs):
-		elif name == 'ImmuneChain':
+		
+		#DEBUG
+		#print "Start:  " + name
+		#print "Buffer: " + '|'+self.buffer+'|'
+		
+		if name == 'ImmuneChain':
 			self.currentChain = ImmuneChain()
+		elif name == 'metatag':
+			#DEBUG
+			#print "started metatag"
+			#print "\tbuffer: " + '|' + self.buffer + '|'
+			self.saveData = True
+		elif name in self.chain_elements:
+			#DEBUG print 'caught elt: ' + name
+			self.saveData = True
 	
 	def characters(self,content):
-		if saveData == True:
-			self.buffer += unescape(content)
+		if self.saveData:
+			self.buffer += content
 	
 	def endElement(self,name):
 		if name == 'metatag':
-			if mode == 'Repertoire':
+			#DEBUG
+			#print "end metatag"
+			#print "\tbuffer: " + '|' + self.buffer + '|'
+			if self.mode == 'Repertoire':
 				self.data.add_metatags(self.buffer)
 		elif name == 'ImmuneChain':
 			self.data.append(self.currentChain)
 			self.numChains += 1
-		elif name == 'descr':
-			self.currentChain.descr = self.buffer
-		elif name == 'seq':
-			self.currentChain.seq = self.buffer
-		elif name == 'v':
-			self.currentChain.v = self.buffer
-		elif name == 'd':
-			self.currentChain.d = self.buffer
-		elif name == 'j':
-			self.currentChain.j = self.buffer
-		elif name == 'ighc':
-			self.currentChain.ighc = self.buffer
-		elif name == 'cdr3':
-			self.currentChain.cdr3 = eval(self.buffer)
-		elif name == 'junction':
-			self.currentChain.junction = self.buffer
-		elif name == 'func':
-			self.currentChain.func = self.buffer
-		elif name == 'tag':
-			self.currentChain.tags.update([self.buffer])
+		elif name in self.chain_elements:
+			if name == 'cdr3':
+				self.currentChain.cdr3 = eval(self.buffer)
+			elif name == 'tag':
+				self.currentChain.add_tags(self.buffer)
+			else:
+				self.currentChain.__setattr__(name,self.buffer)
 		else:
 			self.buffer = ''
 		self.buffer = ''
+		self.saveData = False
 	
 	def endDocument(self):
 		print "Mode is: " + self.mode
-		if mode == 'Repertoire':
+		if self.mode == 'Repertoire':
 			print "Repertoire Metatags:"
 			for tag in self.data.metatags:
 				print tag
@@ -437,7 +447,7 @@ def readVDJ(inputfile,mode='Repertoire'):
 	function to load a Repertoire and return it in a Repertoire object
 	or a list of ImmuneChains
 	'''
-	if isinstance(inputfile,str):
+	if isinstance(inputfile,types.StringTypes):
 		ip = open(inputfile,'r')
 	elif isinstance(inputfile,file):
 		ip = inputfile
@@ -451,18 +461,26 @@ def readVDJ(inputfile,mode='Repertoire'):
 	saxparser.setContentHandler(handler)
 	saxparser.parse(ip)
 	
-	if isinstance(inputfile,str):
+	if isinstance(inputfile,types.StringTypes):
 		ip.close()
 	
 	return data
 
-def writeVDJ(data, handle):
+def writeVDJ(data, fileobj):
+	if isinstance(fileobj,types.StringTypes):
+		handle = open(fileobj,'w')
+	elif isinstance(fileobj,file):
+		handle = fileobj
+		
 	print >>handle, '<?xml version="1.0"?>'
 	if isinstance(data,Repertoire):
 		print >>handle, data
 	elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
 		for chain in data:
 			print >>handle, chain
+	
+	if isinstance(fileobj,types.StringTypes):
+		handle.close()
 
 #===============================================================================
 
@@ -506,3 +524,183 @@ def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
 
 def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
 	return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
+
+#===============================================================================
+
+# ======================
+# = Pipeline functions =
+# ======================
+
+def initial_import(inputfilelist,outputname,metatags=[],tags=[]):
+	seqs = []
+	for filename in inputfilelist:
+		seqs.extend(seqtools.getFasta(filename))
+	
+	chains = [ImmuneChain(descr=seq.description.split()[0],seq=seq.seq.data,tags=tags) for seq in seqs]	
+	rep = Repertoire(chains)
+	rep.add_metatags(metatags)
+	rep.add_metatags("Initial_Import : " + timestamp())
+	
+	writeVDJ(rep,outputname)
+	
+	return rep
+
+def size_select(rep,readlensizes):	
+	if len(readlensizes) != 2:
+		raise Exception, "Incorrect number of args for size_select operation."
+	
+	minreadlen = readlensizes[0]
+	maxreadlen = readlensizes[1]
+	
+	idxs = [i for (i,chain) in enumerate(rep) if len(chain) >= minreadlen and len(chain) <= maxreadlen]
+	
+	rep_sizeselected = rep[idxs]
+	rep_sizeselected.add_metatags("Size Selection: " +"min " + str(minreadlen)+ " max " + str(maxreadlen) + " : " + timestamp())
+		
+	return rep_sizeselected
+
+def barcode_id(rep,barcodefile):
+	# load the barcodes from file and process them
+	ip = open(barcodefile,'r')
+	barcodes = {}
+	for line in ip:
+		bc = line.split()
+		barcodes[bc[0]] = bc[1]
+	ip.close()
+	barcodelen = len(barcodes.keys()[0])
+	
+	rep.add_metatags("Barcode_ID : " + timestamp())
+	
+	for chain in rep:
+		curr_bcID = barcodes.get( chain.seq[:barcodelen], '' )
+		if curr_bcID != '':
+			chain.seq = chain.seq[barcodelen:]	# remove barcode
+			chain.add_tags(curr_bcID)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def isotype_id(rep,IGHCfile):
+	# load the isotype ids from file and process them
+	ip = open(IGHCfile,'r')
+	isotypes = {}
+	for line in ip:
+		iso = line.split()
+		# note that I take the revcomp of the primer sequence here
+		isotypes[reverse_complement(iso[0])] = iso[1]
+	ip.close()
+	
+	rep.add_metatags("Isotype_ID : " + timestamp())
+	
+	for chain in rep:
+		curr_isoID = ''
+		for iso in isotypes.iteritems():
+			if iso[0] in chain.seq[-50:]:	# arbitrary cutoff from 3' end
+				curr_isoID = iso[1]
+		chain.ighc = curr_isoID
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def positive_strand(rep):
+	rep.add_metatags("Positive_Strand : " + timestamp())
+	
+	# compute correct strand
+	strands = alignment.chainlist2strandlist(rep)
+	if len(strands) != len(rep):
+		raise Exception, "Error in positive strand id."
+	
+	# invert strand
+	for (strand,chain) in zip(strands,rep):
+		chain.add_tags('positive')
+		if strand == -1:
+			chain.add_tags('revcomp')
+			chain.seq = reverse_complement(chain.seq)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def align_rep(rep):
+	rep.add_metatags("VDJ_Alignment : " + timestamp())
+	
+	# perform alignment
+	alignment.abacus.alignchainlist(rep)
+	clones.extractCDR3(rep)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+#===============================================================================
+
+# ===================
+# = LSF Dispatching =
+# ===================
+
+def split_into_parts(rep,outputname,packetsize):
+	parts = []
+	nfiles = int(math.ceil(float(len(rep)) / packetsize))
+	for i in xrange(nfiles):
+		# split into multiple parts; append .partNNN to filename
+		currfilename = outputname + '.part%03i' % i
+		parts.append(currfilename)
+		vdj.writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
+	return parts
+
+def load_parts(parts):
+	rep = Repertoire()
+	for part in parts:
+		rep_part = vdj.readVDJ(part,mode='Repertoire')
+		rep += rep_part
+	return rep
+
+def generate_script(operation):
+	scriptname = tempfile.mktemp('.py','vdj_operation','./')
+	op = open(scriptname,'w')
+	print >>op, "import vdj"
+	print >>op, "import sys"
+	print >>op, "rep = vdj.readVDJ(sys.argv[1],mode='Repertoire')"
+	print >>op, "rep=vdj."+operation+"(rep)"
+	print >>op, "vdj.writeVDJ(rep,sys.argv[1])"
+	op.close()
+	return scriptname
+
+def submit_to_LSF(queue,LSFopfile,script,parts):
+	processes = []	# list of PIDs that are dispatched through LSF
+	for chunk in parts:
+		proc = subprocess.Popen( ['bsub','-q'+queue,'-o'+LSFopfile,'python',script,chunk], stdout=subprocess.PIPE )
+		processes.append(proc.stdout.read().split('<')[1].split('>')[0])
+	return processes
+
+def waitforLSFjobs(PIDs,interval=30):
+	finished == False
+	while not finished:
+		time.sleep(interval)
+		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
+		status = p.stdout.read().split('\n')
+		runningprocesses = [line.split()[0] for line in status if line.split() != [] and line.split()[0] != 'JOBID']
+		finished = True
+		for pid in PIDs:
+			if pid in runningprocesses:
+				finished = False
+	return
+
+#===============================================================================
+
+# ==================
+# = Misc Utilities =
+# ==================
+
+def timestamp():
+	return datetime.now().isoformat().split('.')[0]
+
+#===============================================================================
+
+
+#===============================================================================
+
+
+#===============================================================================

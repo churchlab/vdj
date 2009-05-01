@@ -6,7 +6,6 @@ import csv
 import ClientForm
 import vdj
 from vdj import refseq
-from vdj import vdjexcept
 import abacuscore
 import Bio
 from Bio import SeqIO
@@ -43,7 +42,7 @@ class ABACUSer(object):
 				return self.alignseqlist([seq])[0]
 		
 		def alignchainlist(self,chainlist):
-			seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),description=chain.descr) for chain in chainlist]
+			seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),id='',name='',description=chain.descr) for chain in chainlist]
 			alignedchains = self.alignseqlist(seqlist)
 			if len(chainlist) != len(alignedchains):
 				raise Exception, "Alignment error."
@@ -103,7 +102,7 @@ class ABACUSer(object):
 										d = segment.split('*')[0]
 								elif segment.split('*')[0][3] == 'J':
 										j = segment.split('*')[0]
-						parsedvdj = ( v, d, j )
+						#parsedvdj = ( v, d, j )  ImmuneChain object now takes v, d, and j separately
 						curseq = seqlist[k]
 						if curseq.description.strip() != name.strip():
 								print curseq.description, 'is different from', name
@@ -112,7 +111,7 @@ class ABACUSer(object):
 						#		 curseq = seqlist[eval(name.lstrip('0'))]
 						#else:
 						#		 curseq = seqlist[eval(name.lstrip('0'))]
-						chain = vdj.ImmuneChain(seq=seqtools.seqString(curseq), descr = name, vdj = parsedvdj)
+						chain = vdj.ImmuneChain(seq=seqtools.seqString(curseq), descr = name, v=v, d=d, j=j)
 						chains.append(chain)
 				print "num alignments obtained:",len(chains)
 				ip.close()
@@ -156,7 +155,7 @@ def chainlist2strandlist(chainlist):
 	a list of +1 or -1 for positive or negative strand at the same
 	position
 	'''
-	seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),description=chain.descr) for chain in chainlist]
+	seqlist = [SeqRecord(Seq(chain.seq,IUPAC.unambiguous_dna),id='',name='',description=chain.descr) for chain in chainlist]
 	strands = abacuscore.seqlist2positiveseqids(abacuscore.uriseqlist2erezseqlist(seqlist))
 	return strands
 
@@ -208,7 +207,7 @@ class VDJaligner(object):
 				rawdata = response.next()
 				break
 		else:
-			raise vdjexcept.NoData("Alignment failed",seq)
+			raise Exception, "Alignment failed: "+seq
 		
 		header = header.split(';')
 		rawdata = rawdata.split(';')
@@ -297,7 +296,7 @@ class VDJaligner(object):
 			if os.path.exists('mutations in alignments.txt'): os.remove('mutations in alignments.txt')
 			if os.path.exists('VDJalignSEQtemp.fasta'): os.remove('VDJalignSEQtemp.fasta')
 			os.chdir(prevdir)
-			raise vdjexcept.AlignmentError(seq,"Alignment failed")
+			raise Exception, "Alignment failed: " + seq
 		
 		# parse output for VDJ info and length of CDR3 (no allele)
 		data = {}
