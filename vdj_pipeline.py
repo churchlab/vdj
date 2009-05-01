@@ -99,6 +99,8 @@ elif operation == 'positive_strand':
 		if os.path.exists(scriptname): os.remove(scriptname)
 		rep = vdj.load_parts(parts)
 		vdj.writeVDJ(rep,outputname)
+		for part in parts:
+			if os.path.exists(part): os.remove(part)
 	else: # if just running on one file
 		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')		
 		rep = vdj.positive_strand(rep)
@@ -115,6 +117,8 @@ elif operation == 'align_rep':
 		if os.path.exists(scriptname): os.remove(scriptname)
 		rep = vdj.load_parts(parts)
 		vdj.writeVDJ(rep,outputname)
+		for part in parts:
+			if os.path.exists(part): os.remove(part)
 	else:
 		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
 		rep = vdj.align_rep(rep)
@@ -136,6 +140,8 @@ elif operation == 'full':
 		rep = vdj.load_parts(parts)
 		rep = vdj.isotype_id(rep,options.IGHCfile)
 		vdj.writeVDJ(rep,outputname)
+		for part in parts:
+			if os.path.exists(part): os.remove(part)
 	else: # if running on a single file
 		rep = vdj.positive_strand(rep)
 		rep = vdj.isotype_id(rep,options.IGHCfile)
