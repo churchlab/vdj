@@ -680,7 +680,7 @@ def submit_to_LSF(queue,LSFopfile,script,parts):
 	return processes
 
 def waitforLSFjobs(PIDs,interval=30):
-	finished == False
+	finished = False
 	while not finished:
 		time.sleep(interval)
 		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
