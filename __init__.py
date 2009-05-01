@@ -560,6 +560,10 @@ def size_select(rep,readlensizes):
 	
 	idxs = [i for (i,chain) in enumerate(rep) if len(chain) >= minreadlen and len(chain) <= maxreadlen]
 	
+	#DEBUG
+	print idxs
+	print str(type(idxs))
+	
 	rep_sizeselected = rep[idxs]
 	rep_sizeselected.add_metatags("Size Selection: " +"min " + str(minreadlen)+ " max " + str(maxreadlen) + " : " + timestamp())
 		
