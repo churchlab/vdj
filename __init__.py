@@ -46,6 +46,7 @@ class ImmuneChain(object):
 		'''
 		self.seq = seq.upper()
 		self.descr = descr
+		if isinstance(tags,types.StringTypes): tags = [tags]
 		self.tags = set(tags)	# tag for sample number/experiment etc
 		self.v = v
 		self.d = d
@@ -101,6 +102,7 @@ class Repertoire(object):
 			chains = [chains]
 		
 		# set global tags for repertoire
+		if isinstance(metatags,types.StringTypes): metatags = [metatags]
 		self.metatags = set(metatags)
 		
 		# init primary datatype
