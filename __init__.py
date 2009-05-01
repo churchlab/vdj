@@ -11,6 +11,7 @@ import types
 import math
 import tempfile
 import subprocess
+import time
 import xml.sax
 import xml.sax.handler
 from xml.sax.saxutils import escape, unescape
