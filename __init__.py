@@ -9,6 +9,7 @@ import clones	#CDR3 extraction
 import alignment
 import types
 import math
+import tempfile
 import xml.sax
 import xml.sax.handler
 from xml.sax.saxutils import escape, unescape
