@@ -555,6 +555,9 @@ def size_select(rep,readlensizes):
 	if len(readlensizes) != 2:
 		raise Exception, "Incorrect number of args for size_select operation."
 	
+	#DEBUG
+	print len(rep)
+	
 	minreadlen = readlensizes[0]
 	maxreadlen = readlensizes[1]
 	
