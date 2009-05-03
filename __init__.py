@@ -237,8 +237,10 @@ class Repertoire(object):
 		return Repertoire.__add__(other,self)
 	
 	def __iadd__(self,other):
+		self.add_metatags(other.metatags)
 		for chain in other:
 			self.append(chain)
+		self.reprocessTags()
 		return self
 	
 	def __len__(self):
@@ -250,7 +252,7 @@ class Repertoire(object):
 		self.processTags(i,chain)
 		
 		# not necessary to uniqueify the tags as each
-		# time i add another one it's a higher unrepresented
+		# time I add another one it's a higher unrepresented
 		# number
 		
 		return self
