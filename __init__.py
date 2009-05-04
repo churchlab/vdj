@@ -664,7 +664,7 @@ def split_into_parts(rep,outputname,packetsize):
 	nfiles = int(math.ceil(float(len(rep)) / packetsize))
 	for i in xrange(nfiles):
 		# split into multiple parts; append .partNNN to filename
-		currfilename = outputname + '.part%03i' % i
+		currfilename = outputname + '.part%04i' % i
 		parts.append(currfilename)
 		writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
 	return parts
@@ -700,6 +700,9 @@ def waitforLSFjobs(PIDs,interval=30):
 		time.sleep(interval)
 		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
 		status = p.stdout.read().split('\n')
+		if status[0].split()[0] != 'JOBID':
+			finished = False
+			continue
 		runningprocesses = [line.split()[0] for line in status if line.split() != [] and line.split()[0] != 'JOBID']
 		finished = True
 		for pid in PIDs:
