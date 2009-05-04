@@ -351,7 +351,7 @@ class Repertoire(object):
 	def __repr__(self):
 		return self.getXML()
 	
-	def getXML(self):
+	def getXML(self,verbose=True):
 		xmlstring = ''
 		xmlstring += '<Repertoire>\n\n'
 		xmlstring += '<Meta>\n'
@@ -359,7 +359,9 @@ class Repertoire(object):
 			xmlstring += '\t<metatag>' + tag + '</metatag>\n'
 		xmlstring += '</Meta>\n\n'
 		xmlstring += '<Data>\n'
-		for chain in self.chains:
+		for (i,chain) in enumerate(self.chains):
+			if verbose and i%5000==0:
+				print "Writing: " + str(i)
 			xmlstring += chain.getXML() + '\n'
 		xmlstring += '</Data>\n\n'
 		xmlstring += '</Repertoire>\n'
@@ -474,7 +476,7 @@ def readVDJ(inputfile,mode='Repertoire'):
 	
 	return data
 
-def writeVDJ(data, fileobj):
+def writeVDJ(data, fileobj, verbose=True):
 	if isinstance(fileobj,types.StringTypes):
 		handle = open(fileobj,'w')
 	elif isinstance(fileobj,file):
@@ -484,7 +486,9 @@ def writeVDJ(data, fileobj):
 	if isinstance(data,Repertoire):
 		print >>handle, data
 	elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
-		for chain in data:
+		for (i,chain) in enumerate(data):
+			if verbose and i%5000==0:
+				print "Writing: " + str(i)
 			print >>handle, chain
 	
 	if isinstance(fileobj,types.StringTypes):
