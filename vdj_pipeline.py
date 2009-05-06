@@ -133,6 +133,7 @@ elif operation == 'full':
 	rep = vdj.barcode_id(rep,options.barcodefile)
 	if options.LSFargs is not None: # if dispatching to LSF
 		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
+		del rep
 		scriptname1 = vdj.generate_script('positive_strand')
 		processes1 = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname1,parts)
 		vdj.waitforLSFjobs(processes1,30)
