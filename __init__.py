@@ -240,7 +240,7 @@ class Repertoire(object):
 		self.add_metatags(other.metatags)
 		for chain in other:
 			self.append(chain)
-		self.reprocessTags()
+		# self.reprocessTags()  WHY DO I NEED THIS?
 		return self
 	
 	def __len__(self):
@@ -484,7 +484,24 @@ def writeVDJ(data, fileobj, verbose=True):
 		
 	print >>handle, '<?xml version="1.0"?>'
 	if isinstance(data,Repertoire):
-		print >>handle, data
+		# header
+		xmlstring = ''
+		xmlstring += '<Repertoire>\n\n'
+		xmlstring += '<Meta>\n'
+		for tag in data.metatags:
+			xmlstring += '\t<metatag>' + tag + '</metatag>\n'
+		xmlstring += '</Meta>\n\n'
+		xmlstring += '<Data>\n'
+		print >>handle, xmlstring
+		
+		# data
+		for (i,chain) in enumerate(data.chains):
+			if verbose and i%5000==0:
+				print "Writing: " + str(i)
+			print >>handle, str(chain) + '\n'
+		xmlstring = '</Data>\n\n'
+		xmlstring += '</Repertoire>\n'
+		print >>handle, xmlstring
 	elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
 		for (i,chain) in enumerate(data):
 			if verbose and i%5000==0:
@@ -493,6 +510,24 @@ def writeVDJ(data, fileobj, verbose=True):
 	
 	if isinstance(fileobj,types.StringTypes):
 		handle.close()
+
+
+		def getXML(self,verbose=True):
+			xmlstring = ''
+			xmlstring += '<Repertoire>\n\n'
+			xmlstring += '<Meta>\n'
+			for tag in self.metatags:
+				xmlstring += '\t<metatag>' + tag + '</metatag>\n'
+			xmlstring += '</Meta>\n\n'
+			xmlstring += '<Data>\n'
+			for (i,chain) in enumerate(self.chains):
+				if verbose and i%5000==0:
+					print "Writing: " + str(i)
+				xmlstring += chain.getXML() + '\n'
+			xmlstring += '</Data>\n\n'
+			xmlstring += '</Repertoire>\n'
+			return xmlstring
+
 
 #===============================================================================
 
@@ -699,6 +734,7 @@ def waitforLSFjobs(PIDs,interval=30):
 	while not finished:
 		time.sleep(interval)
 		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
+		p.wait()
 		status = p.stdout.read().split('\n')
 		if status[0].split()[0] != 'JOBID':
 			finished = False
