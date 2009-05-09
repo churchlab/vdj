@@ -1,10 +1,28 @@
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+# DEPRECATED
+
+
+
 # clones.py
 # Methods to deal with sequencing clones (incl clustering)
 
 import vdj
 import cluster
 import os
-from seqtools import editdist
+from editdist import distance as editdist
 import seqtools
 
 
@@ -77,7 +95,7 @@ def extractCDR3(chains):
 	if isinstance(chains,vdj.Repertoire): chain_list = chains.chains
 	if isinstance(chains,list): chain_list = chains
 	if isinstance(chains,vdj.ImmuneChain): chain_list = [chains]
-
+	
 	curdir = os.getcwd()
 	if curdir[-1] != '/': curdir += '/'	   
 	
@@ -92,44 +110,44 @@ def extractCDR3(chains):
 	ref_J_file_name	  = 'ref_J_'+seqtools.randalphanum(8)+'.fasta'
 	while os.path.exists(ref_J_file_name):
 		ref_J_file_name	  = 'ref_J_'+seqtools.randalphanum(8)+'.fasta'
-
+	
 	cdr3s = []
 	for chain in chain_list:
 		try:
 			# init indexes
 			v_end_idx = len(chain.seq)
 			j_start_idx = 0
-		
+			
 			# can't get the CDR3
 			if chain.v == '' or chain.j == '':
 				cdr3s.append('')
 				continue
-	
+			
 			# write sequence and references to fasta file
 			query_file	 = open(curdir+query_file_name, 'w')
 			ref_FR3_file = open(curdir+ref_FR3_file_name,'w')
 			ref_J_file	 = open(curdir+ref_J_file_name, 'w')
-	
+			
 			print >>query_file, '>query_V'
 			print >>query_file, chain.seq
-	
+			
 			print >>ref_FR3_file, '>ref_V_FR3'
 			print >>ref_FR3_file, vdj.refseq.IGHV_FR3[chain.v]
-	
+			
 			print >>ref_J_file, '>ref_J_FR4'
 			print >>ref_J_file, vdj.refseq.IGHJ_FR4[chain.j][1]
-	
+			
 			query_file.close()
 			ref_FR3_file.close()
 			ref_J_file.close()
-	
+			
 			v_align = os.popen('bl2seq -i ' + query_file_name + ' -j ' + ref_FR3_file_name + ' -p blastn -g T -F F -e 1.0 -D 1 -r 3 -G 3 -E 6 -W 9')
-	
+			
 			for line in v_align:
 				if line[0]=='#':
 					continue
 				linedata = line.split()
-			
+				
 				refend   = eval(linedata[-3])
 				reflen   = len(vdj.refseq.IGHV_FR3[chain.v])
 				ext_deficit = reflen - refend
@@ -144,32 +162,32 @@ def extractCDR3(chains):
 				queryend = eval(linedata[-5])
 				v_end_idx = eval(line.split()[-5]) + ext_deficit - 3		# FR3 includes the CYS
 				break
-	
+			
 			query_file	 = open(curdir+query_file_name, 'w')
-	
+			
 			print >>query_file, '>query_J'
 			print >>query_file, chain.seq[v_end_idx:]
-	
+			
 			query_file.close()
-	
+			
 			j_align = os.popen('bl2seq -i ' + query_file_name + ' -j ' + ref_J_file_name + ' -p blastn -g T -F F -e 1.0 -D 0 -r 3 -G 3 -E 6 -W 9')
-	
+			
 			# as the conserved TRP is internal to the ref sequence, we have to deal with possible gapped alignments
 			for line in j_align:
 				linedata = line.split()
 				if linedata == [] or linedata[0] != 'Query:':
 					continue
-		
+				
 				querystart = eval(linedata[1])
 				querymatch = linedata[2]
-		
+				
 				j_align.next()	# burn a line
 				line = j_align.next()
 				linedata = line.split()
-		
+				
 				refstart   = eval(linedata[1])
 				refmatch   = linedata[2]
-		
+				
 				# count the number of gaps before the position of the J-TRP
 				TRPstart = vdj.refseq.IGHJ_FR4[chain.j][0] - (refstart - 1)	# first candidate pos
 				if TRPstart < 0 or TRPstart > len(refmatch):
@@ -180,12 +198,12 @@ def extractCDR3(chains):
 					seengaps += refgaps
 					TRPstart += refgaps	# adjust it for any gaps in ref seq
 					refgaps   = refmatch[:TRPstart].count('-') - seengaps	# any add'l gaps?
-		
+				
 				querygaps = querymatch[:TRPstart].count('-')	# num gaps in corres query segment
-		
+				
 				# j_start_idx = pos i left off for V + distance into what's left + distance to TRP - adj for gaps + 3 for TRP
 				j_start_idx = v_end_idx + (querystart - 1) + TRPstart - querygaps + 3
-			
+				
 				break	# in case there are less high-scoring matches
 			
 			cdr3s.append(chain.seq[v_end_idx:j_start_idx])
@@ -197,7 +215,7 @@ def extractCDR3(chains):
 	if os.path.exists(curdir+query_file_name): os.remove(curdir+query_file_name)
 	if os.path.exists(curdir+ref_FR3_file_name): os.remove(curdir+ref_FR3_file_name)
 	if os.path.exists(curdir+ref_J_file_name): os.remove(curdir+ref_J_file_name)
-
+	
 	if isinstance(chains,vdj.Repertoire):
 		if len(chains.chains) != len(cdr3s):
 			raise Exception, 'wrong number of CDR3s extracted'
@@ -217,6 +235,7 @@ def extractCDR3(chains):
 		chains.cdr3 = len(cdr3s[0])
 	
 	return chains
+
 
 
 
