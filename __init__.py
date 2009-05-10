@@ -501,60 +501,76 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 	
 	numChains = 0
 	
+	elements = [
+				'descr',
+				'seq',
+				'v',
+				'd',
+				'j',
+				'ighc',
+				'cdr3',
+				'junction',
+				'func',
+				'tag'
+				]
+	
 	for line in ip:
 		line = line.strip()
+		endelementpos = line.find('>') + 1
+		element = line[0:endelementpos]
 		
-		if line.startswith('<metatag>'):
+		if element == '<metatag>':
 			if mode == 'Repertoire':
-				line = line.replace('<metatag>','',1)
-				line = line.replace('</metatag>','',1)
-				data.add_metatags(line)
-		elif line.startswith('<ImmuneChain>'):
+				data.add_metatags(line[endelementpos:-1*(endelementpos+1)])
+		elif element == '<ImmuneChain>':
 			chain = ImmuneChain()
-		elif line.startswith('</ImmuneChain>'):
+		elif element == '</ImmuneChain>':
 			data.append(chain)
 			numChains += 1
-		elif line.startswith('<descr>'):
-			line = line.replace('<descr>','',1)
-			line = line.replace('</descr>','',1)
-			chain.descr = line
-		elif line.startswith('<seq>'):
-			line = line.replace('<seq>','',1)
-			line = line.replace('</seq>','',1)
-			chain.seq = line
-		elif line.startswith('<v>'):
-			line = line.replace('<v>','',1)
-			line = line.replace('</v>','',1)
-			chain.v = line
-		elif line.startswith('<d>'):
-			line = line.replace('<d>','',1)
-			line = line.replace('</d>','',1)
-			chain.d = line
-		elif line.startswith('<j>'):
-			line = line.replace('<j>','',1)
-			line = line.replace('</j>','',1)
-			chain.j = line
-		elif line.startswith('<ighc>'):
-			line = line.replace('<ighc>','',1)
-			line = line.replace('</ighc>','',1)
-			chain.ighc = line
-		elif line.startswith('<cdr3>'):
-			line = line.replace('<cdr3>','',1)
-			line = line.replace('</cdr3>','',1)
-			chain.cdr3 = eval(line)
-		elif line.startswith('<junction>'):
-			line = line.replace('<junction>','',1)
-			line = line.replace('</junction>','',1)
-			chain.junction = line
-		elif line.startswith('<func>'):
-			line = line.replace('<func>','',1)
-			line = line.replace('</func>','',1)
-			chain.func = line
-		elif line.startswith('<tag>'):
-			line = line.replace('<tag>','',1)
-			line = line.replace('</tag>','',1)
-			chain.add_tags(line)
-			
+		elif element[1:-1] in elements:
+			if element == '<cdr3>':
+				chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
+			elif element == '<tag>':
+				chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
+			else:
+				chain.__setattr__(element[1:-1],line[endelementpos:-1*(endelementpos+1)])
+# 		elif element == '<descr>':
+# 			chain.descr = line[endelementpos:-1*(endelementpos+1)]
+# 		elif element == '<seq>':
+# 			chain.seq = line[endelementpos:-1*(endelementpos+1)]
+# 		elif element == '<v>':
+# 			chain.v = line[endelementpos:-1*(endelementpos+1)]
+# 		elif element == '<d>':
+# 			chain.d = line[endelementpos:-1*(endelementpos+1)]
+# 		elif element == '<j>':
+# 			line = line.replace('<j>','',1)
+# 			line = line.replace('</j>','',1)
+# 			chain.j = line
+# 		elif element == '<ighc>':
+# 			line = line.replace('<ighc>','',1)
+# 			line = line.replace('</ighc>','',1)
+# 			chain.ighc = line
+# 		elif element == '<cdr3>'):
+# 			line = line.replace('<cdr3>','',1)
+# 			line = line.replace('</cdr3>','',1)
+# 			chain.cdr3 = eval(line)
+# 		elif element == '<junction>':
+# 			line = line.replace('<junction>','',1)
+# 			line = line.replace('</junction>','',1)
+# 			chain.junction = line
+# #		elif line.startswith('<junction>'):
+# #			line = line.replace('<junction>','',1)
+# #			line = line.replace('</junction>','',1)
+# #			chain.junction = line
+# 		elif element == '<func>':
+# 			line = line.replace('<func>','',1)
+# 			line = line.replace('</func>','',1)
+# 			chain.func = line
+# 		elif element == '<tag>':
+# 			line = line.replace('<tag>','',1)
+# 			line = line.replace('</tag>','',1)
+# 			chain.add_tags(line)
+	
 	if isinstance(inputfile,types.StringTypes):
 		ip.close()
 	
