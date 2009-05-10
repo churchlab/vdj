@@ -251,6 +251,8 @@ if os.path.exists('/Users/laserson/'):
 	align_ref_dir = '/Users/laserson/research/church/vdj-ome/ref-data/align/'
 elif os.path.exists('/home/ul2/'):
 	align_ref_dir = '/home/ul2/vdj-ome/ref-data/align/'
+else:
+	align_ref_dir = './'
 
 ref_FR3_file      = 'IGHV.FR3-IMGT.20090205.fasta'
 ref_J_REGION_file = 'IGHJ.J-REGION.20090213.fasta'

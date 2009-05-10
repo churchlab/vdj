@@ -19,11 +19,11 @@
 # clones.py
 # Methods to deal with sequencing clones (incl clustering)
 
-import vdj
-import cluster
-import os
-from editdist import distance as editdist
-import seqtools
+#import vdj
+#import cluster
+#import os
+#from editdist import distance as editdist
+#import seqtools
 
 
 # ====================

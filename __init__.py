@@ -454,6 +454,8 @@ class VDJXMLhandler(xml.sax.handler.ContentHandler):
 			for tag in self.data.metatags:
 				print tag
 		print "Number of ImmuneChain objects read: " + str(self.numChains)
+	
+
 
 def readVDJ(inputfile,mode='Repertoire'):
 	'''
@@ -476,6 +478,96 @@ def readVDJ(inputfile,mode='Repertoire'):
 	
 	if isinstance(inputfile,types.StringTypes):
 		ip.close()
+	
+	return data
+
+def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
+	'''
+	function to load a Repertoire and return in a repertoire object
+	it does not utilize the XML libraries, but manually reads the input
+	file line by line.
+	
+	THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY LINE
+	'''
+	if isinstance(inputfile,types.StringTypes):
+		ip = open(inputfile,'r')
+	elif isinstance(inputfile,file):
+		ip = inputfile
+	
+	if mode == 'Repertoire':
+		data = Repertoire()
+	elif mode == 'ImmuneChain':
+		data = []
+	
+	numChains = 0
+	
+	for line in ip:
+		line = line.strip()
+		
+		if line.startswith('<metatag>'):
+			if mode == 'Repertoire':
+				line = line.replace('<metatag>','',1)
+				line = line.replace('</metatag>','',1)
+				data.add_metatags(line)
+		elif line.startswith('<ImmuneChain>'):
+			chain = ImmuneChain()
+		elif line.startswith('</ImmuneChain>'):
+			data.append(chain)
+			numChains += 1
+		elif line.startswith('<descr>'):
+			line = line.replace('<descr>','',1)
+			line = line.replace('</descr>','',1)
+			chain.descr = line
+		elif line.startswith('<seq>'):
+			line = line.replace('<seq>','',1)
+			line = line.replace('</seq>','',1)
+			chain.seq = line
+		elif line.startswith('<v>'):
+			line = line.replace('<v>','',1)
+			line = line.replace('</v>','',1)
+			chain.v = line
+		elif line.startswith('<d>'):
+			line = line.replace('<d>','',1)
+			line = line.replace('</d>','',1)
+			chain.d = line
+		elif line.startswith('<j>'):
+			line = line.replace('<j>','',1)
+			line = line.replace('</j>','',1)
+			chain.j = line
+		elif line.startswith('<ighc>'):
+			line = line.replace('<ighc>','',1)
+			line = line.replace('</ighc>','',1)
+			chain.ighc = line
+		elif line.startswith('<cdr3>'):
+			line = line.replace('<cdr3>','',1)
+			line = line.replace('</cdr3>','',1)
+			chain.cdr3 = eval(line)
+		elif line.startswith('<junction>'):
+			line = line.replace('<junction>','',1)
+			line = line.replace('</junction>','',1)
+			chain.junction = line
+		elif line.startswith('<func>'):
+			line = line.replace('<func>','',1)
+			line = line.replace('</func>','',1)
+			chain.func = line
+		elif line.startswith('<tag>'):
+			line = line.replace('<tag>','',1)
+			line = line.replace('</tag>','',1)
+			chain.add_tags(line)
+			
+	if isinstance(inputfile,types.StringTypes):
+		ip.close()
+	
+	if verbose == True:
+		print "READING VDJ XML"
+		if mode == 'Repertoire':
+			print "mode: Repertoire"
+			print "metatags:"
+			for tag in data.metatags:
+				print '\t' + tag
+		elif mode == 'ImmuneChain':
+			print "mode: ImmuneChain"
+		print "Number of ImmuneChain objects read: " + str(numChains) + '\n'
 	
 	return data
 
