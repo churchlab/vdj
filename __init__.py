@@ -876,10 +876,10 @@ def NGLD(x,y):
 		return 0.
 
 # Clustering
-cutoff = 0.1
-Y = scipy.cluster.hierarchy.distance.pdist(X,chain_Levenshtein)
-Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
-T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='inconsistent')
+#cutoff = 0.1
+#Y = scipy.cluster.hierarchy.distance.pdist(X,chain_Levenshtein)
+#Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
+#T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='inconsistent')
 
 # CDR3 Extraction
 
