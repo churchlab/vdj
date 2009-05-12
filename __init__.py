@@ -495,7 +495,8 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 		ip = inputfile
 	
 	if mode == 'Repertoire':
-		data = Repertoire()
+		metatags = []
+		data = []
 	elif mode == 'ImmuneChain':
 		data = []
 	
@@ -522,7 +523,7 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 		
 		if xmlelement == '<metatag>':
 			if mode == 'Repertoire':
-				data.add_metatags(line[endelementpos:-1*(endelementpos+1)])
+				metatags.append(line[endelementpos:-1*(endelementpos+1)])
 		elif xmlelement == '<ImmuneChain>':
 			chain = ImmuneChain()
 		elif xmlelement == '</ImmuneChain>':
@@ -535,58 +536,27 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 				chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
 			else:
 				chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
-# 		elif element == '<descr>':
-# 			chain.descr = line[endelementpos:-1*(endelementpos+1)]
-# 		elif element == '<seq>':
-# 			chain.seq = line[endelementpos:-1*(endelementpos+1)]
-# 		elif element == '<v>':
-# 			chain.v = line[endelementpos:-1*(endelementpos+1)]
-# 		elif element == '<d>':
-# 			chain.d = line[endelementpos:-1*(endelementpos+1)]
-# 		elif element == '<j>':
-# 			line = line.replace('<j>','',1)
-# 			line = line.replace('</j>','',1)
-# 			chain.j = line
-# 		elif element == '<ighc>':
-# 			line = line.replace('<ighc>','',1)
-# 			line = line.replace('</ighc>','',1)
-# 			chain.ighc = line
-# 		elif element == '<cdr3>'):
-# 			line = line.replace('<cdr3>','',1)
-# 			line = line.replace('</cdr3>','',1)
-# 			chain.cdr3 = eval(line)
-# 		elif element == '<junction>':
-# 			line = line.replace('<junction>','',1)
-# 			line = line.replace('</junction>','',1)
-# 			chain.junction = line
-# #		elif line.startswith('<junction>'):
-# #			line = line.replace('<junction>','',1)
-# #			line = line.replace('</junction>','',1)
-# #			chain.junction = line
-# 		elif element == '<func>':
-# 			line = line.replace('<func>','',1)
-# 			line = line.replace('</func>','',1)
-# 			chain.func = line
-# 		elif element == '<tag>':
-# 			line = line.replace('<tag>','',1)
-# 			line = line.replace('</tag>','',1)
-# 			chain.add_tags(line)
 	
 	if isinstance(inputfile,types.StringTypes):
 		ip.close()
+	
+	if mode == 'Repertoire':
+		rep = Repertoire(data,metatags)
+	elif mode == 'ImmuneChain':
+		rep = data
 	
 	if verbose == True:
 		print "READING VDJ XML"
 		if mode == 'Repertoire':
 			print "mode: Repertoire"
 			print "metatags:"
-			for tag in data.metatags:
+			for tag in rep.metatags:
 				print '\t' + tag
 		elif mode == 'ImmuneChain':
 			print "mode: ImmuneChain"
 		print "Number of ImmuneChain objects read: " + str(numChains) + '\n'
 	
-	return data
+	return rep
 
 def writeVDJ(data, fileobj, verbose=True):
 	if isinstance(fileobj,types.StringTypes):
