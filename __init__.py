@@ -501,7 +501,7 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 	
 	numChains = 0
 	
-	elements = [
+	possible_elements = [
 				'descr',
 				'seq',
 				'v',
@@ -517,23 +517,24 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
 	for line in ip:
 		line = line.strip()
 		endelementpos = line.find('>') + 1
-		element = line[0:endelementpos]
+		xmlelement = line[0:endelementpos]
+		element = xmlelement[1:-1]
 		
-		if element == '<metatag>':
+		if xmlelement == '<metatag>':
 			if mode == 'Repertoire':
 				data.add_metatags(line[endelementpos:-1*(endelementpos+1)])
-		elif element == '<ImmuneChain>':
+		elif xmlelement == '<ImmuneChain>':
 			chain = ImmuneChain()
-		elif element == '</ImmuneChain>':
+		elif xmlelement == '</ImmuneChain>':
 			data.append(chain)
 			numChains += 1
-		elif element[1:-1] in elements:
-			if element == '<cdr3>':
+		elif element in possible_elements:
+			if element == 'cdr3':
 				chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
-			elif element == '<tag>':
+			elif element == 'tag':
 				chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
 			else:
-				chain.__setattr__(element[1:-1],line[endelementpos:-1*(endelementpos+1)])
+				chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
 # 		elif element == '<descr>':
 # 			chain.descr = line[endelementpos:-1*(endelementpos+1)]
 # 		elif element == '<seq>':
@@ -869,7 +870,7 @@ def timestamp():
 #===============================================================================
 
 # =============================
-# = Clustering/CDR3 utilities =
+# = Clustering/CDR3 functions =
 # =============================
 
 # Distance metrics
@@ -891,11 +892,18 @@ def NGLD(x,y):
 	except ZeroDivisionError, e:
 		return 0.
 
-# Clustering
-#cutoff = 0.1
-#Y = scipy.cluster.hierarchy.distance.pdist(X,chain_Levenshtein)
-#Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
-#T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='inconsistent')
+# Clustering functions
+
+def clusterRepertoire(rep,cutoff=0.1,tag_chains=False):
+	Y = scipy.cluster.hierarchy.distance.pdist(X,chain_Levenshtein)
+	Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
+	T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='inconsistent')
+	if tag_chains == True:
+		for (i,chain) in rep:
+			chain.add_tags('cluster|'+str(T[i]))
+	return T
+
+
 
 # CDR3 Extraction
 
