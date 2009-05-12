@@ -250,8 +250,9 @@ class Repertoire(object):
 		return len(self.chains)
 	
 	def append(self,chain):
+		print "WARNING: This function uses Repertoire.append(), which is slow and memory intensive for large repertoires."
 		i = len(self.chains)
-		self.chains = np.append(self.chains,chain)
+		self.chains = np.append(self.chains,chain)	# slow and inefficient: np.append is NOT in-place
 		self.processTags(i,chain)
 		
 		# not necessary to uniqueify the tags as each
