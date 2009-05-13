@@ -72,26 +72,26 @@ if operation == 'initial_import':
 elif operation == 'size_select':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
-	rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 	rep = vdj.size_select(rep,options.readlensizes)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'barcode_id':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
-	rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 	rep = vdj.barcode_id(rep,options.barcodefile)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'isotype_id':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
-	rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 	rep = vdj.isotype_id(rep,options.IGHCfile)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'positive_strand':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	if options.LSFargs is not None: # if dispatching to LSF
-		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
 		scriptname = vdj.generate_script(operation)
 		processes = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
@@ -102,14 +102,14 @@ elif operation == 'positive_strand':
 		for part in parts:
 			if os.path.exists(part): os.remove(part)
 	else: # if just running on one file
-		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')		
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')		
 		rep = vdj.positive_strand(rep)
 		vdj.writeVDJ(rep,outputname)
 elif operation == 'align_rep':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	if options.LSFargs is not None: # if dispatching to LSF
-		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
 		scriptname = vdj.generate_script(operation)
 		processes = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
@@ -120,7 +120,7 @@ elif operation == 'align_rep':
 		for part in parts:
 			if os.path.exists(part): os.remove(part)
 	else:
-		rep = vdj.readVDJ(inputfilelist[0],mode='Repertoire')
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		rep = vdj.align_rep(rep)
 		vdj.writeVDJ(rep,outputname)
 elif operation == 'full':
