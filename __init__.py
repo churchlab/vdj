@@ -829,6 +829,7 @@ def submit_to_LSF(queue,LSFopfile,script,parts):
 	processes = []	# list of PIDs that are dispatched through LSF
 	for chunk in parts:
 		proc = subprocess.Popen( ['bsub','-q'+queue,'-o'+LSFopfile,'python',script,chunk], stdout=subprocess.PIPE )
+		proc.wait()
 		processes.append(proc.stdout.read().split('<')[1].split('>')[0])
 	return processes
 
@@ -837,7 +838,7 @@ def waitforLSFjobs(PIDs,interval=30):
 	while not finished:
 		time.sleep(interval)
 		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
-		#p.wait()
+		p.wait()
 		status = p.stdout.read().split('\n')
 		if status[0].split()[0] != 'JOBID':
 			finished = False
