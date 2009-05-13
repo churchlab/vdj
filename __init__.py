@@ -810,7 +810,7 @@ def split_into_parts(rep,outputname,packetsize):
 def load_parts(parts):
 	rep = Repertoire()
 	for part in parts:
-		rep_part = readVDJ(part,mode='Repertoire')
+		rep_part = fastreadVDJ(part,mode='Repertoire')
 		rep += rep_part
 	return rep
 
@@ -819,7 +819,7 @@ def generate_script(operation):
 	op = open(scriptname,'w')
 	print >>op, "import vdj"
 	print >>op, "import sys"
-	print >>op, "rep = vdj.readVDJ(sys.argv[1],mode='Repertoire')"
+	print >>op, "rep = vdj.fastreadVDJ(sys.argv[1],mode='Repertoire')"
 	print >>op, "rep=vdj."+operation+"(rep)"
 	print >>op, "vdj.writeVDJ(rep,sys.argv[1])"
 	op.close()
@@ -837,7 +837,7 @@ def waitforLSFjobs(PIDs,interval=30):
 	while not finished:
 		time.sleep(interval)
 		p = subprocess.Popen('bjobs',stdout=subprocess.PIPE)
-		p.wait()
+		#p.wait()
 		status = p.stdout.read().split('\n')
 		if status[0].split()[0] != 'JOBID':
 			finished = False
