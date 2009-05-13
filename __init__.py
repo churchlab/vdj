@@ -392,6 +392,9 @@ class VDJXMLhandler(xml.sax.handler.ContentHandler):
 		self.numChains = 0
 		self.saveData = False
 		
+		self.chains = []
+		self.metatags = []
+		
 		self.chain_elements = [
 							'descr',
 							'seq',
@@ -432,9 +435,9 @@ class VDJXMLhandler(xml.sax.handler.ContentHandler):
 			#print "end metatag"
 			#print "\tbuffer: " + '|' + self.buffer + '|'
 			if self.mode == 'Repertoire':
-				self.data.add_metatags(self.buffer)
+				self.metatags.append(self.buffer)
 		elif name == 'ImmuneChain':
-			self.data.append(self.currentChain)
+			self.chains.append(self.currentChain)
 			self.numChains += 1
 		elif name in self.chain_elements:
 			if name == 'cdr3':
@@ -449,14 +452,17 @@ class VDJXMLhandler(xml.sax.handler.ContentHandler):
 		self.saveData = False
 	
 	def endDocument(self):
-		print "Mode is: " + self.mode
+		print "READING VDJ XML"
 		if self.mode == 'Repertoire':
-			print "Repertoire Metatags:"
+			self.data.__init__(self.chains,self.metatags)
+			print "mode: Repertoire"
+			print "metatags:"
 			for tag in self.data.metatags:
-				print tag
-		print "Number of ImmuneChain objects read: " + str(self.numChains)
-	
-
+				print '\t' + tag
+		elif self.mode == 'ImmuneChain':
+			self.data.extend(self.chains)
+			print "mode: ImmuneChain"
+		print "Number of ImmuneChain objects read: " + str(self.numChains) + '\n'
 
 def readVDJ(inputfile,mode='Repertoire'):
 	'''
@@ -564,7 +570,17 @@ def writeVDJ(data, fileobj, verbose=True):
 		handle = open(fileobj,'w')
 	elif isinstance(fileobj,file):
 		handle = fileobj
-		
+	
+	if verbose == True:
+		print "WRITING VDJ XML"
+		if isinstance(data,Repertoire):
+			print "mode: Repertoire"
+			print "metatags:"
+			for tag in data.metatags:
+				print '\t' + tag
+		elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
+			print "mode: ImmuneChain"
+	
 	print >>handle, '<?xml version="1.0"?>'
 	if isinstance(data,Repertoire):
 		# header
@@ -579,37 +595,41 @@ def writeVDJ(data, fileobj, verbose=True):
 		
 		# data
 		for (i,chain) in enumerate(data.chains):
-			if verbose and i%5000==0:
-				print "Writing: " + str(i)
+			#if verbose and i%5000==0:
+			#	print "Writing: " + str(i)
 			print >>handle, str(chain) + '\n'
 		xmlstring = '</Data>\n\n'
 		xmlstring += '</Repertoire>\n'
 		print >>handle, xmlstring
 	elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
 		for (i,chain) in enumerate(data):
-			if verbose and i%5000==0:
-				print "Writing: " + str(i)
+			#if verbose and i%5000==0:
+			#	print "Writing: " + str(i)
 			print >>handle, chain
+	
+	if verbose == True:
+		print "Number of ImmuneChain objects written: " + str(len(data)) + '\n'
 	
 	if isinstance(fileobj,types.StringTypes):
 		handle.close()
 
 
-		def getXML(self,verbose=True):
-			xmlstring = ''
-			xmlstring += '<Repertoire>\n\n'
-			xmlstring += '<Meta>\n'
-			for tag in self.metatags:
-				xmlstring += '\t<metatag>' + tag + '</metatag>\n'
-			xmlstring += '</Meta>\n\n'
-			xmlstring += '<Data>\n'
-			for (i,chain) in enumerate(self.chains):
-				if verbose and i%5000==0:
-					print "Writing: " + str(i)
-				xmlstring += chain.getXML() + '\n'
-			xmlstring += '</Data>\n\n'
-			xmlstring += '</Repertoire>\n'
-			return xmlstring
+def getXML(self,verbose=True):
+	print "WARNING: the getXML function is slow and memory intensive for large repertoires."
+	xmlstring = ''
+	xmlstring += '<Repertoire>\n\n'
+	xmlstring += '<Meta>\n'
+	for tag in self.metatags:
+		xmlstring += '\t<metatag>' + tag + '</metatag>\n'
+	xmlstring += '</Meta>\n\n'
+	xmlstring += '<Data>\n'
+	for (i,chain) in enumerate(self.chains):
+		if verbose and i%5000==0:
+			print "Writing: " + str(i)
+		xmlstring += chain.getXML() + '\n'
+	xmlstring += '</Data>\n\n'
+	xmlstring += '</Repertoire>\n'
+	return xmlstring
 
 
 #===============================================================================
@@ -849,6 +869,9 @@ def timestamp():
 def chain_Levenshtein(x,y):
 	return editdist(x.seq,y.seq)
 
+def chain_junction_Levenshtein(x,y):
+	return editdist(x.junction,y.junction)
+
 def NGLD(x,y):
 	'''
 	Normalized Generalized Levenshtein Distance
@@ -865,13 +888,23 @@ def NGLD(x,y):
 
 # Clustering functions
 
-def clusterRepertoire(rep,cutoff=0.1,tag_chains=False):
-	Y = scipy.cluster.hierarchy.distance.pdist(X,chain_Levenshtein)
+def pdist(X,metric):
+	m = len(X)
+	dm = np.zeros((m * (m - 1) / 2,), dtype=np.double)
+	k = 0
+	for i in xrange(0, m - 1):
+		for j in xrange(i+1, m):
+			dm[k] = metric(X[i], X[j])
+			k += 1
+	return dm
+
+def clusterRepertoire(rep,cutoff=5,tag_chains=False,tag=''):
+	Y = pdist(rep.chains,chain_junction_Levenshtein)
 	Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
-	T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='inconsistent')
+	T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
 	if tag_chains == True:
-		for (i,chain) in rep:
-			chain.add_tags('cluster|'+str(T[i]))
+		for (i,chain) in enumerate(rep):
+			chain.add_tags('cluster|'+tag+'|'+str(T[i]))
 	return T
 
 
