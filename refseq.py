@@ -5,6 +5,7 @@
 
 from Bio import SeqIO
 import numpy as np
+import seqtools
 
 LOCI = ['IGH','IGK','IGL','TRA','TRB','TRD','TRG']
 
@@ -227,6 +228,70 @@ def splitrefseqs(directory,infile):
     opV.close()
     opD.close()
     opJ.close()
+
+
+def get_LIGM_with_specificities(inputfileLIGMflat,inputfileLIGMfasta,outputfasta):
+	'''
+	Take the IMGT LIGM flat and fasta files, and return a fasta with only those seqs
+	that have a specificity associated with them in a fasta file.  The header contains
+	the accession and the specificity.
+	
+	vdj.refseq.get_LIGM_with_specificities("imgt.dat","imgt.fasta","imgt.specificities.fasta")
+	'''
+	specificities = {}		# list of 2-tuples: (ACCESION,specificity)
+	LIGMflat = open(inputfileLIGMflat,'r')
+	LIGMfasta = open(inputfileLIGMfasta,'r')
+	opSpecificityfasta = open(outputfasta,'w')
+	
+	numRecords = 0
+	numRecordswithSpec = 0
+	
+	ID = ''
+	DE = ''
+	for line in LIGMflat:
+		splitline = line.split()
+		
+		if splitline[0] == 'ID':
+			inRecord = True
+			ID = splitline[1]
+			numRecords += 1
+		elif splitline[0] == 'DE':
+			if inRecord:
+				DE += ' '.join(splitline[1:])
+		elif splitline[0] == 'XX':
+			if DE == '':	# if i haven't stored the description yet
+				continue
+			else:	# finished record
+				if 'specificity' in DE:
+					specidx = DE.rfind('specificity')
+					spec = DE[specidx+len('specificity'):].strip()
+					specificities[ID] = spec
+					numRecordswithSpec += 1
+				ID = ''
+				DE = ''
+				inRecord = False
+	
+	print "Number of LIGM records read: " + str(numRecords)
+	print "Number of LIGM records that have specificities: " + str(numRecordswithSpec)
+	
+	numFasta = 0
+	
+	for seq in SeqIO.parse(LIGMfasta,'fasta'):
+		spec = specificities.get(seq.id,'')
+		if spec == '':
+			continue
+		else:
+			print >>opSpecificityfasta, ">" + seq.id + " | " + spec
+			print >>opSpecificityfasta, seqtools.seqString(seq)
+			numFasta += 1
+	
+	print "Number of Fasta records with specificities found and printed: " + str(numFasta)
+	
+	LIGMflat.close()
+	LIGMfasta.close()
+	opSpecificityfasta.close()
+	
+	return
 
 
 # All IGHV FR3 seqs

@@ -240,10 +240,7 @@ class Repertoire(object):
 		return Repertoire.__add__(other,self)
 	
 	def __iadd__(self,other):
-		self.add_metatags(other.metatags)
-		for chain in other:
-			self.append(chain)
-		# self.reprocessTags()  WHY DO I NEED THIS?
+		self.__init__( np.append(self.chains,other.chains), (self.metatags | other.metatags) )
 		return self
 	
 	def __len__(self):
