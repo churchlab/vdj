@@ -896,16 +896,36 @@ def pdist(X,metric):
 			k += 1
 	return dm
 
-def clusterRepertoire(rep,cutoff=5,tag_chains=False,tag=''):
-	Y = pdist(rep.chains,chain_junction_Levenshtein)
-	Z = scipy.cluster.hierarchy.linkage(Y,method='complete')
+def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
+	Y = pdist(chains,chain_junction_Levenshtein)
+	Z = scipy.cluster.hierarchy.linkage(Y,method='average')
 	T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
 	if tag_chains == True:
-		for (i,chain) in enumerate(rep):
+		for (i,chain) in enumerate(chains):
 			chain.add_tags('cluster|'+tag+'|'+str(T[i]))
 	return T
 
-
+def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
+	'''
+	split repertoire into all V-J combos and perform clustering
+	tag_chains will add a cluster tag to each chain; tag will be
+	incorporated as well.
+	If false, then it will return a list of lists, each one of
+	which represents a cluster and has the chain descr in it
+	'''
+	repgood = rep.get_chains_fullVJCDR3()
+	clusters = []
+	for vseg in refseq.IGHV[1:]:
+		for jseg in refseq.IGHJ[1:]:
+			currtag = tag+'|'+vseg+'|'+jseg
+			currchains = repgood.get_chains_AND([vseg,jseg]).chains
+			T = clusterChains(repgood.get_chains_AND([vseg,jseg]).chains,cutoff,tag_chains,currtag)
+			numclusters = len(set(T))
+			currclusters = [ [] for i in np.arange(numclusters)]
+			for (i,clust) in enumerate(T):
+				currclusters[clust].append(currchains[i].descr)
+			clusters.extend(currclusters)
+	return clusters
 
 # CDR3 Extraction
 
