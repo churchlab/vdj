@@ -924,14 +924,16 @@ def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
 		for jseg in refseq.IGHJ[1:]:
 			currtag = reptag+vseg+'|'+jseg
 			currchains = repgood.get_chains_AND([vseg,jseg]).chains
+			if len(currchains) == 0:
+				continue
 			T = clusterChains(repgood.get_chains_AND([vseg,jseg]).chains,cutoff,tag_chains,currtag)
 			numclusters = len(set(T))
 			currclusters = [ [] for i in np.arange(numclusters)]
 			for (i,clust) in enumerate(T):
-				currclusters[clust].append(currchains[i].descr)
+				currclusters[clust-1].append(currchains[i].descr)
 			clusters.extend(currclusters)
 	if tag_chains == True:
-		rep.add_metatags("Clustering|" + tag + "|edit_distance|average_linkage|cutoff="+str(cutoff)+"|"+timestamp())
+		rep.add_metatags("Clustering|" + tag + "edit_distance|average_linkage|cutoff="+str(cutoff)+"|"+timestamp())
 	return clusters
 
 # CDR3 Extraction
