@@ -913,11 +913,16 @@ def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
 	If false, then it will return a list of lists, each one of
 	which represents a cluster and has the chain descr in it
 	'''
+	if tag == '':
+		reptag = ''
+	else:
+		reptag = tag+'|'
+	
 	repgood = rep.get_chains_fullVJCDR3()
 	clusters = []
 	for vseg in refseq.IGHV[1:]:
 		for jseg in refseq.IGHJ[1:]:
-			currtag = tag+'|'+vseg+'|'+jseg
+			currtag = reptag+vseg+'|'+jseg
 			currchains = repgood.get_chains_AND([vseg,jseg]).chains
 			T = clusterChains(repgood.get_chains_AND([vseg,jseg]).chains,cutoff,tag_chains,currtag)
 			numclusters = len(set(T))
@@ -925,6 +930,8 @@ def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
 			for (i,clust) in enumerate(T):
 				currclusters[clust].append(currchains[i].descr)
 			clusters.extend(currclusters)
+	if tag_chains == True:
+		rep.add_metatags("Clustering|" + tag + "|edit_distance|average_linkage|cutoff="+str(cutoff)+"|"+timestamp())
 	return clusters
 
 # CDR3 Extraction
