@@ -137,7 +137,7 @@ class Repertoire(object):
 		'''
 		
 		# num dim
-		if not isinstance(keys,list) and not isinstance(keys,tuple):
+		if not isinstance(keys,list) and not isinstance(keys,tuple) and not isinstance(a,np.ndarray):
 			keys = (keys,)
 		
 		if len(keys) == 0:
@@ -802,6 +802,21 @@ def split_into_parts(rep,outputname,packetsize):
 		currfilename = outputname + '.part%04i' % i
 		parts.append(currfilename)
 		writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
+	return parts
+
+def split_into_good_VJCDR3s(rep,outputname):
+	repgood = rep.get_chains_fullVJCDR3()
+	parts = []
+	partnum = 0
+	for vseg in refseq.IGHV[1:]:
+		for jseg in refseq.IGHJ[1:]:
+			currfilename = outputname + '.part%04i' % partnum
+			currrep = repgood.get_chains_AND([vseg,jseg])
+			if len(currrep) == 0:
+				continue
+			writeVDJ(currrep,currfilename)
+			parts.append(currfilename)
+			partnum += 1
 	return parts
 
 def load_parts(parts):
