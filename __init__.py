@@ -807,6 +807,7 @@ def split_into_parts(rep,outputname,packetsize):
 def split_into_good_VJCDR3s(rep,outputname):
 	repgood = rep.get_chains_fullVJCDR3()
 	parts = []
+	vjcombo = []
 	partnum = 0
 	for vseg in refseq.IGHV[1:]:
 		for jseg in refseq.IGHJ[1:]:
@@ -816,8 +817,9 @@ def split_into_good_VJCDR3s(rep,outputname):
 				continue
 			writeVDJ(currrep,currfilename)
 			parts.append(currfilename)
+			vjcombo.append(vseg+'|'+jseg)
 			partnum += 1
-	return parts
+	return (parts,vjcombo)
 
 def load_parts(parts):
 	rep = Repertoire()
