@@ -804,7 +804,7 @@ def split_into_parts(rep,outputname,packetsize):
 		writeVDJ(rep[i*packetsize:(i+1)*packetsize],currfilename)
 	return parts
 
-def split_into_good_VJCDR3s(rep,outputname):
+def split_into_good_VJCDR3s(rep,outputname,verbose=True):
 	repgood = rep.get_chains_fullVJCDR3()
 	parts = []
 	vjcombo = []
@@ -815,16 +815,16 @@ def split_into_good_VJCDR3s(rep,outputname):
 			currrep = repgood.get_chains_AND([vseg,jseg])
 			if len(currrep) == 0:
 				continue
-			writeVDJ(currrep,currfilename)
+			writeVDJ(currrep,currfilename,verbose=verbose)
 			parts.append(currfilename)
 			vjcombo.append(vseg+'|'+jseg)
 			partnum += 1
 	return (parts,vjcombo)
 
-def load_parts(parts):
+def load_parts(parts,verbose=True):
 	rep = Repertoire()
 	for part in parts:
-		rep_part = fastreadVDJ(part,mode='Repertoire')
+		rep_part = fastreadVDJ(part,mode='Repertoire',verbose=verbose)
 		rep += rep_part
 	return rep
 
