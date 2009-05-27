@@ -817,7 +817,7 @@ def split_into_good_VJCDR3s(rep,outputname,verbose=True):
 				continue
 			writeVDJ(currrep,currfilename,verbose=verbose)
 			parts.append(currfilename)
-			vjcombo.append(vseg+'|'+jseg)
+			vjcombo.append(vseg.replace('/','_')+'_'+jseg.replace('/','_'))
 			partnum += 1
 	return (parts,vjcombo)
 
@@ -914,6 +914,13 @@ def pdist(X,metric):
 	return dm
 
 def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
+	if len(chains) == 0:
+		raise Exception, "chains has nothing it"
+	elif len(chains) == 1:
+		T = np.array([1])
+		if tag_chains == True:
+			chains[0].add_tags('cluster|'+tag+'|'+str(T[0]))
+		return T
 	Y = pdist(chains,chain_junction_Levenshtein)
 	Z = scipy.cluster.hierarchy.linkage(Y,method='average')
 	T = scipy.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
