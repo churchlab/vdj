@@ -3,8 +3,10 @@
 # VDJ package for analysis and visualization functions
 
 import numpy as np
-import pylab
+#import pylab
 import matplotlib
+import matplotlib.pyplot as plt
+import vdj
 
 # define hot colormap for counts.  it can be log-normalized
 hotcounts = matplotlib.colors.LinearSegmentedColormap('hotcounts',matplotlib.cm.datad['hot'],256)
@@ -247,3 +249,39 @@ def heatmaplogratio(rep1,rep2,info='VJCDR3'):
 	
 	
 	return pylab.imshow(logratios,interpolation='nearest',cmap=redgreen)
+
+def circlemapVJ(rep):
+	counts = vdj.countsVJ(rep)
+	logcounts = np.log10(counts)
+	logcounts[logcounts==-np.Inf] = 0
+	norm_counts = counts / np.float_(np.max(counts))
+	norm_logcounts = logcounts / np.float_(np.max(logcounts))
+	
+	num_rows = counts.shape[0]
+	num_cols = counts.shape[1]
+	fig_unit_frac = 1./(num_rows+2)
+	axes_unit_frac = 1./num_rows
+	axes_width  = num_cols*fig_unit_frac
+	axes_height = num_rows*fig_unit_frac
+	max_circle_radius = 0.98*axes_unit_frac / 2
+	max_circle_area = np.pi * (max_circle_radius**2)
+	
+	circle_centers = np.empty(counts.shape,dtype=np.object_)
+	for row in range(num_rows):
+		for col in range(num_cols):
+			x = (col*axes_unit_frac) + axes_unit_frac/2
+			y = ((num_rows-row-1)*axes_unit_frac) + axes_unit_frac/2
+			circle_centers[row,col] = (x,y)
+	
+	fig = plt.figure()
+	ax = fig.add_axes([ (1-axes_width)/2, fig_unit_frac, axes_width, axes_height ])
+	
+	for row in range(num_rows):
+		for col in range(num_cols):
+			center = circle_centers[row,col]
+			radius = norm_logcounts[row,col] * max_circle_radius
+			circ = matplotlib.patches.Circle( center, radius, transform = ax.transAxes, linewidth=0, facecolor='b' )
+			ax.add_patch(circ)
+	
+	#ax.draw()
+	return ax
