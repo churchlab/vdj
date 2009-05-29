@@ -5,6 +5,7 @@
 import numpy as np
 import seqtools
 import refseq
+import analysis
 import clones	#CDR3 extraction
 import alignment
 import types
@@ -137,7 +138,7 @@ class Repertoire(object):
 		'''
 		
 		# num dim
-		if not isinstance(keys,list) and not isinstance(keys,tuple) and not isinstance(a,np.ndarray):
+		if not isinstance(keys,list) and not isinstance(keys,tuple) and not isinstance(keys,np.ndarray):
 			keys = (keys,)
 		
 		if len(keys) == 0:
@@ -672,6 +673,22 @@ def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
 def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
 	return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
 
+def countsClusters(clusters,reference_clusters):
+	'''
+	Takes a dictionary of cluster names mapped to a sequence of indexes in a repertoire.
+	
+	Returns an np array of the same length as reference_clusters with the counts of each
+	cluster in reference_clusters.
+	
+	The need for reference_clusters is due to the fact that splitting a given repertoire
+	may result in some parts not observing any clusters, so there needs to be a common way
+	to compare two cluster sets
+	'''
+	counts = np.zeros(len(reference_clusters))
+	for (i,name) in enumerate(reference_clusters):
+		counts[i] = len(clusters.get(name,[]))
+	return counts
+
 #===============================================================================
 
 # ======================
@@ -958,6 +975,16 @@ def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
 			clusters.extend(currclusters)
 	if tag_chains == True:
 		rep.add_metatags("Clustering|" + tag + "edit_distance|average_linkage|cutoff="+str(cutoff)+"|"+timestamp())
+	return clusters
+
+def getClusters(rep):
+	clusters = {}
+	for (tag,idxs) in rep.tags.iteritems():
+		if tag.startswith('cluster'):
+			# error checking: make sure every new cluster is unique
+			if clusters.has_key(tag):
+				raise Exception, "repertoire object's tags has multiple copies of the same tag"
+			clusters[tag]=idxs
 	return clusters
 
 # CDR3 Extraction
