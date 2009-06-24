@@ -805,6 +805,12 @@ def align_rep(rep):
 	
 	return rep
 
+def get_specificity(rep,spec_ref_rep):
+	rep.add_metatags("Specifity_ID : " + timestamp())
+	
+	for chain in rep:
+		pass
+
 #===============================================================================
 
 # ===================
