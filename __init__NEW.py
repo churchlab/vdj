@@ -709,23 +709,10 @@ class vdj_aligner(object):
 		self.seedpatterns = [patternA,patternB,patternC,patternD,patternE]
 		self.miniseedpatterns = ['111011','110111']
 		
-		# Load reference germline library
-		
-		#CHANGE TO USE THE REFSEQ FUNCTIONALITY
-		self.Vrefseqlist = seqtools.getFasta(V_ref_fasta_file)
-		self.Drefseqlist = seqtools.getFasta(D_ref_fasta_file)
-		self.Jrefseqlist = seqtools.getFasta(J_ref_fasta_file)
-		
-		self.Vrefseqdict = seqlist2seqdict(Vrefseqlist)
-		self.Drefseqdict = seqlist2seqdict(Drefseqlist)
-		self.Jrefseqdict = seqlist2seqdict(Jrefseqlist)
-		
 		# Generate hashes from reference data
-		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( self.Vrefseqlist, self.seedpatterns )
-		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( self.Drefseqlist, self.miniseedpatterns )
-		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( self.Jrefseqlist, self.seedpatterns )
-		
-		
+		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
+		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
+		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
 		
 		t1 = time.time()
 		
@@ -831,43 +818,50 @@ class vdj_aligner(object):
 		
 		chain.junction = query
 		
-		# compute hashes from junction sequence using mini seed patterns
-		queryannot,querykeys = seq2kmerannot(query,self.miniseedpatterns)
+		# only attempt D alignment if both V and J were successful
+		if bestVseg != '' and bestJseg != '':
+			# compute hashes from junction sequence using mini seed patterns
+			queryannot,querykeys = seq2kmerannot(query,self.miniseedpatterns)
 		
-		t9 = time.time()
+			t9 = time.time()
 		
-		Dscores_hash = {}
+			Dscores_hash = {}
 		
-		# for each reference D segment and each pattern, how many shared k-mers are there?
-		for Dseg in refseq.IGHD_seqs.keys():
-			score = 0
-			for pattern in self.miniseedpatterns:
-				score += len( self.Dseqlistkeysmini[Dseg][pattern] & querykeys[pattern] )
-			Dscores_hash[Dseg] = score
+			# for each reference D segment and each pattern, how many shared k-mers are there?
+			for Dseg in refseq.IGHD_seqs.keys():
+				score = 0
+				for pattern in self.miniseedpatterns:
+					score += len( self.Dseqlistkeysmini[Dseg][pattern] & querykeys[pattern] )
+				Dscores_hash[Dseg] = score
 		
-		# get numCrudeDCandidates highest scores in Dscores and store their names in descending order
-		goodDseglist = [ seg[0] for seg in dict2sorteditemlist(Dscores_hash,'value').reverse()[0:self.numCrudeDCandidates] ]
+			# get numCrudeDCandidates highest scores in Dscores and store their names in descending order
+			goodDseglist = [ seg[0] for seg in dict2sorteditemlist(Dscores_hash,'value').reverse()[0:self.numCrudeDCandidates] ]
 		
-		t10 = time.time()
+			t10 = time.time()
 		
-		bestDseg = ''
-		bestDscore = 0
-		bestDscoremat = []
-		bestDtracemat = []
+			bestDseg = ''
+			bestDscore = 0
+			bestDscoremat = []
+			bestDtracemat = []
 		
-		# perform Smith-Waterman on top D seg candidates and remember which had the highest score
-		for goodDseg in goodDseglist:
-			scores,trace = alignSW( self.Vrefseqdict[goodVseg], query )
-			currscore = scoreDalign(scores)
-			if currscore > bestDscore:
-				bestDscore = currscore
-				bestDseg = goodDseg
-				bestDscoremat = scores
-				bestDtracemat = trace
+			# perform Smith-Waterman on top D seg candidates and remember which had the highest score
+			for goodDseg in goodDseglist:
+				scores,trace = alignSW( self.Vrefseqdict[goodVseg], query )
+				currscore = scoreDalign(scores)
+				if currscore > bestDscore:
+					bestDscore = currscore
+					bestDseg = goodDseg
+					bestDscoremat = scores
+					bestDtracemat = trace
 		
-		t11 = time.time()
+			t11 = time.time()
 		
-		chain.d = bestDseg
+			chain.d = bestDseg
+			
+		else:
+			t9 = time.time()
+			t10 = time.time()
+			t11 = time.time()
 		
 		# TODO: Rather than just assigning the best scorer to the V, D, or J segment
 		#		I need a way to determine the alignment's significance, and only make
@@ -887,6 +881,45 @@ class vdj_aligner(object):
 			print t11-t10, ""
 		
 		return bestVseg, bestDseg, bestJseg, query
+	
+	@staticmethod
+	def seq2kmerannot(seq1,patterns):
+		"""Given sequence and patterns, for each pattern, compute all corresponding k-mers from sequence.
+		
+		The result is seqannot[pattern][key]=[pos1,pos2,...,posN] in seq
+		
+		"""
+		seq = seqtools.seqString(seq1)
+		seqannot = {}
+		for pattern in patterns:
+			seqannot[pattern] = {}
+		
+		for i in xrange(len(seq)):
+			for pattern in patterns:
+				word = seq[i:i+len(pattern)]
+				if len(word) == len(pattern):
+					key = ''.join( [p[1] for p in zip(pattern,word) if p[0]=='1'] )
+				try: seqannot[pattern][key] += [i]
+				except KeyError,e: seqannot[pattern][key] = [i]
+		
+		seqkeys = {}
+		for pattern in patterns:
+			seqkeys[pattern] = set( seqannot[pattern].keys() )
+		
+		return seqannot,seqkeys
+	
+	@staticmethod
+	def seqlist2kmerannot(seqdict,patterns):
+		seqlistannot = {}
+		seqlistkeys  = {}
+		for seq in seqdict.iteritems():
+			seqannot,seqkeys = seq2kmerannot(seq[1],patterns)
+			seqlistannot[seq[0]] = {}
+			seqlistkeys[seq[0]]  = {}
+			for pattern in patterns:
+				seqlistannot[seq[0]][pattern] = seqannot[pattern]
+				seqlistkeys[seq[0]][pattern]  = seqkeys[pattern]
+		return seqlistannot,seqlistkeys
 	
 	@staticmethod
 	def pruneVregion( alnref, alnquery, alnquerycoords, refID, queryseq ):
@@ -1021,7 +1054,7 @@ class vdj_aligner(object):
 	def alignNW(sequence1,sequence2):
 		'''Align two seqs using modified Needleman-Wunsch algorithm as in Durbin.
 	
-		Returns only a single optimal alignment.
+		Returns only a single optimal alignment in the backtrace.
 		
 		Initialization is with zeros rather than with gap penalties.  This allows
 		the smaller reference segment to freely align anywhere along the query
@@ -1069,8 +1102,47 @@ class vdj_aligner(object):
 	
 	@staticmethod
 	def alignSW(sequence1,sequence2):
-		"""Smith-Waterman"""
-		pass
+		"""Align two seqs using classic Smith-Waterman algorithm as in Durbin.
+		
+		Uses linear gap costs
+		
+		Returns only a single optimal alignment in the backtrace.
+		
+		Notation is like the original paper.
+		
+		"""
+		
+		seq1 = seqtools.seqString(sequence1)
+		seq2 = seqtools.seqString(sequence2)
+		
+		# define parameters
+		match     =  0.5
+		mismatch  = -0.75
+		gapextend = -1.5
+		
+		def match_fn(a,b):
+			if a == b:
+				return match
+			else:
+				return mismatch
+		
+		# carve out memory
+		# note that we are using zero initial conditions, so matrices are initialized too
+		# notation is like Durbin p.22
+		F = np.zeros( [len(seq1)+1, len(seq2)+1] )
+		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
+		
+		for i in xrange( 1, len(seq1) ):
+			for j in xrange( 1, len(seq2) ):
+				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
+				extensions = [ 0, F[i-1,j-1] + s, F[i-1,j] + gapextend, F[i,j-1] + gapextend ]
+				pointers = [ 0, (i-1,j-1), (i-1,j), (i,j-1) ]
+				best = np.argmax( extensions )
+			
+				F[i,j]  = extensions[ best ]
+				BT[i,j] = pointers[ best ]
+		
+		return F, BT
 
 
 
@@ -1112,6 +1184,34 @@ def alignV(query,Vseg):
 	
 	for r in xrange( len(query)+1 ):
 		pass
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class abacus_aligner(object):
 	def __init__(self,verbose=False):
