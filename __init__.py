@@ -692,7 +692,7 @@ def countsClusters(clusters,reference_clusters):
 
 class vdj_aligner(object):
 	
-	def __init__(self.verbose=False):
+	def __init__(self, verbose=False):
 		
 		t0 = time.time()
 		
@@ -1213,139 +1213,139 @@ def alignV(query,Vseg):
 
 
 
-class abacus_aligner(object):
-	def __init__(self,verbose=False):
-		
-		t0 = time.time()
-		
-		# Define seed patterns
-		patternA='111011001011010111'
-		patternB='1111000100010011010111'
-		patternC='111111111111'
-		patternD='110100001100010101111'
-		patternE='1110111010001111'
-		self.seedpatterns = [patternA,patternB,patternC,patternD,patternE]
-		self.miniseedpatterns = ['111011','110111']
-		
-		# Load reference germline library
-		self.Vrefseqlist = seqtools.getFasta(V_ref_fasta_file)
-		self.Drefseqlist = seqtools.getFasta(D_ref_fasta_file)
-		self.Jrefseqlist = seqtools.getFasta(J_ref_fasta_file)
-		
-		self.Vrefseqdict = seqlist2seqdict(Vrefseqlist)
-		self.Drefseqdict = seqlist2seqdict(Drefseqlist)
-		self.Jrefseqdict = seqlist2seqdict(Jrefseqlist)
-		
-		# Generate hashes from reference data
-		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( self.Vrefseqlist, self.seedpatterns )
-		self.Dseqlistannot,self.Dseqlistkeys = seqlist2kmerannot( self.Drefseqlist, self.seedpatterns )
-		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( self.Jrefseqlist, self.seedpatterns )
-		
-		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( self.Drefseqlist, self.miniseedpatterns )
-		
-		t1 = time.time()
-		
-		if verbose:
-			print "Database init:", t1-t0
-		
-		return
-	
-	# =============
-	# = Interface =
-	# =============
-	
-	def align_seq(self,seq,verbose=False):
-		
-		query = seqtools.seqString(seq)
-		
-		t0 = time.time()
-		
-		queryannot,querykeys = seq2kmerannot(query,self.seedpatterns)
-		
-		t1 = time.time()
-		
-		Vscores = {}
-		Dscores = {}
-		Jscores = {}
-		
-		# for each reference segment and each pattern, how many shared k-mers are there?
-		for Vseg in self.Vrefseqdict.keys():
-			score = 0
-			for pattern in self.seedpatterns:
-				score += len( self.Vseqlistkeys[Vseg][pattern] & querykeys[pattern] )
-			Vscores[Vseg] = scores
-		
-		for V=Jseg in self.Jrefseqdict.keys():
-			score = 0
-			for pattern in self.seedpatterns:
-				score += len( self.Jseqlistkeys[Jseg][pattern] & querykeys[pattern] )
-			Jscores[Jseg] = scores
-		
-		goodVscores = {}
-		goodJscores = {}
-		bestV = ''
-		bestJ = ''
-		
-		# get 10 highest scores in Vscores and store their names in descending order
-		goodVseglist = [ seg[0] for seg in dict2sorteditemlist(Vscores,'value').reverse()[0:10] ]
-	
-	def align_seqlist(self,seqs):
-		pass
-	
-	def align_fasta(self,fastafile):
-		pass
-	
-	# =====================
-	# = Utility functions =
-	# =====================
-	
-	@staticmethod
-	def seqlist2seqdict(seqlist):
-		seqdict = {}
-		for seq in seqlist:
-			seqdict[seq.description] = seqtools.seqString(seq)
-		return seqdict
-	
-	@staticmethod
-	def seq2kmerannot(seq1,patterns):
-		"""Given sequence and patterns, for each pattern, compute all corresponding k-mers from sequence.
-		
-		The result is seqannot[pattern][key]=[pos1,pos2,...,posN] in seq
-		
-		"""
-		seq = seqtools.seqString(seq1)
-		seqannot = {}
-		for pattern in patterns:
-			seqannot[pattern] = {}
-		
-		for i in xrange(len(seq)):
-			for pattern in patterns:
-				word = seq[i:i+len(pattern)]
-				if len(word) == len(pattern):
-					key = ''.join( [p[1] for p in zip(pattern,word) if p[0]=='1'] )
-				try: seqannot[pattern][key] += [i]
-				except KeyError,e: seqannot[pattern][key] = [i]
-		
-		seqkeys = {}
-		for pattern in patterns:
-			seqkeys[pattern] = set( seqannot[pattern].keys() )
-		
-		return seqannot,seqkeys
-	
-	@staticmethod
-	def seqlist2kmerannot(seqlist,patterns):
-		seqlistannot = {}
-		seqlistkeys  = {}
-		for seq in seqlist:
-			seqannot,seqkeys = seq2kmerannot(seqtools.seqString(seq),patterns)
-			seqlistannot[seq.description] = {}
-			seqlistkeys[seq.description]  = {}
-			for pattern in patterns:
-				seqlistannot[seq.description][pattern] = seqannot[pattern]
-				seqlistkeys[seq.description][pattern]  = seqkeys[pattern]
-		return seqlistannot,seqlistkeys
-	
-	@staticmethod
-	def dict2sorteditemlist(dictionary,keyorvalue='value'):
-		pos = {'key':0, 'value':1}
-		return dictionary.items().sort(key=operator.itemgetter[pos[keyorvalue]])
+# class abacus_aligner(object):
+# 	def __init__(self,verbose=False):
+# 		
+# 		t0 = time.time()
+# 		
+# 		# Define seed patterns
+# 		patternA='111011001011010111'
+# 		patternB='1111000100010011010111'
+# 		patternC='111111111111'
+# 		patternD='110100001100010101111'
+# 		patternE='1110111010001111'
+# 		self.seedpatterns = [patternA,patternB,patternC,patternD,patternE]
+# 		self.miniseedpatterns = ['111011','110111']
+# 		
+# 		# Load reference germline library
+# 		self.Vrefseqlist = seqtools.getFasta(V_ref_fasta_file)
+# 		self.Drefseqlist = seqtools.getFasta(D_ref_fasta_file)
+# 		self.Jrefseqlist = seqtools.getFasta(J_ref_fasta_file)
+# 		
+# 		self.Vrefseqdict = seqlist2seqdict(Vrefseqlist)
+# 		self.Drefseqdict = seqlist2seqdict(Drefseqlist)
+# 		self.Jrefseqdict = seqlist2seqdict(Jrefseqlist)
+# 		
+# 		# Generate hashes from reference data
+# 		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( self.Vrefseqlist, self.seedpatterns )
+# 		self.Dseqlistannot,self.Dseqlistkeys = seqlist2kmerannot( self.Drefseqlist, self.seedpatterns )
+# 		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( self.Jrefseqlist, self.seedpatterns )
+# 		
+# 		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( self.Drefseqlist, self.miniseedpatterns )
+# 		
+# 		t1 = time.time()
+# 		
+# 		if verbose:
+# 			print "Database init:", t1-t0
+# 		
+# 		return
+# 	
+# 	# =============
+# 	# = Interface =
+# 	# =============
+# 	
+# 	def align_seq(self,seq,verbose=False):
+# 		
+# 		query = seqtools.seqString(seq)
+# 		
+# 		t0 = time.time()
+# 		
+# 		queryannot,querykeys = seq2kmerannot(query,self.seedpatterns)
+# 		
+# 		t1 = time.time()
+# 		
+# 		Vscores = {}
+# 		Dscores = {}
+# 		Jscores = {}
+# 		
+# 		# for each reference segment and each pattern, how many shared k-mers are there?
+# 		for Vseg in self.Vrefseqdict.keys():
+# 			score = 0
+# 			for pattern in self.seedpatterns:
+# 				score += len( self.Vseqlistkeys[Vseg][pattern] & querykeys[pattern] )
+# 			Vscores[Vseg] = scores
+# 		
+# 		for Jseg in self.Jrefseqdict.keys():
+# 			score = 0
+# 			for pattern in self.seedpatterns:
+# 				score += len( self.Jseqlistkeys[Jseg][pattern] & querykeys[pattern] )
+# 			Jscores[Jseg] = scores
+# 		
+# 		goodVscores = {}
+# 		goodJscores = {}
+# 		bestV = ''
+# 		bestJ = ''
+# 		
+# 		# get 10 highest scores in Vscores and store their names in descending order
+# 		goodVseglist = [ seg[0] for seg in dict2sorteditemlist(Vscores,'value').reverse()[0:10] ]
+# 	
+# 	def align_seqlist(self,seqs):
+# 		pass
+# 	
+# 	def align_fasta(self,fastafile):
+# 		pass
+# 	
+# 	# =====================
+# 	# = Utility functions =
+# 	# =====================
+# 	
+# 	@staticmethod
+# 	def seqlist2seqdict(seqlist):
+# 		seqdict = {}
+# 		for seq in seqlist:
+# 			seqdict[seq.description] = seqtools.seqString(seq)
+# 		return seqdict
+# 	
+# 	@staticmethod
+# 	def seq2kmerannot(seq1,patterns):
+# 		"""Given sequence and patterns, for each pattern, compute all corresponding k-mers from sequence.
+# 		
+# 		The result is seqannot[pattern][key]=[pos1,pos2,...,posN] in seq
+# 		
+# 		"""
+# 		seq = seqtools.seqString(seq1)
+# 		seqannot = {}
+# 		for pattern in patterns:
+# 			seqannot[pattern] = {}
+# 		
+# 		for i in xrange(len(seq)):
+# 			for pattern in patterns:
+# 				word = seq[i:i+len(pattern)]
+# 				if len(word) == len(pattern):
+# 					key = ''.join( [p[1] for p in zip(pattern,word) if p[0]=='1'] )
+# 				try: seqannot[pattern][key] += [i]
+# 				except KeyError,e: seqannot[pattern][key] = [i]
+# 		
+# 		seqkeys = {}
+# 		for pattern in patterns:
+# 			seqkeys[pattern] = set( seqannot[pattern].keys() )
+# 		
+# 		return seqannot,seqkeys
+# 	
+# 	@staticmethod
+# 	def seqlist2kmerannot(seqlist,patterns):
+# 		seqlistannot = {}
+# 		seqlistkeys  = {}
+# 		for seq in seqlist:
+# 			seqannot,seqkeys = seq2kmerannot(seqtools.seqString(seq),patterns)
+# 			seqlistannot[seq.description] = {}
+# 			seqlistkeys[seq.description]  = {}
+# 			for pattern in patterns:
+# 				seqlistannot[seq.description][pattern] = seqannot[pattern]
+# 				seqlistkeys[seq.description][pattern]  = seqkeys[pattern]
+# 		return seqlistannot,seqlistkeys
+# 	
+# 	@staticmethod
+# 	def dict2sorteditemlist(dictionary,keyorvalue='value'):
+# 		pos = {'key':0, 'value':1}
+# 		return dictionary.items().sort(key=operator.itemgetter[pos[keyorvalue]])
