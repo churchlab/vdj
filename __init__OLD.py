@@ -4,7 +4,7 @@
 
 import numpy as np
 import seqtools
-import refseq
+import refseqOLD as refseq
 import analysis
 import clones	#CDR3 extraction
 import alignment
