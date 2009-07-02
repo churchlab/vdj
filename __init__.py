@@ -8,6 +8,7 @@ import numpy as np
 
 import seqtools
 import refseq
+import alignmentcore
 
 
 
@@ -18,7 +19,7 @@ import refseq
 class ImmuneChain(object):
 	"""Data structure to represent an immune chain."""
 	
-	def __init__(self, seq='', func='', v='', d='', j='', ighc='', junction='', descr='', tags=set([])):
+	def __init__(self, seq='', func='', v='', d='', j='', ighc='', cdr3=0, junction='', descr='', tags=set([])):
 		"""Initialize ImmuneChain
 		
 		seq is 5'->3'
@@ -31,13 +32,18 @@ class ImmuneChain(object):
 		self.d = d
 		self.j = j
 		self.ighc = ighc
+		self.cdr3 = cdr3
 		self.junction = junction
 		self.func = func
 	
-	cdr3 = property(getCDR3len)
-	
-	def getCDR3len(self):
-		return len(self.junction)
+	# REWORK CDR3 AS PROPERTY LATER
+	# def getCDR3len(self):
+	# 	return len(self.junction)
+	# 
+	# def setCDR3len(self):
+	# 	# empty method.  checks if set value corresponds 
+	# 
+	# cdr3 = property(getCDR3len)
 	
 	def add_tags(self,tagset):
 		if isinstance(tagset,types.StringTypes): tagset = [tagset]
@@ -98,7 +104,7 @@ class Repertoire(object):
 		self.tags = {}
 		
 		# ensure that at least, all identifiers in refseq are present
-		for ident in refseq.ALL_IDs:
+		for ident in refseq.ALL_IDs[1:]:
 			self.tags[ident] = []
 		
 		for (i,chain) in enumerate(self.chains):
@@ -342,7 +348,7 @@ class Repertoire(object):
 	def reprocessTags(self):
 		"""Process and uniqueify all tags of a Repertoire object from scratch."""
 		self.tags = {}
-		for ident in refseq.ALL_IDs:
+		for ident in refseq.ALL_IDs[1:]:
 			self.tags[ident] = []
 		for (i,chain) in enumerate(self.chains):
 			self.processTags(i,chain)
@@ -619,6 +625,18 @@ def writeVDJ(data, fileobj, verbose=True):
 	if isinstance(fileobj,types.StringTypes):
 		handle.close()
 
+
+############################################################################
+############################################################################
+###
+###     CLEAN UP TO HERE
+###
+############################################################################
+############################################################################
+
+
+
+
 #===============================================================================
 
 # ============
@@ -681,13 +699,6 @@ def countsClusters(clusters,reference_clusters):
 
 
 
-############################################################################
-############################################################################
-###
-###     CLEAN UP TO HERE
-###
-############################################################################
-############################################################################
 
 
 class vdj_aligner(object):
@@ -710,9 +721,9 @@ class vdj_aligner(object):
 		self.miniseedpatterns = ['111011','110111']
 		
 		# Generate hashes from reference data
-		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
-		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
-		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
+		self.Vseqlistannot,self.Vseqlistkeys = vdj_aligner.seqlist2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
+		self.Dseqlistannotmini,self.Dseqlistkeysmini = vdj_aligner.seqlist2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
+		self.Jseqlistannot,self.Jseqlistkeys = vdj_aligner.seqlist2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
 		
 		t1 = time.time()
 		
@@ -727,21 +738,21 @@ class vdj_aligner(object):
 		t0 = time.time()
 		
 		# compute hashes from query seq
-		queryannot,querykeys = seq2kmerannot(query,self.seedpatterns)
+		queryannot,querykeys = vdj_aligner.seq2kmerannot(query,self.seedpatterns)
 		
 		t1 = time.time()
 		
 		Vscores_hash = {}
 		
 		# for each reference V segment and each pattern, how many shared k-mers are there?
-		for Vseg in self.Vrefseqdict.keys():
+		for Vseg in refseq.IGHV_seqs.keys():
 			score = 0
 			for pattern in self.seedpatterns:
 				score += len( self.Vseqlistkeys[Vseg][pattern] & querykeys[pattern] )
 			Vscores_hash[Vseg] = score
 		
 		# get numCrudeVCandidates highest scores in Vscores and store their names in descending order
-		goodVseglist = [ seg[0] for seg in dict2sorteditemlist(Vscores_hash,'value').reverse()[0:self.numCrudeVCandidates] ]
+		goodVseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Vscores_hash,'value')[0:self.numCrudeVCandidates] ]
 		
 		t2 = time.time()
 		
@@ -752,8 +763,22 @@ class vdj_aligner(object):
 		
 		# perform Needleman-Wunsch on top V seg candidates and remember which had the highest score
 		for goodVseg in goodVseglist:
-			scores,trace = alignNW( self.Vrefseqdict[goodVseg], query )
-			currscore = scoreVJalign(scores)
+			# C implementation:
+			# carve out memory
+			# note that we are using zero initial conditions, so matrices are initialize too
+			# notation is like Durbin p.29
+			seq1 = refseq.IGHV_seqs[goodVseg]
+			seq2 = query
+			scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
+			alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
+			
+			# pure python:
+			# scores,trace = vdj_aligner.alignNW( refseq.IGHV_seqs[goodVseg], query )
+			
+			currscore = vdj_aligner.scoreVJalign(scores)
 			if currscore > bestVscore:
 				bestVscore = currscore
 				bestVseg = goodVseg
@@ -766,13 +791,13 @@ class vdj_aligner(object):
 		
 		# reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
 		if bestVseg != '':
-			Valnref,Valnrefcoords,Valnquery,Valnquerycoords = construct_alignment( refseq.IGHV_seqs[bestVseg], query )
-			query = pruneVregion( Valnref, Valnquery, Valnquerycoords, bestVseg, query )
+			Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
+			query = vdj_aligner.pruneVregion( Valnref, Valnquery, Valnquerycoords, bestVseg, query )
 		
 		t4 = time.time()
 		
 		# compute hashes from (pruned) query seq (junction + J)
-		queryannot,querykeys = seq2kmerannot(query,self.seedpatterns)
+		queryannot,querykeys = vdj_aligner.seq2kmerannot(query,self.seedpatterns)
 		
 		t5 = time.time()
 		
@@ -782,11 +807,11 @@ class vdj_aligner(object):
 		for Jseg in refseq.IGHJ_seqs.keys():
 			score = 0
 			for pattern in self.seedpatterns:
-				score += len( self.Jseqlistkeys[Vseg][pattern] & querykeys[pattern] )
+				score += len( self.Jseqlistkeys[Jseg][pattern] & querykeys[pattern] )
 			Jscores_hash[Jseg] = score
 		
 		# get numCrudeJCandidates highest scores in Jscores and store their names in descending order
-		goodJseglist = [ seg[0] for seg in dict2sorteditemlist(Jscores_hash,'value').reverse()[0:self.numCrudeJCandidates] ]
+		goodJseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Jscores_hash,'value')[0:self.numCrudeJCandidates] ]
 		
 		t6 = time.time()
 		
@@ -797,31 +822,46 @@ class vdj_aligner(object):
 		
 		# perform Needleman-Wunsch on top J seg candidates and remember which had the highest score
 		for goodJseg in goodJseglist:
-			scores,trace = alignNW( self.Jrefseqdict[goodJseg], query )
-			currscore = scoreVJalign(scores)
+			# C implementation:
+			# carve out memory
+			# note that we are using zero initial conditions, so matrices are initialize too
+			# notation is like Durbin p.29
+			seq1 = refseq.IGHJ_seqs[goodJseg]
+			seq2 = query
+			scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
+			trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
+			alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
+			
+			# pure python:
+			#scores,trace = vdj_aligner.alignNW( refseq.IGHJ_seqs[goodJseg], query )
+			
+			currscore = vdj_aligner.scoreVJalign(scores)
 			if currscore > bestJscore:
 				bestJscore = currscore
 				bestJseg = goodJseg
 				bestJscoremat = scores
 				bestJtracemat = trace
 		
-		chain.J = bestJseg
+		chain.j = bestJseg
 		
 		t7 = time.time()
 		
 		# reconstruct the alignment and chop off J region after the TRP (IMGT)
 		if bestJseg != '':
-			Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = construct_alignment( refseq.IGHJ_seqs[bestJseg], query )
-			query = pruneJregion( Jalnref, Jalnquery, Jalnquerycoords, bestJseg, query )
+			Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
+			query = vdj_aligner.pruneJregion( Jalnref, Jalnquery, Jalnquerycoords, bestJseg, query )
 		
 		t8 = time.time()
 		
-		chain.junction = query
-		
 		# only attempt D alignment if both V and J were successful
 		if bestVseg != '' and bestJseg != '':
+			chain.junction = query
+			chain.cdr3 = len(query)
+			
 			# compute hashes from junction sequence using mini seed patterns
-			queryannot,querykeys = seq2kmerannot(query,self.miniseedpatterns)
+			queryannot,querykeys = vdj_aligner.seq2kmerannot(query,self.miniseedpatterns)
 		
 			t9 = time.time()
 		
@@ -835,7 +875,7 @@ class vdj_aligner(object):
 				Dscores_hash[Dseg] = score
 		
 			# get numCrudeDCandidates highest scores in Dscores and store their names in descending order
-			goodDseglist = [ seg[0] for seg in dict2sorteditemlist(Dscores_hash,'value').reverse()[0:self.numCrudeDCandidates] ]
+			goodDseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Dscores_hash,'value')[0:self.numCrudeDCandidates] ]
 		
 			t10 = time.time()
 		
@@ -846,8 +886,20 @@ class vdj_aligner(object):
 		
 			# perform Smith-Waterman on top D seg candidates and remember which had the highest score
 			for goodDseg in goodDseglist:
-				scores,trace = alignSW( self.Vrefseqdict[goodVseg], query )
-				currscore = scoreDalign(scores)
+				# C implementation:
+				# carve out memory
+				# note that we are using zero initial conditions, so matrices are initialize too
+				# notation is like Durbin p.29
+				seq1 = refseq.IGHD_seqs[goodDseg]
+				seq2 = query
+				scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+				trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
+				alignmentcore.alignSW( scores, trace, seq1, seq2 )
+				
+				# pure python:
+				#scores,trace = vdj_aligner.alignSW( refseq.IGHD_seqs[goodDseg], query )
+				
+				currscore = vdj_aligner.scoreDalign(scores)
 				if currscore > bestDscore:
 					bestDscore = currscore
 					bestDseg = goodDseg
@@ -859,28 +911,30 @@ class vdj_aligner(object):
 			chain.d = bestDseg
 			
 		else:
-			t9 = time.time()
-			t10 = time.time()
-			t11 = time.time()
+			bestDseg = ''
+			t9 = t8
+			t10 = t8
+			t11 = t8
 		
 		# TODO: Rather than just assigning the best scorer to the V, D, or J segment
 		#		I need a way to determine the alignment's significance, and only make
 		#		make the assignment if there is a good match.
 		
 		if verbose:
-			print t1-t0, ""
-			print t2-t1, ""
-			print t3-t2, ""
-			print t4-t3, ""
-			print t5-t4, ""
-			print t6-t5, ""
-			print t7-t6, ""
-			print t8-t7, ""
-			print t9-t8, ""
-			print t10-t9, ""
-			print t11-t10, ""
+			print t1-t0, "Full query hashes"
+			print t2-t1, "Comparing hashes to V database"
+			print t3-t2, "V seg NW alignment"
+			print t4-t3, "Construct alignment and prune V region off"
+			print t5-t4, "Pruned query hashes"
+			print t6-t5, "Comparing hashes to J database"
+			print t7-t6, "J seg NW alignment"
+			print t8-t7, "Construct alignment and prune J region off"
+			print t9-t8, "Pruned query hashes (junction only)"
+			print t10-t9, "Comparing hashes to D database"
+			print t11-t10, "D seg SW alignment"
+			print t11-t0, "Total time"
 		
-		return bestVseg, bestDseg, bestJseg, query
+		return chain.v, chain.d, chain.j, chain.junction
 	
 	@staticmethod
 	def seq2kmerannot(seq1,patterns):
@@ -913,7 +967,7 @@ class vdj_aligner(object):
 		seqlistannot = {}
 		seqlistkeys  = {}
 		for seq in seqdict.iteritems():
-			seqannot,seqkeys = seq2kmerannot(seq[1],patterns)
+			seqannot,seqkeys = vdj_aligner.seq2kmerannot(seq[1],patterns)
 			seqlistannot[seq[0]] = {}
 			seqlistkeys[seq[0]]  = {}
 			for pattern in patterns:
@@ -951,7 +1005,7 @@ class vdj_aligner(object):
 		return queryseq[v_end_idx:]
 	
 	@staticmethod
-	def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID, queryseq ):
+	def pruneJregion( alnref, alnquery, alnquerycoords, refID, queryseq ):
 		"""Prune J region out of query sequence based on alignment.
 		
 		Given ref and query alignments of J region, refID, and the original
@@ -982,35 +1036,48 @@ class vdj_aligner(object):
 	@staticmethod
 	def construct_alignment(seq1,seq2,scoremat,tracemat):
 		"""Construct alignment of ref segment to query from score and trace matrices."""
-		nrows,ncols = scorematrix.shape
+		nrows,ncols = scoremat.shape
 		
 		# do some error checking
 		if not nrows <= ncols:
 			raise Exception, "score matrix must have nrows < ncols"
 		if not len(seq1) <= len(seq2):
 			raise Exception, "len of seq1 must be smaller than seq2"
-		if len(seq1) != nrows+1 or len(seq2) != ncols+1:
-			raise Exception, "nrows+1 and ncols+1 must be equal to len(seq1) and len(seq2)"
+		if len(seq1)+1 != nrows or len(seq2)+1 != ncols:
+			raise Exception, "nrows and ncols must be equal to len(seq1)+1 and len(seq2)+1"
+		
+		# translate integer traces to coords
+		deltas = {
+			0 : (1,1),
+			1 : (1,0),
+			2 : (0,1),
+			3 : (0,0)
+		}
 		
 		# compute col where alignment should start
 		col = np.argmax( scoremat[nrows-1,:] )
 		row = nrows-1
 		
-		aln1 = seq1[row]
-		aln2 = seq2[col]
+		# if row is coord in matrix, row-1 is coord in seq
 		
-		aln1end = row + 1
-		aln2end = col + 1
+		aln1 = seq1[row-1]
+		aln2 = seq2[col-1]
 		
-		while row > 0:
+		aln1end = row
+		aln2end = col
+		
+		while row-1 > 0:
 			# compute direction of moves
-			rowchange = row-tracemat[row,col][0]
-			colchange = col-tracemat[row,col][1]
+			rowchange,colchange = deltas[ tracemat[row,col] ]
+			
+			# WORKS WITH PURE PYTHON alignNW trace return
+			#rowchange = row-tracemat[row,col][0]
+			#colchange = col-tracemat[row,col][1]
 			
 			# emit appropriate symbols
 			if rowchange == 1:
 				row -= 1
-				aln1 = seq1[row] + aln1
+				aln1 = seq1[row-1] + aln1
 			elif rowchange == 0:
 				aln1 = '-' + aln1
 			else:
@@ -1018,14 +1085,14 @@ class vdj_aligner(object):
 			
 			if colchange == 1:
 				col -= 1
-				aln2 = seq2[col] + aln2
+				aln2 = seq2[col-1] + aln2
 			elif colchange == 0:
 				aln2 = '-' + aln2
 			else:
 				raise Exception, "Trace matrix contained jump of greater than one row/col."
 		
-		aln1start = row - 1
-		aln2start = col - 1
+		aln1start = row-1
+		aln2start = col-1
 		
 		return aln1, (aln1start,aln1end), aln2, (aln2start,aln2end)
 	
@@ -1085,16 +1152,19 @@ class vdj_aligner(object):
 		Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
 		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
 		
-		for i in xrange( 1, len(seq1) ):
-			for j in xrange( 1, len(seq2) ):
+		#alignmentcore.alignNW(M,Ix,Iy,BT,seq1,seq2)
+		
+		for i in xrange( 1, len(seq1)+1 ):
+			for j in xrange( 1, len(seq2)+1 ):
 				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
-				extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1] + s, Iy[i-1,j-1] + s ]
+				extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1] + s, Iy[i-1,j-1] + s ]	# Durbin
+				#extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1], Iy[i-1,j-1] ]	# Gotoh
 				pointers = [ (i-1,j-1), (i-1,j), (i,j-1) ]
 				best = np.argmax( extensions )
 			
 				M[i,j]  = extensions[best]
-				Ix[i,j] = max( M[i-1,j] - gapopen, Ix[i-1,j] - gapextend )
-				Iy[i,j] = max( M[i,j-1] - gapopen, Iy[i,j-1] - gapextend )
+				Ix[i,j] = max( M[i-1,j] + gapopen, Ix[i-1,j] + gapextend )
+				Iy[i,j] = max( M[i,j-1] + gapopen, Iy[i,j-1] + gapextend )
 			
 				BT[i,j] = pointers[ best ]
 		
@@ -1132,8 +1202,8 @@ class vdj_aligner(object):
 		F = np.zeros( [len(seq1)+1, len(seq2)+1] )
 		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
 		
-		for i in xrange( 1, len(seq1) ):
-			for j in xrange( 1, len(seq2) ):
+		for i in xrange( 1, len(seq1)+1 ):
+			for j in xrange( 1, len(seq2)+1 ):
 				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
 				extensions = [ 0, F[i-1,j-1] + s, F[i-1,j] + gapextend, F[i,j-1] + gapextend ]
 				pointers = [ 0, (i-1,j-1), (i-1,j), (i,j-1) ]
@@ -1143,49 +1213,14 @@ class vdj_aligner(object):
 				BT[i,j] = pointers[ best ]
 		
 		return F, BT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def alignV(query,Vseg):
-	'''Align query sequence using modified Smith-Waterman alignment to reference V segment.
 	
-	Uses Smith-Waterman like algorithm with affine gap penalties.
-	
-	The alignment is ASYMMETRIC.  Overhang penalties are only in one direction.  Because the V seg
-	should align to the 5' end of query, overhang on the left is penalized while overhang on the
-	right is not.
-	
-	'''
-	matchscore     =  0.5
-	mismatchscore  = -0.75
-	gapopenscore   = -2.0
-	gapextendscore = -1.5
-	
-	scores    = np.zeros( [len(query)+1, len(Vseg)+1] )
-	backtrace = np.zeros( [len(query)+1, len(Vseg)+1] )
-	
-	for r in xrange( len(query)+1 ):
-		pass
-	
-	
+	@staticmethod
+	def dict2sorteddecreasingitemlist(dictionary,keyorvalue='value'):
+		pos = {'key':0, 'value':1}
+		di = dictionary.items()
+		di.sort(key=operator.itemgetter(pos[keyorvalue]))
+		di.reverse()
+		return di
 
 
 
@@ -1202,6 +1237,32 @@ def alignV(query,Vseg):
 
 
 
+# 
+# 
+# 
+# 
+# def alignV(query,Vseg):
+# 	'''Align query sequence using modified Smith-Waterman alignment to reference V segment.
+# 	
+# 	Uses Smith-Waterman like algorithm with affine gap penalties.
+# 	
+# 	The alignment is ASYMMETRIC.  Overhang penalties are only in one direction.  Because the V seg
+# 	should align to the 5' end of query, overhang on the left is penalized while overhang on the
+# 	right is not.
+# 	
+# 	'''
+# 	matchscore     =  0.5
+# 	mismatchscore  = -0.75
+# 	gapopenscore   = -2.0
+# 	gapextendscore = -1.5
+# 	
+# 	scores    = np.zeros( [len(query)+1, len(Vseg)+1] )
+# 	backtrace = np.zeros( [len(query)+1, len(Vseg)+1] )
+# 	
+# 	for r in xrange( len(query)+1 ):
+# 		pass
+# 	
+# 	
 
 
 

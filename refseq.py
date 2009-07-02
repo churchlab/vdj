@@ -282,7 +282,8 @@ IGHC_list = [
 			]
 IGHC_idx = dict([(g,i) for i,g in enumerate(IGHC_list)])
 
-ALL_IDs = list(set(IGHV_list + IGHD_list + IGHJ_list + IGHC_list)).sort()
+ALL_IDs = list(set(IGHV_list + IGHD_list + IGHJ_list + IGHC_list))
+ALL_IDs.sort()
 
 IGHV_FR3_IMGT_end_coord = get_FR3_IMGT_end(IGHV_acc=IGHV_acc, refdatadir=refdatadir, imgtdat=imgtdat, verbose=False)
 IGHJ_J_TRP_start_coord  = get_J_TRP_start(IGHJ_acc=IGHJ_acc, refdatadir=refdatadir, imgtdat=imgtdat, verbose=False)
