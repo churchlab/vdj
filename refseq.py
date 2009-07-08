@@ -294,5 +294,5 @@ for seg in IGHV_list[1:]:
 	# offset to end before the 2nd-CYS
 	IGHV_offset[seg] = IGHV_FR3_IMGT_end_coord[seg] - IGHV_coords[seg][0] - 2
 for seg in IGHJ_list[1:]:
-	# offset to start after the J-TRP
-	IGHJ_offset[seg] = IGHJ_J_TRP_start_coord[seg]  - IGHJ_coords[seg][0] + 3
+	# offset to start before the J-TRP
+	IGHJ_offset[seg] = IGHJ_J_TRP_start_coord[seg]  - IGHJ_coords[seg][0]
