@@ -731,6 +731,31 @@ class vdj_aligner(object):
 		
 		return
 	
+	def align_rep(self,rep,verbose=False):
+		return self.align_chains(rep,verbose)
+	
+	def align_chains(self,chains,verbose=False):
+		"""Align list of ImmuneChain objects to VDJ reference."""
+		
+		tstart = time.time()
+		chaintimes = []
+		vdj_junc = []
+		
+		for chain in chains:
+			curraln = self.align_chain(chain)
+			vdj_junc.append(curraln)
+			if verbose: chaintimes.append(time.time())
+		
+		tend = time.time()
+		
+		if verbose:
+			chaindurs = [(chaintimes[i+1]-chaintimes[i]) for i in xrange(len(chaintimes)-1)]
+			print "Number of chains:", len(chains)
+			print "Total time for aln:", tend-tstart
+			print "Average time per chain:", np.mean(chaindurs)
+		
+		return vdj_junc
+	
 	def align_chain(self,chain,verbose=False):
 		
 		query = chain.seq
