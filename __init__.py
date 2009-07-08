@@ -817,7 +817,7 @@ class vdj_aligner(object):
 		# reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
 		if bestVseg != '':
 			Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
-			query = vdj_aligner.pruneVregion( Valnref, Valnquery, Valnquerycoords, bestVseg, query )
+			query = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg, query )
 		
 		t4 = time.time()
 		
@@ -876,7 +876,7 @@ class vdj_aligner(object):
 		# reconstruct the alignment and chop off J region after the TRP (IMGT)
 		if bestJseg != '':
 			Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
-			query = vdj_aligner.pruneJregion( Jalnref, Jalnquery, Jalnquerycoords, bestJseg, query )
+			query = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg, query )
 		
 		t8 = time.time()
 		
@@ -1001,7 +1001,7 @@ class vdj_aligner(object):
 		return seqlistannot,seqlistkeys
 	
 	@staticmethod
-	def pruneVregion( alnref, alnquery, alnquerycoords, refID, queryseq ):
+	def pruneVregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID, queryseq ):
 		"""Prune V region out of query sequence based on alignment.
 		
 		Given ref and query alignments of V region, refID, and the original
@@ -1009,12 +1009,15 @@ class vdj_aligner(object):
 		the 2nd-CYS.  Also needs query alignment coords.
 		
 		"""
-		# check that alnref actually has the whole reference segment
-		# otherwise, I would need to pass something like alnrefcoords
-		if alnref.replace('-','') != refseq.IGHV_seqs[refID]:
-			raise Exception, "Aligned reference segment is not equal to vdj.refseq reference segment."
 		
-		FR3end = refseq.IGHV_offset[refID]		# first candidate position	
+		#DEBUG
+		# # check that alnref actually has the whole reference segment
+		# 		# otherwise, I would need to pass something like alnrefcoords
+		# 		if alnref.replace('-','') != refseq.IGHV_seqs[refID]:
+		# 			raise Exception, "Aligned reference segment is not equal to vdj.refseq reference segment."
+		
+		FR3end = refseq.IGHV_offset[refID] - alnrefcoords[0]		# first candidate position	
+		#FR3end = refseq.IGHV_offset[refID]		# first candidate position	
 		refgaps = alnref[:FR3end].count('-')	# count gaps up to putative CYS pos
 		seengaps = 0
 		while refgaps != 0:		# iteratively find all gaps up to the CYS
@@ -1030,7 +1033,7 @@ class vdj_aligner(object):
 		return queryseq[v_end_idx:]
 	
 	@staticmethod
-	def pruneJregion( alnref, alnquery, alnquerycoords, refID, queryseq ):
+	def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID, queryseq ):
 		"""Prune J region out of query sequence based on alignment.
 		
 		Given ref and query alignments of J region, refID, and the original
@@ -1038,23 +1041,24 @@ class vdj_aligner(object):
 		the J-TRP.  Also needs query alignment coords.
 		
 		"""
-		# check that alnref actually has the whole reference segment
-		# otherwise, I would need to pass something like alnrefcoords
-		if alnref.replace('-','') != refseq.IGHJ_seqs[refID]:
-			raise Exception, "Aligned reference segment is not equal to vdj.refseq reference segment."
+		#DEBUG
+		# # check that alnref actually has the whole reference segment
+		# 		# otherwise, I would need to pass something like alnrefcoords
+		# 		if alnref.replace('-','') != refseq.IGHJ_seqs[refID]:
+		# 			raise Exception, "Aligned reference segment is not equal to vdj.refseq reference segment."
 		
-		FR4start = refseq.IGHJ_offset[refID]	# first candidate position	
-		refgaps = alnref[:FR4start].count('-')	# count gaps up through putative TRP pos
+		FR4start = refseq.IGHJ_offset[refID] - alnrefcoords[0]	# first candidate position of J-TRP start	
+		refgaps = alnref[:FR4start].count('-')	# count gaps up to putative TRP pos
 		seengaps = 0
-		while refgaps != 0:		# iteratively find all gaps up through the TRP
+		while refgaps != 0:		# iteratively find all gaps up to the TRP
 			seengaps += refgaps
-			FR4start += refgaps		# adjust if for gaps in ref alignment
-			refgaps   = alnref[:FR4end].count('-') - seengaps	# any add'l gaps?
+			FR4start += refgaps		# adjust for gaps in ref alignment
+			refgaps   = alnref[:FR4start].count('-') - seengaps	# any add'l gaps?
 		
 		querygaps = alnquery[:FR4start].count('-')
 		
-		# v_end_idx = idx of start of aln of query + distance into aln - # of gaps
-		j_start_idx = alnquerycoords[0] + FR4start - querygaps
+		# v_end_idx = idx of start of aln of query + distance into aln - # of gaps + 3 nt for J-TRP
+		j_start_idx = alnquerycoords[0] + FR4start - querygaps + 3
 		
 		return queryseq[:j_start_idx]
 	
@@ -1064,12 +1068,14 @@ class vdj_aligner(object):
 		nrows,ncols = scoremat.shape
 		
 		# do some error checking
-		if not nrows <= ncols:
-			raise Exception, "score matrix must have nrows < ncols"
-		if not len(seq1) <= len(seq2):
-			raise Exception, "len of seq1 must be smaller than seq2"
 		if len(seq1)+1 != nrows or len(seq2)+1 != ncols:
 			raise Exception, "nrows and ncols must be equal to len(seq1)+1 and len(seq2)+1"
+		
+		#DEBUG
+		# if not nrows <= ncols:
+		# 			raise Exception, "score matrix must have nrows < ncols"
+		# 		if not len(seq1) <= len(seq2):
+		# 			raise Exception, "len of seq1 must be smaller than seq2"
 		
 		# translate integer traces to coords
 		deltas = {
@@ -1080,8 +1086,15 @@ class vdj_aligner(object):
 		}
 		
 		# compute col where alignment should start
-		col = np.argmax( scoremat[nrows-1,:] )
-		row = nrows-1
+		if nrows <= ncols:
+			col = np.argmax( scoremat[nrows-1,:] )
+			row = nrows-1
+		else:
+			col = ncols-1
+			row = np.argmax( scoremat[:,ncols-1] )
+		#DEBUG
+		# col = np.argmax( scoremat[nrows-1,:] )
+		# row = nrows-1
 		
 		# if row is coord in matrix, row-1 is coord in seq
 		
@@ -1091,7 +1104,9 @@ class vdj_aligner(object):
 		aln1end = row
 		aln2end = col
 		
-		while row-1 > 0:
+		#DEBUG
+		#while row-1 > 0:
+		while (row-1 > 0) and (col-1 > 0):
 			# compute direction of moves
 			rowchange,colchange = deltas[ tracemat[row,col] ]
 			
@@ -1130,10 +1145,20 @@ class vdj_aligner(object):
 		"""
 		nrows,ncols = scorematrix.shape
 		
-		if not nrows < ncols:
-			raise Exception, "score matrix must have nrows < ncols"
 		
-		return np.max( scorematrix[nrows-1,:] )
+		if nrows <= ncols:
+			return np.max( scorematrix[nrows-1,:] )
+		else:
+			return np.max( scorematrix[:,ncols-1] )
+		
+		#DEBUG
+		#OLD WAY
+		# nrows,ncols = scorematrix.shape
+		# 		
+		# 		if not nrows < ncols:
+		# 			raise Exception, "score matrix must have nrows < ncols"
+		# 		
+		# 		return np.max( scorematrix[nrows-1,:] )
 		
 	@staticmethod
 	def scoreDalign(scorematrix):
