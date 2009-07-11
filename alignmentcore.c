@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 // DEBUG
-#include <stdio.h>
+//#include <stdio.h>
 
 int arrayargmax( double *data, int n ) {
 	int maxidx, curidx ;

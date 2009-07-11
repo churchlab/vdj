@@ -211,9 +211,9 @@ class Repertoire(object):
 		return idxs
 	
 	def get_idxs_fullVJCDR3(self):
-		"""Return indexes of chains that have a V and J alignment and a non-empty junction of length = 0 mod 3."""
+		"""Return indexes of chains that have a V and J alignment and a non-empty junction."""
 		VJs   = set(self.get_idxs_fullVJ())
-		CDR3s = set([i for (i,chain) in enumerate(self.chains) if chain.cdr3 % 3 == 0 and chain.cdr3 > 0])
+		CDR3s = set([i for (i,chain) in enumerate(self.chains) if chain.cdr3 > 0])
 		idxs = list(VJs & CDR3s)
 		idxs.sort()
 		return idxs		
@@ -625,18 +625,6 @@ def writeVDJ(data, fileobj, verbose=True):
 	if isinstance(fileobj,types.StringTypes):
 		handle.close()
 
-
-############################################################################
-############################################################################
-###
-###     CLEAN UP TO HERE
-###
-############################################################################
-############################################################################
-
-
-
-
 #===============================================================================
 
 # ============
@@ -644,41 +632,62 @@ def writeVDJ(data, fileobj, verbose=True):
 # ============
 
 def countsVJ(rep):
-	cn = np.zeros( (NV,NJ) )
+	cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list)) )
 	for chain in rep.chains:
-		cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j]] += 1
+		cn[refseq.IGHV_idx[chain.v],refseq.IGHJ_idx[chain.j]] += 1
 	return cn
 
 def countsVJ_1D(rep):
 	return countsVJ(rep).ravel()
 
 def countsVDJ(rep):
-	cn = np.zeros( (NV,ND,NJ) )
+	cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHD_list),len(refseq.IGHJ_list)) )
 	for chain in rep.chains:
-		cn[refseq.IGHVdict[chain.v],refseq.IGHDdict[chain.d],refseq.IGHJdict[chain.j]] += 1
+		cn[refseq.IGHV_idx[chain.v],refseq.IGHD_idx[chain.d],refseq.IGHJ_idx[chain.j]] += 1
 	return cn
 
 def countsVDJ_2D(rep):
 	cn = countsVDJ(rep)
-	return cn.reshape(NV,ND*NJ)
+	return cn.reshape(len(refseq.IGHV_list),len(refseq.IGHD_list)*len(refseq.IGHJ_list))
 
 def countsVDJ_1D(rep):
 	return countsVDJ(rep).ravel()
 
 def countsVJCDR3(rep,cdrlow=3,cdrhigh=99):
-	numlens = (cdrhigh-cdrlow)/3 + 1
-	cn = np.zeros( (NV,NJ,numlens) )
+	numlens = (cdrhigh-cdrlow) + 1
+	cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list),numlens) )
 	for chain in rep.chains:
-		if chain.cdr3 >= cdrlow and chain.cdr3 <= cdrhigh and chain.cdr3 % 3 == 0:
-			cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j],(chain.cdr3-cdrlow)/3] += 1
+		if chain.cdr3 >= cdrlow and chain.cdr3 <= cdrhigh:
+			cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j],(chain.cdr3 - 3)] += 1
 	return cn
 
 def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
 	cn = countsVJCDR3(rep,cdrlow,cdrhigh)
-	return cn.reshape(NV,cn.shape[1]*cn.shape[2])
+	return cn.reshape(len(refseq.IGHV_list),cn.shape[1]*cn.shape[2])
 
 def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
 	return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
+
+def counts_ontology_1D(rep,info,gooddata=False):
+	if info == 'VJ':
+		if gooddata:
+			counts = countsVJ_1D(rep.get_chains_fullVJ())
+		else:
+			counts = countsVJ_1D(rep)
+	elif info == 'VDJ':
+		if gooddata:
+			counts = countsVDJ_1D(rep.get_chains_fullVDJ())
+		else:
+			counts = countsVDJ_1D(rep)
+	elif info == 'VJCDR3':
+		if gooddata:
+			counts = countsVJCDR3_1D(rep.get_chains_fullVJCDR3())
+		else:
+			counts = countsVJCDR3_1D(rep)
+	else:
+		raise Exception, info + " is not a recognized type of information to count."
+	
+	return counts
 
 def countsClusters(clusters,reference_clusters):
 	"""Takes a dictionary of cluster names mapped to a sequence of indexes in a repertoire.
@@ -697,9 +706,11 @@ def countsClusters(clusters,reference_clusters):
 		counts[i] = len(clusters.get(name,[]))
 	return counts
 
+#===============================================================================
 
-
-
+# =================
+# = VDJ ALIGNMENT =
+# =================
 
 class vdj_aligner(object):
 	
@@ -719,11 +730,17 @@ class vdj_aligner(object):
 		patternE='1110111010001111'
 		self.seedpatterns = [patternA,patternB,patternC,patternD,patternE]
 		self.miniseedpatterns = ['111011','110111']
+		self.patternPos = '111111111111'
 		
 		# Generate hashes from reference data
-		self.Vseqlistannot,self.Vseqlistkeys = vdj_aligner.seqlist2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
-		self.Dseqlistannotmini,self.Dseqlistkeysmini = vdj_aligner.seqlist2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
-		self.Jseqlistannot,self.Jseqlistkeys = vdj_aligner.seqlist2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
+		self.Vseqlistannot,self.Vseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
+		self.Dseqlistannotmini,self.Dseqlistkeysmini = vdj_aligner.seqdict2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
+		self.Jseqlistannot,self.Jseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
+		
+		self.posVseqlistannot,self.posVseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHV_seqs, [self.patternPos] )
+		self.posJseqlistannot,self.posJseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHJ_seqs, [self.patternPos] )
+		self.negVseqlistannot,self.negVseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHV_seqs), [self.patternPos] )
+		self.negJseqlistannot,self.negJseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHJ_seqs), [self.patternPos] )
 		
 		t1 = time.time()
 		
@@ -782,7 +799,7 @@ class vdj_aligner(object):
 		t2 = time.time()
 		
 		bestVseg = ''
-		bestVscore = 0
+		bestVscore = 100	# derived from calibration data 20090710
 		bestVscoremat = []
 		bestVtracemat = []
 		
@@ -841,7 +858,7 @@ class vdj_aligner(object):
 		t6 = time.time()
 		
 		bestJseg = ''
-		bestJscore = 0
+		bestJscore = 13		# derived from calibration data 20090710
 		bestJscoremat = []
 		bestJtracemat = []
 		
@@ -905,7 +922,7 @@ class vdj_aligner(object):
 			t10 = time.time()
 		
 			bestDseg = ''
-			bestDscore = 0
+			bestDscore = 4		# derived from calibration data 20090710
 			bestDscoremat = []
 			bestDtracemat = []
 		
@@ -941,10 +958,6 @@ class vdj_aligner(object):
 			t10 = t8
 			t11 = t8
 		
-		# TODO: Rather than just assigning the best scorer to the V, D, or J segment
-		#		I need a way to determine the alignment's significance, and only make
-		#		make the assignment if there is a good match.
-		
 		if verbose:
 			print t1-t0, "Full query hashes"
 			print t2-t1, "Comparing hashes to V database"
@@ -961,11 +974,49 @@ class vdj_aligner(object):
 		
 		return chain.v, chain.d, chain.j, chain.junction
 	
+	def chainlist2posstrandlist(self,chains):
+		strands = []
+		for chain in chains:
+			strand.append( self.seq2posstrand(chain.seq) )
+		return strands
+	
+	def seq2posstrand(self,seq1):
+		seq = seqtools.seqString(seq1)
+		
+		# collect possible keys
+		posset=set([])
+		for key in self.posVseqlistkeys.keys():
+			posset.update(self.posVseqlistkeys[key][self.patternPos])
+		for key in self.posJseqlistkeys.keys():
+			posset.update(self.posJseqlistkeys[key][self.patternPos])
+		
+		negset=set([])
+		for key in self.negVseqlistkeys.keys():
+			negset.update(self.negVseqlistkeys[key][self.patternPos])
+		for key in self.negJseqlistkeys.keys():
+			negset.update(self.negJseqlistkeys[key][self.patternPos])
+		
+		# get keys unique to positive or negative versions of reference set
+		possetnew=posset-negset
+		negsetnew=negset-posset
+		
+		posset=possetnew
+		negset=negsetnew
+		
+		seqannot,seqkeys = vdj_aligner.seq2kmerannot(seq,[self.patternPos])
+		seqwords = seqkeys[self.patternPos]
+		strandid = 1
+		if len(negset & seqwords) > len(posset & seqwords):
+			strandid = -1
+		
+		return strandid
+	
 	@staticmethod
 	def seq2kmerannot(seq1,patterns):
 		"""Given sequence and patterns, for each pattern, compute all corresponding k-mers from sequence.
 		
 		The result is seqannot[pattern][key]=[pos1,pos2,...,posN] in seq
+					  seqkeys[pattern] = set([kmers])
 		
 		"""
 		seq = seqtools.seqString(seq1)
@@ -978,8 +1029,8 @@ class vdj_aligner(object):
 				word = seq[i:i+len(pattern)]
 				if len(word) == len(pattern):
 					key = ''.join( [p[1] for p in zip(pattern,word) if p[0]=='1'] )
-				try: seqannot[pattern][key] += [i]
-				except KeyError,e: seqannot[pattern][key] = [i]
+					try: seqannot[pattern][key] += [i]
+					except KeyError,e: seqannot[pattern][key] = [i]
 		
 		seqkeys = {}
 		for pattern in patterns:
@@ -988,7 +1039,7 @@ class vdj_aligner(object):
 		return seqannot,seqkeys
 	
 	@staticmethod
-	def seqlist2kmerannot(seqdict,patterns):
+	def seqdict2kmerannot(seqdict,patterns):
 		seqlistannot = {}
 		seqlistkeys  = {}
 		for seq in seqdict.iteritems():
@@ -1168,109 +1219,272 @@ class vdj_aligner(object):
 		return np.max( scorematrix )
 	
 	@staticmethod
-	def alignNW(sequence1,sequence2):
-		'''Align two seqs using modified Needleman-Wunsch algorithm as in Durbin.
-	
-		Returns only a single optimal alignment in the backtrace.
-		
-		Initialization is with zeros rather than with gap penalties.  This allows
-		the smaller reference segment to freely align anywhere along the query
-		sequence.
-	
-		'''
-		
-		seq1 = seqtools.seqString(sequence1)
-		seq2 = seqtools.seqString(sequence2)
-		
-		# define parameters
-		match     =  0.5
-		mismatch  = -0.75
-		gapopen   = -2.0
-		gapextend = -1.5
-		
-		def match_fn(a,b):
-			if a == b:
-				return match
-			else:
-				return mismatch
-		
-		# carve out memory
-		# note that we are using zero initial conditions, so matrices are initialize too
-		# notation is like Durbin p.29
-		M  = np.zeros( [len(seq1)+1, len(seq2)+1] )
-		Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
-		Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
-		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
-		
-		#alignmentcore.alignNW(M,Ix,Iy,BT,seq1,seq2)
-		
-		for i in xrange( 1, len(seq1)+1 ):
-			for j in xrange( 1, len(seq2)+1 ):
-				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
-				extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1] + s, Iy[i-1,j-1] + s ]	# Durbin
-				#extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1], Iy[i-1,j-1] ]	# Gotoh
-				pointers = [ (i-1,j-1), (i-1,j), (i,j-1) ]
-				best = np.argmax( extensions )
-			
-				M[i,j]  = extensions[best]
-				Ix[i,j] = max( M[i-1,j] + gapopen, Ix[i-1,j] + gapextend )
-				Iy[i,j] = max( M[i,j-1] + gapopen, Iy[i,j-1] + gapextend )
-			
-				BT[i,j] = pointers[ best ]
-		
-		return M, BT
-	
-	@staticmethod
-	def alignSW(sequence1,sequence2):
-		"""Align two seqs using classic Smith-Waterman algorithm as in Durbin.
-		
-		Uses linear gap costs
-		
-		Returns only a single optimal alignment in the backtrace.
-		
-		Notation is like the original paper.
-		
-		"""
-		
-		seq1 = seqtools.seqString(sequence1)
-		seq2 = seqtools.seqString(sequence2)
-		
-		# define parameters
-		match     =  0.5
-		mismatch  = -0.75
-		gapextend = -1.5
-		
-		def match_fn(a,b):
-			if a == b:
-				return match
-			else:
-				return mismatch
-		
-		# carve out memory
-		# note that we are using zero initial conditions, so matrices are initialized too
-		# notation is like Durbin p.22
-		F = np.zeros( [len(seq1)+1, len(seq2)+1] )
-		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
-		
-		for i in xrange( 1, len(seq1)+1 ):
-			for j in xrange( 1, len(seq2)+1 ):
-				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
-				extensions = [ 0, F[i-1,j-1] + s, F[i-1,j] + gapextend, F[i,j-1] + gapextend ]
-				pointers = [ 0, (i-1,j-1), (i-1,j), (i,j-1) ]
-				best = np.argmax( extensions )
-			
-				F[i,j]  = extensions[ best ]
-				BT[i,j] = pointers[ best ]
-		
-		return F, BT
-	
-	@staticmethod
 	def dict2sorteddecreasingitemlist(dictionary,keyorvalue='value'):
 		pos = {'key':0, 'value':1}
 		di = dictionary.items()
 		di.sort(key=operator.itemgetter(pos[keyorvalue]))
 		di.reverse()
 		return di
+	
+	@staticmethod
+	def seqdict2revcompseqdict(seqdict):
+		revcompdict = {}
+		for item in seqdict.iteritems():
+			revcompdict[item[0]] = seqtools.revcomp(item[1])
+		return revcompdict
+	
+	
+	
+	# DEPRECATED!
+	# pure python implementations.  much slower than the C implementations.
+	# @staticmethod
+	# 	def alignNW(sequence1,sequence2):
+	# 		'''Align two seqs using modified Needleman-Wunsch algorithm as in Durbin.
+	# 	
+	# 		Returns only a single optimal alignment in the backtrace.
+	# 		
+	# 		Initialization is with zeros rather than with gap penalties.  This allows
+	# 		the smaller reference segment to freely align anywhere along the query
+	# 		sequence.
+	# 	
+	# 		'''
+	# 		
+	# 		seq1 = seqtools.seqString(sequence1)
+	# 		seq2 = seqtools.seqString(sequence2)
+	# 		
+	# 		# define parameters
+	# 		match     =  0.5
+	# 		mismatch  = -0.75
+	# 		gapopen   = -2.0
+	# 		gapextend = -1.5
+	# 		
+	# 		def match_fn(a,b):
+	# 			if a == b:
+	# 				return match
+	# 			else:
+	# 				return mismatch
+	# 		
+	# 		# carve out memory
+	# 		# note that we are using zero initial conditions, so matrices are initialize too
+	# 		# notation is like Durbin p.29
+	# 		M  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+	# 		Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
+	# 		Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
+	# 		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
+	# 		
+	# 		#alignmentcore.alignNW(M,Ix,Iy,BT,seq1,seq2)
+	# 		
+	# 		for i in xrange( 1, len(seq1)+1 ):
+	# 			for j in xrange( 1, len(seq2)+1 ):
+	# 				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
+	# 				extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1] + s, Iy[i-1,j-1] + s ]	# Durbin
+	# 				#extensions = [ M[i-1,j-1] + s, Ix[i-1,j-1], Iy[i-1,j-1] ]	# Gotoh
+	# 				pointers = [ (i-1,j-1), (i-1,j), (i,j-1) ]
+	# 				best = np.argmax( extensions )
+	# 			
+	# 				M[i,j]  = extensions[best]
+	# 				Ix[i,j] = max( M[i-1,j] + gapopen, Ix[i-1,j] + gapextend )
+	# 				Iy[i,j] = max( M[i,j-1] + gapopen, Iy[i,j-1] + gapextend )
+	# 			
+	# 				BT[i,j] = pointers[ best ]
+	# 		
+	# 		return M, BT
+	# 	
+	# 	@staticmethod
+	# 	def alignSW(sequence1,sequence2):
+	# 		"""Align two seqs using classic Smith-Waterman algorithm as in Durbin.
+	# 		
+	# 		Uses linear gap costs
+	# 		
+	# 		Returns only a single optimal alignment in the backtrace.
+	# 		
+	# 		Notation is like the original paper.
+	# 		
+	# 		"""
+	# 		
+	# 		seq1 = seqtools.seqString(sequence1)
+	# 		seq2 = seqtools.seqString(sequence2)
+	# 		
+	# 		# define parameters
+	# 		match     =  0.5
+	# 		mismatch  = -0.75
+	# 		gapextend = -1.5
+	# 		
+	# 		def match_fn(a,b):
+	# 			if a == b:
+	# 				return match
+	# 			else:
+	# 				return mismatch
+	# 		
+	# 		# carve out memory
+	# 		# note that we are using zero initial conditions, so matrices are initialized too
+	# 		# notation is like Durbin p.22
+	# 		F = np.zeros( [len(seq1)+1, len(seq2)+1] )
+	# 		BT = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.object)
+	# 		
+	# 		for i in xrange( 1, len(seq1)+1 ):
+	# 			for j in xrange( 1, len(seq2)+1 ):
+	# 				s = match_fn(seq1[i-1],seq2[j-1])	# note that seqs are zero-indexe
+	# 				extensions = [ 0, F[i-1,j-1] + s, F[i-1,j] + gapextend, F[i,j-1] + gapextend ]
+	# 				pointers = [ 0, (i-1,j-1), (i-1,j), (i,j-1) ]
+	# 				best = np.argmax( extensions )
+	# 			
+	# 				F[i,j]  = extensions[ best ]
+	# 				BT[i,j] = pointers[ best ]
+	# 		
+	# 		return F, BT
+	
+
+#===============================================================================
+
+# =============================
+# = Clustering/CDR3 functions =
+# =============================
+
+
+
+
+
+
+
+#===============================================================================
+
+# ======================
+# = Pipeline functions =
+# ======================
+
+def initial_import(inputfilelist,outputname,metatags=[],tags=[],tag_rep=False):
+	seqs = []
+	for filename in inputfilelist:
+		seqs.extend(seqtools.getFasta(filename))
+	
+	chains = [ImmuneChain(descr=seq.description.split()[0],seq=seq.seq.data,tags=tags) for seq in seqs]	
+	rep = Repertoire(chains)
+	rep.add_metatags(metatags)
+	if tag_rep:
+		rep.add_metatags("Initial_Import : " + timestamp())
+	
+	writeVDJ(rep,outputname)
+	
+	return rep
+
+def size_select(rep,readlensizes,tag_rep=False):	
+	if len(readlensizes) != 2:
+		raise Exception, "Incorrect number of args for size_select operation."
+	
+	#DEBUG
+	#print "size select: " + str(len(rep))
+	
+	minreadlen = readlensizes[0]
+	maxreadlen = readlensizes[1]
+	
+	idxs = [i for (i,chain) in enumerate(rep) if len(chain) >= minreadlen and len(chain) <= maxreadlen]
+	
+	#DEBUG
+	#print idxs
+	#print str(type(idxs))
+	
+	rep_sizeselected = rep[idxs]
+	if tag_rep:
+		rep_sizeselected.add_metatags("Size Selection: " +"min " + str(minreadlen)+ " max " + str(maxreadlen) + " : " + timestamp())
+		
+	return rep_sizeselected
+
+def barcode_id(rep,barcodefile,tag_rep=False):
+	# load the barcodes from file and process them
+	ip = open(barcodefile,'r')
+	barcodes = {}
+	for line in ip:
+		bc = line.split()
+		barcodes[bc[0]] = bc[1]
+	ip.close()
+	barcodelen = len(barcodes.keys()[0])
+	
+	if tag_rep:
+		rep.add_metatags("Barcode_ID : " + timestamp())
+	
+	for chain in rep:
+		curr_bcID = barcodes.get( chain.seq[:barcodelen], '' )
+		if curr_bcID != '':
+			chain.seq = chain.seq[barcodelen:]	# remove barcode
+			chain.add_tags(curr_bcID)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def isotype_id(rep,IGHCfile,tag_rep=False):
+	# load the isotype ids from file and process them
+	ip = open(IGHCfile,'r')
+	isotypes = {}
+	for line in ip:
+		iso = line.split()
+		# note that I take the revcomp of the primer sequence here
+		isotypes[reverse_complement(iso[0])] = iso[1]
+	ip.close()
+	
+	if tag_rep:
+		rep.add_metatags("Isotype_ID : " + timestamp())
+	
+	for chain in rep:
+		curr_isoID = ''
+		for iso in isotypes.iteritems():
+			if iso[0] in chain.seq[-50:]:	# arbitrary cutoff from 3' end
+				curr_isoID = iso[1]
+		chain.ighc = curr_isoID
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def positive_strand(rep,tag_rep=False):
+	if tag_rep:
+		rep.add_metatags("Positive_Strand : " + timestamp())
+	
+	aligner = vdj_aligner()
+	
+	# compute correct strand
+	strands = aligner.chainlist2posstrandlist(rep)
+	if len(strands) != len(rep):
+		raise Exception, "Error in positive strand id: len(strands) != len(rep)"
+	
+	# invert strand
+	for (strand,chain) in zip(strands,rep):
+		chain.add_tags('positive')
+		if strand == -1:
+			chain.add_tags('revcomp')
+			chain.seq = seqtools.revcomp(chain.seq)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+def align_rep(rep,tag_rep=False):
+	if tag_rep:
+		rep.add_metatags("VDJ_Alignment : " + timestamp())
+	
+	aligner = vdj_aligner()
+	
+	# perform alignment
+	aligner.align_rep(rep)
+	
+	rep.reprocessTags()
+	
+	return rep
+
+
+
+
+
+
+#===============================================================================
+
+# ==================
+# = Misc Utilities =
+# ==================
+
+def timestamp():
+	return datetime.now().isoformat().split('.')[0]
 
 
 
@@ -1279,51 +1493,10 @@ class vdj_aligner(object):
 
 
 
+#===============================================================================
 
-
-
-
-
-
-
-
-# 
-# 
-# 
-# 
-# def alignV(query,Vseg):
-# 	'''Align query sequence using modified Smith-Waterman alignment to reference V segment.
-# 	
-# 	Uses Smith-Waterman like algorithm with affine gap penalties.
-# 	
-# 	The alignment is ASYMMETRIC.  Overhang penalties are only in one direction.  Because the V seg
-# 	should align to the 5' end of query, overhang on the left is penalized while overhang on the
-# 	right is not.
-# 	
-# 	'''
-# 	matchscore     =  0.5
-# 	mismatchscore  = -0.75
-# 	gapopenscore   = -2.0
-# 	gapextendscore = -1.5
-# 	
-# 	scores    = np.zeros( [len(query)+1, len(Vseg)+1] )
-# 	backtrace = np.zeros( [len(query)+1, len(Vseg)+1] )
-# 	
-# 	for r in xrange( len(query)+1 ):
-# 		pass
-# 	
-# 	
-
-
-
-
-
-
-
-
-
-
-
+# DEPRECATED!
+# beginning of cleanup of ABACUS aligner
 # class abacus_aligner(object):
 # 	def __init__(self,verbose=False):
 # 		
@@ -1348,11 +1521,11 @@ class vdj_aligner(object):
 # 		self.Jrefseqdict = seqlist2seqdict(Jrefseqlist)
 # 		
 # 		# Generate hashes from reference data
-# 		self.Vseqlistannot,self.Vseqlistkeys = seqlist2kmerannot( self.Vrefseqlist, self.seedpatterns )
-# 		self.Dseqlistannot,self.Dseqlistkeys = seqlist2kmerannot( self.Drefseqlist, self.seedpatterns )
-# 		self.Jseqlistannot,self.Jseqlistkeys = seqlist2kmerannot( self.Jrefseqlist, self.seedpatterns )
+# 		self.Vseqlistannot,self.Vseqlistkeys = seqdict2kmerannot( self.Vrefseqlist, self.seedpatterns )
+# 		self.Dseqlistannot,self.Dseqlistkeys = seqdict2kmerannot( self.Drefseqlist, self.seedpatterns )
+# 		self.Jseqlistannot,self.Jseqlistkeys = seqdict2kmerannot( self.Jrefseqlist, self.seedpatterns )
 # 		
-# 		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqlist2kmerannot( self.Drefseqlist, self.miniseedpatterns )
+# 		self.Dseqlistannotmini,self.Dseqlistkeysmini = seqdict2kmerannot( self.Drefseqlist, self.miniseedpatterns )
 # 		
 # 		t1 = time.time()
 # 		
@@ -1444,7 +1617,7 @@ class vdj_aligner(object):
 # 		return seqannot,seqkeys
 # 	
 # 	@staticmethod
-# 	def seqlist2kmerannot(seqlist,patterns):
+# 	def seqdict2kmerannot(seqlist,patterns):
 # 		seqlistannot = {}
 # 		seqlistkeys  = {}
 # 		for seq in seqlist:

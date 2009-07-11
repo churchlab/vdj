@@ -695,7 +695,7 @@ def countsClusters(clusters,reference_clusters):
 # = Pipeline functions =
 # ======================
 
-def initial_import(inputfilelist,outputname,metatags=[],tags=[]):
+def initial_import(inputfilelist,outputname,metatags=[],tags=[],tag_rep=False):
 	seqs = []
 	for filename in inputfilelist:
 		seqs.extend(seqtools.getFasta(filename))
@@ -703,13 +703,14 @@ def initial_import(inputfilelist,outputname,metatags=[],tags=[]):
 	chains = [ImmuneChain(descr=seq.description.split()[0],seq=seq.seq.data,tags=tags) for seq in seqs]	
 	rep = Repertoire(chains)
 	rep.add_metatags(metatags)
-	rep.add_metatags("Initial_Import : " + timestamp())
+	if tag_rep:
+		rep.add_metatags("Initial_Import : " + timestamp())
 	
 	writeVDJ(rep,outputname)
 	
 	return rep
 
-def size_select(rep,readlensizes):	
+def size_select(rep,readlensizes,tag_rep=False):	
 	if len(readlensizes) != 2:
 		raise Exception, "Incorrect number of args for size_select operation."
 	
@@ -726,7 +727,8 @@ def size_select(rep,readlensizes):
 	#print str(type(idxs))
 	
 	rep_sizeselected = rep[idxs]
-	rep_sizeselected.add_metatags("Size Selection: " +"min " + str(minreadlen)+ " max " + str(maxreadlen) + " : " + timestamp())
+	if tag_rep:
+		rep_sizeselected.add_metatags("Size Selection: " +"min " + str(minreadlen)+ " max " + str(maxreadlen) + " : " + timestamp())
 		
 	return rep_sizeselected
 
