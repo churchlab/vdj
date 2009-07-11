@@ -5,7 +5,9 @@
 import glob
 import optparse
 import os
+
 import vdj
+import vdj.LSF
 
 # ========================
 # = Process command line =
@@ -68,87 +70,91 @@ else:
 # ====================================
 
 if operation == 'initial_import':
-	vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags)
+	vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags,tag_rep=True)
 elif operation == 'size_select':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-	rep = vdj.size_select(rep,options.readlensizes)
+	rep = vdj.size_select(rep,options.readlensizes,tag_rep=True)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'barcode_id':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-	rep = vdj.barcode_id(rep,options.barcodefile)
+	rep = vdj.barcode_id(rep,options.barcodefile,tag_rep=True)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'isotype_id':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-	rep = vdj.isotype_id(rep,options.IGHCfile)
+	rep = vdj.isotype_id(rep,options.IGHCfile,tag_rep=True)
 	vdj.writeVDJ(rep,outputname)
 elif operation == 'positive_strand':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	if options.LSFargs is not None: # if dispatching to LSF
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
-		scriptname = vdj.generate_script(operation)
-		processes = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
-		vdj.waitforLSFjobs(processes,30)
+		parts = vdj.LSF.split_into_parts(rep,outputname,options.packetsize)
+		scriptname = vdj.LSF.generate_script(operation)
+		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
+		vdj.LSF.waitforLSFjobs(processes,30)
 		if os.path.exists(scriptname): os.remove(scriptname)
-		rep = vdj.load_parts(parts)
+		rep = vdj.LSF.load_parts(parts)
+		rep.add_metatags("Positive_Strand : " + vdj.timestamp())
 		vdj.writeVDJ(rep,outputname)
 		for part in parts:
 			if os.path.exists(part): os.remove(part)
 	else: # if just running on one file
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')		
-		rep = vdj.positive_strand(rep)
+		rep = vdj.positive_strand(rep,tag_rep=True)
 		vdj.writeVDJ(rep,outputname)
 elif operation == 'align_rep':
 	if len(inputfilelist) > 1:
 		raise Exception, "Too many input files for size_select operation."
 	if options.LSFargs is not None: # if dispatching to LSF
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
-		scriptname = vdj.generate_script(operation)
-		processes = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
-		vdj.waitforLSFjobs(processes,30)
+		parts = vdj.LSF.split_into_parts(rep,outputname,options.packetsize)
+		scriptname = vdj.LSF.generate_script(operation)
+		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
+		vdj.LSF.waitforLSFjobs(processes,30)
 		if os.path.exists(scriptname): os.remove(scriptname)
-		rep = vdj.load_parts(parts)
+		rep = vdj.LSF.load_parts(parts)
+		rep.add_metatags("VDJ_Alignment : " + vdj.timestamp())
 		vdj.writeVDJ(rep,outputname)
 		for part in parts:
 			if os.path.exists(part): os.remove(part)
 	else:
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
-		rep = vdj.align_rep(rep)
+		rep = vdj.align_rep(rep,tag_rep=True)
 		vdj.writeVDJ(rep,outputname)
 elif operation == 'full':
-	rep = vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags)
+	rep = vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags,tag_rep=True)
 	#DEBUG
 	#print "post initial import: " + str(type(rep))
 	#print "post initial import: len of rep: " + str(len(rep))
 	#print rep
-	rep = vdj.size_select(rep,options.readlensizes)
-	rep = vdj.barcode_id(rep,options.barcodefile)
+	rep = vdj.size_select(rep,options.readlensizes,tag_rep=True)
+	rep = vdj.barcode_id(rep,options.barcodefile,tag_rep=True)
 	if options.LSFargs is not None: # if dispatching to LSF
-		parts = vdj.split_into_parts(rep,outputname,options.packetsize)
+		parts = vdj.LSF.split_into_parts(rep,outputname,options.packetsize)
 		del rep
-		scriptname1 = vdj.generate_script('positive_strand')
-		processes1 = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname1,parts)
-		vdj.waitforLSFjobs(processes1,30)
+		scriptname1 = vdj.LSF.generate_script('positive_strand')
+		processes1 = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname1,parts)
+		vdj.LSF.waitforLSFjobs(processes1,30)
 		if os.path.exists(scriptname1): os.remove(scriptname1)
-		scriptname2 = vdj.generate_script('align_rep')
-		processes2 = vdj.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname2,parts)
-		vdj.waitforLSFjobs(processes2,30)
+		scriptname2 = vdj.LSF.generate_script('align_rep')
+		processes2 = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname2,parts)
+		vdj.LSF.waitforLSFjobs(processes2,30)
 		if os.path.exists(scriptname2): os.remove(scriptname2)
-		rep = vdj.load_parts(parts)
-		rep = vdj.isotype_id(rep,options.IGHCfile)
+		rep = vdj.LSF.load_parts(parts)
+		rep.add_metatags("Positive_Strand : " + vdj.timestamp())
+		rep.add_metatags("VDJ_Alignment : " + vdj.timestamp())
+		rep = vdj.isotype_id(rep,options.IGHCfile,tag_rep=True)
 		vdj.writeVDJ(rep,outputname)
 		for part in parts:
 			if os.path.exists(part): os.remove(part)
 	else: # if running on a single file
-		rep = vdj.positive_strand(rep)
-		rep = vdj.isotype_id(rep,options.IGHCfile)
-		rep = vdj.align_rep(rep)
+		rep = vdj.positive_strand(rep,tag_rep=True)
+		rep = vdj.isotype_id(rep,options.IGHCfile,tag_rep=True)
+		rep = vdj.align_rep(rep,tag_rep=True)
 		vdj.writeVDJ(rep,outputname)
