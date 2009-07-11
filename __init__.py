@@ -1485,7 +1485,7 @@ def align_rep(rep,tag_rep=False):
 # ==================
 
 def timestamp():
-	return datetime.now().isoformat().split('.')[0]
+	return datetime.datetime.now().isoformat().split('.')[0]
 
 
 
