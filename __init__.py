@@ -978,7 +978,7 @@ class vdj_aligner(object):
 	def chainlist2posstrandlist(self,chains):
 		strands = []
 		for chain in chains:
-			strand.append( self.seq2posstrand(chain.seq) )
+			strands.append( self.seq2posstrand(chain.seq) )
 		return strands
 	
 	def seq2posstrand(self,seq1):
