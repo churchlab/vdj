@@ -499,7 +499,7 @@ def readVDJ(inputfile,mode='Repertoire'):
 	
 	return data
 
-def fastreadVDJ(inputfile,mode='Repertoire',verbose=True):
+def fastreadVDJ(inputfile,mode='Repertoire',verbose=False):
 	"""Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
 	
 	NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
@@ -733,15 +733,36 @@ class vdj_aligner(object):
 		self.miniseedpatterns = ['111011','110111']
 		self.patternPos = '111111111111'
 		
-		# Generate hashes from reference data
+		# Generate hashes from reference data for sequence alignment
 		self.Vseqlistannot,self.Vseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHV_seqs, self.seedpatterns )
 		self.Dseqlistannotmini,self.Dseqlistkeysmini = vdj_aligner.seqdict2kmerannot( refseq.IGHD_seqs, self.miniseedpatterns )
 		self.Jseqlistannot,self.Jseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHJ_seqs, self.seedpatterns )
 		
-		self.posVseqlistannot,self.posVseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHV_seqs, [self.patternPos] )
-		self.posJseqlistannot,self.posJseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHJ_seqs, [self.patternPos] )
-		self.negVseqlistannot,self.negVseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHV_seqs), [self.patternPos] )
-		self.negJseqlistannot,self.negJseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHJ_seqs), [self.patternPos] )
+		# Generate reference data for positive sequence ID
+		posVseqlistannot,posVseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHV_seqs, [self.patternPos] )
+		posJseqlistannot,posJseqlistkeys = vdj_aligner.seqdict2kmerannot( refseq.IGHJ_seqs, [self.patternPos] )
+		negVseqlistannot,negVseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHV_seqs), [self.patternPos] )
+		negJseqlistannot,negJseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHJ_seqs), [self.patternPos] )
+		
+		# collect possible keys
+		self.posset=set([])
+		for key in posVseqlistkeys.keys():
+			self.posset.update(posVseqlistkeys[key][self.patternPos])
+		for key in posJseqlistkeys.keys():
+			self.posset.update(posJseqlistkeys[key][self.patternPos])
+		
+		self.negset=set([])
+		for key in negVseqlistkeys.keys():
+			self.negset.update(negVseqlistkeys[key][self.patternPos])
+		for key in negJseqlistkeys.keys():
+			self.negset.update(negJseqlistkeys[key][self.patternPos])
+		
+		# get keys unique to positive or negative versions of reference set
+		possetnew=self.posset-self.negset
+		negsetnew=self.negset-self.posset
+		
+		self.posset=possetnew
+		self.negset=negsetnew
 		
 		t1 = time.time()
 		
@@ -984,30 +1005,10 @@ class vdj_aligner(object):
 	def seq2posstrand(self,seq1):
 		seq = seqtools.seqString(seq1)
 		
-		# collect possible keys
-		posset=set([])
-		for key in self.posVseqlistkeys.keys():
-			posset.update(self.posVseqlistkeys[key][self.patternPos])
-		for key in self.posJseqlistkeys.keys():
-			posset.update(self.posJseqlistkeys[key][self.patternPos])
-		
-		negset=set([])
-		for key in self.negVseqlistkeys.keys():
-			negset.update(self.negVseqlistkeys[key][self.patternPos])
-		for key in self.negJseqlistkeys.keys():
-			negset.update(self.negJseqlistkeys[key][self.patternPos])
-		
-		# get keys unique to positive or negative versions of reference set
-		possetnew=posset-negset
-		negsetnew=negset-posset
-		
-		posset=possetnew
-		negset=negsetnew
-		
 		seqannot,seqkeys = vdj_aligner.seq2kmerannot(seq,[self.patternPos])
 		seqwords = seqkeys[self.patternPos]
 		strandid = 1
-		if len(negset & seqwords) > len(posset & seqwords):
+		if len(self.negset & seqwords) > len(self.posset & seqwords):
 			strandid = -1
 		
 		return strandid
@@ -1022,16 +1023,24 @@ class vdj_aligner(object):
 		"""
 		seq = seqtools.seqString(seq1)
 		seqannot = {}
+		patlens = []
 		for pattern in patterns:
+			patlens.append(len(pattern))
 			seqannot[pattern] = {}
 		
+		maxpatlen = max(patlens)
+		
 		for i in xrange(len(seq)):
+			word = seq[i:i+maxpatlen]
 			for pattern in patterns:
-				word = seq[i:i+len(pattern)]
-				if len(word) == len(pattern):
-					key = ''.join( [p[1] for p in zip(pattern,word) if p[0]=='1'] )
-					try: seqannot[pattern][key] += [i]
-					except KeyError,e: seqannot[pattern][key] = [i]
+				patlen = len(pattern)
+				if len(word) >= patlen:
+					key = ''
+					for j in xrange(patlen):
+						if pattern[j] == '1':
+							key += word[j]
+					prevkmers = seqannot[pattern].get(key,[])
+					seqannot[pattern][key] = prevkmers + [i]
 		
 		seqkeys = {}
 		for pattern in patterns:
