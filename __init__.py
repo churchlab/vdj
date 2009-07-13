@@ -1430,7 +1430,7 @@ def isotype_id(rep,IGHCfile,tag_rep=False):
 	for line in ip:
 		iso = line.split()
 		# note that I take the revcomp of the primer sequence here
-		isotypes[reverse_complement(iso[0])] = iso[1]
+		isotypes[seqtools.revcomp(iso[0])] = iso[1]
 	ip.close()
 	
 	if tag_rep:
