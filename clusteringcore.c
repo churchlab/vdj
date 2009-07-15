@@ -1,11 +1,11 @@
-// clusteringcorewrapper.c
+// clusteringcore.c
 // Defines clusteringcore python extension module
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
 // DEBUG
-#include <stdio.h>
+//#include <stdio.h>
 
 int intarraymin( int *data, int n ) {
 	int i, minval ;
@@ -26,9 +26,6 @@ static PyObject *clusteringcore_levenshtein( PyObject *self, PyObject *args ){
 	int ext[3] ;
 	PyArrayObject *scores = NULL;
 	
-	//DEBUG
-	printf("Finished declaring variables.\n") ;
-	
 	// get sequence args
 	if ( !PyArg_ParseTuple(args,"s#s#",
 							&seq1, &len1,
@@ -36,31 +33,16 @@ static PyObject *clusteringcore_levenshtein( PyObject *self, PyObject *args ){
 		return NULL ;
 	}
 	
-	//DEBUG
-	printf("Successfully unpacked arguments:\ns1: %.*s\ns2: %.*s\n",4,seq1,4,seq2) ;
-	
 	// check for trivial case
 	if ( len1 == 0 || len2 == 0 ) {
 		return Py_BuildValue( "i", (len1 < len2 ? len2 : len1) ) ;
 	}
 	
-	printf("Checked for trivial cases.\n") ;
-	
 	// allocate and initialize score matrix F
 	dim[0] = len1+1 ;
 	dim[1] = len2+1 ;
 	scores = (PyArrayObject *)PyArray_ZEROS( 2, dim, NPY_INT, 0 ) ;
-	//DEBUG
-	printf("Attempted to allocate score matrix.") ;
-	//if (scores == NULL) return NULL ;
-	//DEBUG
-	if (scores == NULL) {
-		printf("Returned NULL pointer.") ;
-		return NULL ;
-	}
-	
-	//DEBUG
-	printf("Successfully(?) allocated score matrix.") ;
+	if (scores == NULL) return NULL ;
 	
 	for ( i = 0, j = 0 ; i <= len1 ; i++ ) {
 		*((int*)PyArray_GETPTR2(scores,i,j)) = i ;
@@ -68,9 +50,6 @@ static PyObject *clusteringcore_levenshtein( PyObject *self, PyObject *args ){
 	for ( i = 0, j = 0 ; j <= len2 ; j++ ) {
 		*((int*)PyArray_GETPTR2(scores,i,j)) = j ;
 	}
-	
-	//DEBUG
-	printf("Successfully initialized score matrix.") ;
 	
 	// compute DP score matrix
 	for ( i = 1 ; i <= len1 ; i++ ) {
@@ -96,4 +75,5 @@ static PyMethodDef clusteringcoremethods[] = {
 
 void initclusteringcore() {
 	Py_InitModule( "clusteringcore", clusteringcoremethods ) ;
+	import_array() ;
 }

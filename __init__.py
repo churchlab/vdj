@@ -12,6 +12,7 @@ import scipy.cluster
 import seqtools
 import refseq
 import alignmentcore
+import clusteringcore
 
 
 
@@ -1385,16 +1386,13 @@ def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
 	
 	# collapse identical junctions into each other
 	unique_junctions = list( set( [c.junction for c in chains] ) )
-	junction_counts = dict( [(junc,0) for junc in unique_junctions] )
 	junction_idx = dict( [(j,i) for i,j in enumerate(unique_junctions)] )
-	for chain in chains:
-		junction_counts[chain.junction] += 1
 	
 	# compute the distance matrix
-	Y = pdist(chains,chain_junction_Levenshtein)
+	Y = pdist( unique_junctions, clusteringcore.levenshtein )
 	
 	# compute the linkage
-	Z = sp.cluster.hierarchy.linkage(Y,method='average')
+	Z = sp.cluster.hierarchy.linkage(Y,method='single')
 	
 	# determine the clusters at level cutoff
 	T = sp.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
@@ -1402,11 +1400,59 @@ def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
 	# perform chain tagging
 	if tag_chains == True:
 		for (i,chain) in enumerate(chains):
-			chain.add_tags('cluster|'+tag+'|'+str(T[i]))
+			chain.add_tags('cluster|'+tag+'|'+str(T[junction_idx[chain.junction]]))
 	
 	return T
 
+def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
+	"""Cluster the chains in a Repertoire object.
+	
+	First the algorithm partitions the chains according to V-J combo.
+	Then clusters based on junction sequences for each partition
+	separately.
+	
+	Only clusters the set of chains that has both a V and J and CDR3.
+	
+	If tag_chains is True, it will add a cluster tag to each chain.
+	tag will be incorporated as well.
+	
+	If tag_chains is False, the fn will return a list of lists,
+	each one of which represents a cluster, and which is composed
+	of the descriptions of the corresponding chains in the cluster.
+	
+	"""
+	if tag == '':
+		reptag = ''
+	else:
+		reptag = tag+'|'
+	
+	repgood = rep.get_chains_fullVJCDR3()
+	clusters = []
+	for vseg in refseq.IGHV_seqs.keys():
+		for jseg in refseq.IGHJ_seqs.keys():
+			currtag = reptag+vseg+'|'+jseg
+			currchains = repgood.get_chains_AND([vseg,jseg]).chains
+			if len(currchains) == 0:
+				continue
+			T = clusterChains(repgood.get_chains_AND([vseg,jseg]).chains,cutoff,tag_chains,currtag)
+			numclusters = len(set(T))
+			currclusters = [ [] for i in np.arange(numclusters)]
+			for (i,clust) in enumerate(T):
+				currclusters[clust-1].append(currchains[i].descr)
+			clusters.extend(currclusters)
+	if tag_chains == True:
+		rep.add_metatags("Clustering|" + tag + "levenshtein|single_linkage|cutoff="+str(cutoff)+"|"+timestamp())
+	return clusters
 
+def getClusters(rep):
+	clusters = {}
+	for (tag,idxs) in rep.tags.iteritems():
+		if tag.startswith('cluster'):
+			# error checking: make sure every new cluster is unique
+			if clusters.has_key(tag):
+				raise Exception, "repertoire object's tags has multiple copies of the same tag"
+			clusters[tag]=idxs
+	return clusters
 
 #===============================================================================
 
