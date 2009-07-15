@@ -17,7 +17,7 @@ import vdj.LSF
 # vdj_pipeline operation relevant_options files_to_operate_on
 #
 # operations can be one of:
-#	full				perform all operations below; takes list of fileglobs
+#	full				perform all operations below except clustering; takes list of fileglobs
 #	initial_import		take fasta file and set up initial ImmuneChain/Repertoire XML file
 #						takes list of fileglobs
 #	size_select			filter out sequences of a certain size; takes single XML file
@@ -25,6 +25,7 @@ import vdj.LSF
 #	isotype_id			tag with isotype; takes single XML file
 #	positive_strand		convert to positive strand; takes single XML file
 #	align_rep			perform VDJ alignment, CDR3 extraction, isotype ID; takes single XML file
+#	cluster_rep			cluster repertoire
 
 cmdlineparse = optparse.OptionParser()
 cmdlineparse.add_option('--tag', action='append', type='string',dest='tags',default=[])
@@ -37,9 +38,13 @@ cmdlineparse.add_option('-s','--sizeselect', action='store', type='float', dest=
 cmdlineparse.add_option('-b','--barcodesplit', action='store', type='string', dest='barcodefile')
 	# note that barcodes must be listed in a file followed by an identifier
 	# 454 MIDs are: /Users/laserson/research/church/vdj-ome/seq-data/barcodes/454MID.barcodes
-cmdlineparse.add_option('-i','--isotype', action='store', type='string',dest='IGHCfile')
+cmdlineparse.add_option('-i','--isotype', action='store', type='string', dest='IGHCfile')
 	# contains primer seq (5'->3') and then the isotype identifier on each line
 	# 20080924 primers are: /Users/laserson/research/church/vdj-ome/primer-sets/isotypeIDs/20080924.IGHC.ID
+cmdlineparse.add_option('--cutoff', action='store', type='float', dest='cutoff')
+	# cutoff value for clipping clusters off linkage tree; good default it 4.5, but must be explicitly given
+cmdlineparse.add_option('--clustertag', action=store, type='string', dest='clustertag', default='')
+	# contains a tag that will be added to each clustertag in the clustering operation
 # LSF dispatching.  only applies to positive strand identification or VDJ alignment/CDR3 extraction
 cmdlineparse.add_option('--LSFdispatch', action='store', type='string', dest='LSFargs', nargs=2)
 	# note that first argument is the queue to submit to and second argument is filename to dump LSF output to
@@ -126,6 +131,25 @@ elif operation == 'align_rep':
 	else:
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		rep = vdj.align_rep(rep,tag_rep=True)
+		vdj.writeVDJ(rep,outputname)
+elif operation == 'cluster_rep':
+	if len(inputfilelist) > 1:
+		raise Exception, "Too many input files for size_select operation."
+	if options.LSFargs is not None: # if dispatching to LSF
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
+		(inparts,vjcombos) = vdj.split_into_good_VJCDR3s(rep,outputname,verbose=True)
+		scriptname = vdj.LSF.generate_script(operation,[options.cutoff,options.clustertag])
+		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
+		vdj.LSF.waitforLSFjobs(processes,30)
+		if os.path.exists(scriptname): os.remove(scriptname)
+		rep = vdj.LSF.load_parts(parts)
+		rep.add_metatags("Clustering|" + options.clustertag + "levenshtein|single_linkage|cutoff="+str(options.cutoff)+"|"+timestamp())
+		vdj.writeVDJ(rep,outputname)
+		for part in parts:
+			if os.path.exists(part): os.remove(part)
+	else: # if just running on one file serially
+		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
+		rep = vdj.clusterRepertoire(rep,options.cutoff,tag_rep=True,tag_chains=True,tag=options.clustertag)
 		vdj.writeVDJ(rep,outputname)
 elif operation == 'full':
 	rep = vdj.initial_import(inputfilelist,outputname,options.metatags,options.tags,tag_rep=True)

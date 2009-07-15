@@ -24,15 +24,15 @@ def split_into_good_VJCDR3s(rep,outputname,verbose=True):
 	parts = []
 	vjcombo = []
 	partnum = 0
-	for vseg in refseq.IGHV[1:]:
-		for jseg in refseq.IGHJ[1:]:
+	for vseg in vdj.refseq.IGHV_seqs.keys():
+		for jseg in vdj.refseq.IGHJ_seqs.keys():
 			currfilename = outputname + '.part%04i' % partnum
 			currrep = repgood.get_chains_AND([vseg,jseg])
 			if len(currrep) == 0:
 				continue
 			vdj.writeVDJ(currrep,currfilename,verbose=verbose)
 			parts.append(currfilename)
-			vjcombo.append(vseg.replace('/','_')+'_'+jseg.replace('/','_'))
+			vjcombo.append(vseg.replace('/','_').replace('*','_')+'_'+jseg.replace('/','_').replace('*','_'))
 			partnum += 1
 	return (parts,vjcombo)
 
@@ -43,13 +43,22 @@ def load_parts(parts,verbose=True):
 		rep += rep_part
 	return rep
 
-def generate_script(operation):
+def generate_script(operation,args=[]):
 	scriptname = tempfile.mktemp('.py','vdj_operation','./')
 	op = open(scriptname,'w')
 	print >>op, "import vdj"
 	print >>op, "import sys"
 	print >>op, "rep = vdj.fastreadVDJ(sys.argv[1],mode='Repertoire')"
-	print >>op, "rep=vdj."+operation+"(rep)"
+	
+	if operation == 'cluster_rep':
+		if len(args) != 2:
+			raise Exception, "generate_script expected 2 args for clustering function."
+		cutoff = args[0]
+		clustertag = args[1]
+		print >>op, "T = vdj.clusterChains(rep.chains,cutoff="+str(cutoff)+",tag_chains=True,tag="+clustertag")"
+	else:
+		print >>op, "rep=vdj."+operation+"(rep)"
+	
 	print >>op, "vdj.writeVDJ(rep,sys.argv[1])"
 	op.close()
 	return scriptname

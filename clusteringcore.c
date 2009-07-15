@@ -73,7 +73,7 @@ static PyMethodDef clusteringcoremethods[] = {
 	{"levenshtein", clusteringcore_levenshtein, METH_VARARGS}
 } ;
 
-void initclusteringcore() {
+PyMODINIT_FUNC initclusteringcore() {
 	Py_InitModule( "clusteringcore", clusteringcoremethods ) ;
 	import_array() ;
 }
