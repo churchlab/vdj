@@ -16,13 +16,9 @@ def scatter_repertoires(reps,info='VJCDR3',gooddata=False,measurement='proportio
 	for rep in reps:
 		datalist.append( vdj.counts_ontology_1D(rep,info,gooddata) )
 	
-	print "finished computing counts"
-	
 	if measurement == 'proportions':
-		for data in datalist:
-			data = np.float_(data) / np.sum(data)
-	
-	print "finished normalizing data"
+		for i in xrange(len(datalist)):
+			datalist[i] = np.float_(datalist[i]) / np.sum(datalist[i])
 	
 	min_nonzero = np.min([np.min(data[data>0]) for data in datalist])
 	max_nonzero = np.max([np.max(data[data>0]) for data in datalist])
@@ -31,13 +27,23 @@ def scatter_repertoires(reps,info='VJCDR3',gooddata=False,measurement='proportio
 	
 	fig = plt.figure()
 	
-	for row in xrange(1,numreps):
-		for col in xrange(row,numreps):
-			plotnum = (numreps-1)*(row-1) + col
-			ax = fig.add_subplot(numreps-1,numreps-1,plotnum)
-			ax.scatter(datalist[row-1],datalist[col-1],c='k',marker='o',s=2,edgecolors=None)
+	hist_axs = []
+	for row in xrange(numreps):
+		col = row
+		plotnum = numreps*row + col + 1
+		ax = fig.add_subplot(numreps,numreps,plotnum)
+		ax.hist(datalist[row],bins=100,log=True,facecolor='k')
+		hist_axs.append(ax)
+	
+	scatter_axs = []
+	for row in xrange(numreps-1):
+		for col in xrange(row+1,numreps):
+			plotnum = numreps*row + col + 1
+			ax = fig.add_subplot(numreps,numreps,plotnum)
+			ax.scatter(datalist[row],datalist[col],c='k',marker='o',s=2,edgecolors=None)
 			ax.set_xscale('log')
 			ax.set_yscale('log')
 			ax.axis([axislo,axishi,axislo,axishi])
+			scatter_axs.append(ax)
 	
 	return fig
