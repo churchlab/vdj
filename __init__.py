@@ -6,6 +6,8 @@ import datetime
 import operator
 
 import numpy as np
+import scipy as sp
+import scipy.cluster
 
 import seqtools
 import refseq
@@ -1351,9 +1353,58 @@ class vdj_aligner(object):
 # = Clustering/CDR3 functions =
 # =============================
 
+def pdist(X,metric):
+	m = len(X)
+	dm = np.zeros((m * (m - 1) / 2,), dtype=np.double)
+	k = 0
+	for i in xrange(0, m - 1):
+		for j in xrange(i+1, m):
+			dm[k] = metric(X[i], X[j])
+			k += 1
+	return dm
 
-
-
+def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
+	"""Cluster list of ImmuneChains using Levenshtein edit distance between junctions.
+	
+	Returns a vector T where T[i] is the cluster number for chains[i]
+	
+	Note: to improve the performance, this method first collapses all identical chains
+		  and records the weight.  It then computes the initial distance matrix taking
+		  the weights into account.  The rest of the UPGMA method will propagate this
+		  information.
+	
+	"""
+	# check trivial cases
+	if len(chains) == 0:
+		raise Exception, "chains has nothing it"
+	elif len(chains) == 1:
+		T = np.array([1])
+		if tag_chains == True:
+			chains[0].add_tags('cluster|'+tag+'|'+str(T[0]))
+		return T
+	
+	# collapse identical junctions into each other
+	unique_junctions = list( set( [c.junction for c in chains] ) )
+	junction_counts = dict( [(junc,0) for junc in unique_junctions] )
+	junction_idx = dict( [(j,i) for i,j in enumerate(unique_junctions)] )
+	for chain in chains:
+		junction_counts[chain.junction] += 1
+	
+	# compute the distance matrix
+	Y = pdist(chains,chain_junction_Levenshtein)
+	
+	# compute the linkage
+	Z = sp.cluster.hierarchy.linkage(Y,method='average')
+	
+	# determine the clusters at level cutoff
+	T = sp.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
+	
+	# perform chain tagging
+	if tag_chains == True:
+		for (i,chain) in enumerate(chains):
+			chain.add_tags('cluster|'+tag+'|'+str(T[i]))
+	
+	return T
 
 
 
