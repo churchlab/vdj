@@ -27,10 +27,12 @@ def split_into_good_VJCDR3s(rep,outputname,verbose=True):
 	for vseg in vdj.refseq.IGHV_seqs.keys():
 		for jseg in vdj.refseq.IGHJ_seqs.keys():
 			currfilename = outputname + '.part%04i' % partnum
-			currrep = repgood.get_chains_AND([vseg,jseg])
-			if len(currrep) == 0:
+			currrepidxs = repgood.get_idxs_AND([vseg,jseg])
+			if len(currrepidxs) == 0:
 				continue
-			vdj.writeVDJ(currrep,currfilename,verbose=verbose)
+			if len(currrepidxs) == 1:
+				vdj.writeVDJ([repgood[currrepidxs]],currfilename,verbose=verbose)
+			vdj.writeVDJ(repgood[currrepidxs],currfilename,verbose=verbose)
 			parts.append(currfilename)
 			vjcombo.append(vseg.replace('/','_').replace('*','_')+'_'+jseg.replace('/','_').replace('*','_'))
 			partnum += 1
