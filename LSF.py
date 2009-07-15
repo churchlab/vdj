@@ -55,7 +55,7 @@ def generate_script(operation,args=[]):
 			raise Exception, "generate_script expected 2 args for clustering function."
 		cutoff = args[0]
 		clustertag = args[1]
-		print >>op, "T = vdj.clusterChains(rep.chains,cutoff="+str(cutoff)+",tag_chains=True,tag="+clustertag")"
+		print >>op, "T = vdj.clusterChains(rep.chains,cutoff="+str(cutoff)+",tag_chains=True,tag="+clustertag+")"
 	else:
 		print >>op, "rep=vdj."+operation+"(rep)"
 	
