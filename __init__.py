@@ -1404,7 +1404,7 @@ def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
 	
 	return T
 
-def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
+def clusterRepertoire(rep,cutoff=4.5,tag_rep=False,tag_chains=False,tag=''):
 	"""Cluster the chains in a Repertoire object.
 	
 	First the algorithm partitions the chains according to V-J combo.
@@ -1440,7 +1440,7 @@ def clusterRepertoire(rep,cutoff=4.5,tag_chains=False,tag=''):
 			for (i,clust) in enumerate(T):
 				currclusters[clust-1].append(currchains[i].descr)
 			clusters.extend(currclusters)
-	if tag_chains == True:
+	if tag_rep == True:
 		rep.add_metatags("Clustering|" + tag + "levenshtein|single_linkage|cutoff="+str(cutoff)+"|"+timestamp())
 	return clusters
 
