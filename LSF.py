@@ -30,9 +30,10 @@ def split_into_good_VJCDR3s(rep,outputname,verbose=True):
 			currrepidxs = repgood.get_idxs_AND([vseg,jseg])
 			if len(currrepidxs) == 0:
 				continue
-			if len(currrepidxs) == 1:
+			elif len(currrepidxs) == 1:
 				vdj.writeVDJ([repgood[currrepidxs]],currfilename,verbose=verbose)
-			vdj.writeVDJ(repgood[currrepidxs],currfilename,verbose=verbose)
+			else:
+				vdj.writeVDJ(repgood[currrepidxs],currfilename,verbose=verbose)
 			parts.append(currfilename)
 			vjcombo.append(vseg.replace('/','_').replace('*','_')+'_'+jseg.replace('/','_').replace('*','_'))
 			partnum += 1
