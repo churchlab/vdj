@@ -1387,7 +1387,7 @@ def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
 		T = np.array([1]*len(chains))
 		if tag_chains == True:
 			for chain in chains:
-				chain.add_tags('cluster|'+tag+'|'+str(1)
+				chain.add_tags('cluster|'+tag+'|'+str(1))
 		return T
 	
 	# compute the distance matrix
