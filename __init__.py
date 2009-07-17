@@ -1378,15 +1378,17 @@ def clusterChains(chains,cutoff=4.5,tag_chains=False,tag=''):
 	# check trivial cases
 	if len(chains) == 0:
 		raise Exception, "chains has nothing it"
-	elif len(chains) == 1:
-		T = np.array([1])
-		if tag_chains == True:
-			chains[0].add_tags('cluster|'+tag+'|'+str(T[0]))
-		return T
 	
 	# collapse identical junctions into each other
 	unique_junctions = list( set( [c.junction for c in chains] ) )
 	junction_idx = dict( [(j,i) for i,j in enumerate(unique_junctions)] )
+	
+	if len(unique_junctions) == 1:
+		T = np.array([1]*len(chains))
+		if tag_chains == True:
+			for chain in chains:
+				chain.add_tags('cluster|'+tag+'|'+str(1)
+		return T
 	
 	# compute the distance matrix
 	Y = pdist( unique_junctions, clusteringcore.levenshtein )
