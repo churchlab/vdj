@@ -4,6 +4,7 @@ import xml.sax.handler
 import time
 import datetime
 import operator
+import os
 
 import numpy as np
 import scipy as sp
@@ -1581,7 +1582,12 @@ def align_rep(rep,tag_rep=False):
 	
 	return rep
 
-
+# TODO
+def get_specificity(rep,spec_ref_rep):
+	rep.add_metatags("Specifity_ID : " + timestamp())
+	
+	for chain in rep:
+		pass
 
 
 
@@ -1596,9 +1602,14 @@ def timestamp():
 	return datetime.datetime.now().isoformat().split('.')[0]
 
 
+#===============================================================================
 
+# ===========================================
+# = Generating specificities reference data =
+# ===========================================
 
-
+if not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)) or not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)):
+	refseq.get_LIGM_with_specificities(refseq.refdatadir,refseq.imgtdat,refseq.imgtfasta,refseq.imgtspecfasta,refseq.imgtspecvdjxml)
 
 
 

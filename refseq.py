@@ -22,8 +22,12 @@ IGHJ_J_TRP_start_coord -- dict where the keys are refseq IDs and the values are 
 """
 
 import os
+import os.path
+
+from Bio import SeqIO
 
 import seqtools
+import vdj
 
 # ===============================================
 # = UTILITY FNs for parsing reference databases =
@@ -298,3 +302,104 @@ for seg in IGHV_list[1:]:
 for seg in IGHJ_list[1:]:
 	# offset to start before the J-TRP
 	IGHJ_offset[seg] = IGHJ_J_TRP_start_coord[seg]  - IGHJ_coords[seg][0]
+
+# ====================
+# = Specificity data =
+# ====================
+
+def get_LIGM_with_specificities(refdatadir,imgtdat,imgtfasta,outputfasta,outputvdjxml):
+	'''
+	Take the IMGT LIGM flat and fasta files, and return a fasta with only those seqs
+	that have a specificity associated with them in a fasta file.  The header contains
+	the accession and the specificity.
+	
+	vdj.refseq.get_LIGM_with_specificities("imgt.dat","imgt.fasta","imgt.specificities.fasta","imgt.specificities.vdjxml")
+	'''
+	specificities = {}		# list of 2-tuples: (ACCESION,specificity)
+	LIGMflat = open(os.path.join(refdatadir,imgtdat),'r')
+	LIGMfasta = open(os.path.join(refdatadir,imgtfasta),'r')
+	opSpecificityfasta = open(os.path.join(refdatadir,outputfasta),'w')
+	
+	numRecords = 0
+	numRecordswithSpec = 0
+	
+	ID = ''
+	DE = ''
+	for line in LIGMflat:
+		splitline = line.split()
+		
+		if splitline[0] == 'ID':
+			inRecord = True
+			ID = splitline[1]
+			numRecords += 1
+		elif splitline[0] == 'DE':
+			if inRecord:
+				DE += ' '.join(splitline[1:]) + ' '
+		elif splitline[0] == 'XX':
+			if DE == '':	# if i haven't stored the description yet
+				continue
+			else:	# finished record
+				if 'specificity' in DE:
+					specidx = DE.rfind('specificity')
+					spec = DE[specidx+len('specificity'):].strip().rstrip('.')
+					if spec.startswith('anti'):
+						specificities[ID] = spec
+						numRecordswithSpec += 1
+				ID = ''
+				DE = ''
+				inRecord = False
+	
+	print "Number of LIGM records read: " + str(numRecords)
+	print "Number of LIGM records that have specificities: " + str(numRecordswithSpec)
+	
+	numFasta = 0
+	
+	for seq in SeqIO.parse(LIGMfasta,'fasta'):
+		spec = specificities.get(seq.id,'')
+		if spec == '':
+			continue
+		else:
+			print >>opSpecificityfasta, ">" + seq.id + " | " + spec
+			print >>opSpecificityfasta, seqtools.seqString(seq)
+			numFasta += 1
+	
+	print "Number of Fasta records with specificities found and printed: " + str(numFasta)
+	
+	LIGMflat.close()
+	LIGMfasta.close()
+	opSpecificityfasta.close()
+	
+	# VDJXML and alignment
+	rep = vdj.initial_import([os.path.join(refdatadir,outputfasta)],os.path.join(refdatadir,outputvdjxml),metatags=['specificity_reference : '+vdj.timestamp()])
+	rep = vdj.positive_strand(rep)
+	rep = vdj.align_rep(rep)
+	
+	#repfiltered = rep.get_chains_fullVJ()
+	repfiltered = rep
+	for chain in repfiltered:
+		spec = specificities.get(chain.descr,'')
+		if spec == '':
+			print "Reference chain has empty specificity: " + chain.descr
+			continue
+		else:
+			chain.add_tags( 'specificity|'+spec )
+	
+	vdj.writeVDJ(repfiltered,os.path.join(refdatadir,outputvdjxml))	
+	
+	return
+
+imgtspecfasta  = 'imgtspec.fasta'
+imgtspecvdjxml = 'imgtspec.vdjxml'
+
+if os.path.exists(os.path.join(refdatadir,imgtspecfasta)) and os.path.exists(os.path.join(refdatadir,imgtspecfasta)):
+	ipspecfasta = open(os.path.join(refdatadir,imgtspecfasta),'r')
+	
+	SPEC_list = set()
+	for line in ipspecfasta:
+		if line[0] == '>':
+			currspec = '|'.join(line.split('|')[1:]).strip()
+			SPEC_list.add(currspec)
+	ipspecfasta.close()
+	SPEC_list.add('')
+	SPEC_list = list(SPEC_list)
+	SPEC_list.sort()
