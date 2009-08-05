@@ -253,7 +253,7 @@ class Repertoire(object):
 		return len(self.chains)
 	
 	def append(self,chain):
-		print "WARNING: This function uses Repertoire.append(), which is slow and memory intensive for large repertoires."
+		print "WARNING: This function uses np.append(), which is slow and memory intensive for large repertoires."
 		i = len(self.chains)
 		self.chains = np.append(self.chains,chain)	# slow and inefficient: np.append is NOT in-place; it reallocates everytime
 		self.processTags(i,chain)
@@ -673,7 +673,7 @@ def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
 def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
 	return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
 
-def counts_ontology_1D(rep,info,gooddata=False):
+def counts_ontology_1D(rep,info,gooddata=False,refclusters=None):
 	if info == 'VJ':
 		if gooddata:
 			counts = countsVJ_1D(rep.get_chains_fullVJ())
