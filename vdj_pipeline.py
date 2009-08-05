@@ -100,6 +100,7 @@ elif operation == 'positive_strand':
 	if options.LSFargs is not None: # if dispatching to LSF
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		parts = vdj.LSF.split_into_parts(rep,outputname,options.packetsize)
+		del rep
 		scriptname = vdj.LSF.generate_script(operation)
 		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
 		vdj.LSF.waitforLSFjobs(processes,30)
@@ -119,6 +120,7 @@ elif operation == 'align_rep':
 	if options.LSFargs is not None: # if dispatching to LSF
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		parts = vdj.LSF.split_into_parts(rep,outputname,options.packetsize)
+		del rep
 		scriptname = vdj.LSF.generate_script(operation)
 		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
 		vdj.LSF.waitforLSFjobs(processes,30)
@@ -138,6 +140,7 @@ elif operation == 'cluster_rep':
 	if options.LSFargs is not None: # if dispatching to LSF
 		rep = vdj.fastreadVDJ(inputfilelist[0],mode='Repertoire')
 		(inparts,vjcombos) = vdj.split_into_good_VJCDR3s(rep,outputname,verbose=True)
+		del rep
 		scriptname = vdj.LSF.generate_script(operation,[options.cutoff,options.clustertag])
 		processes = vdj.LSF.submit_to_LSF(options.LSFargs[0],options.LSFargs[1],scriptname,parts)
 		vdj.LSF.waitforLSFjobs(processes,30)
