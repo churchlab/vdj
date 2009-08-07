@@ -160,6 +160,8 @@ def rep2spectratype(rep):
 	for cdr3len in np.arange(min_cdr3,max_raw_cdr3,3):
 		totalcdr3s = np.sum(binnedcdr3s[cdr3len-1:cdr3len+2])
 		goodcdr3s  = binnedcdr3s[cdr3len]
+		if totalcdr3s == 0:
+			continue
 		mu = cdr3len
 		x = cdr3len-0.5
 		tail = np.float(goodcdr3s) / totalcdr3s / 2
