@@ -164,7 +164,7 @@ def rep2spectratype(rep):
 			continue
 		mu = cdr3len
 		x = cdr3len-0.5
-		tail = np.float(goodcdr3s) / totalcdr3s / 2
+		tail = (1 - (np.float(goodcdr3s)/totalcdr3s)) / 2.
 		sigma = (x-mu) / (np.sqrt(2.)*sp.special.erfinv(2*tail-1))
 		rv = sp.stats.norm(loc=mu,scale=sigma)
 		gaussians.append( (totalcdr3s,rv) )
