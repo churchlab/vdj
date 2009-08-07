@@ -1,4 +1,7 @@
 import numpy as np
+import scipy as sp
+import scipy.stats
+import scipy.special
 #import matplotlib
 import matplotlib.pyplot as plt
 
@@ -93,7 +96,23 @@ def scatter_repertoires_clusters(reps,refclusters,measurement='proportions'):
 	
 	return fig
 
-def timeseries_repertoires(times,reps,refclusters,allpositive=False):
+def reps2timeseries(reps,refclusters):
+	"""Return time series matrix from list or Repertoire objs in chron order.
+	
+	reps is list of Repertoire objects
+	refclusters is the master list of reference clusters
+	"""
+	numreps = len(reps)
+	numclusters = len(refclusters)
+	
+	countdata = np.zeros((numclusters,numreps))
+	for (i,rep) in enumerate(reps):
+		clusters = vdj.getClusters(rep)
+		countdata[:,i] = vdj.countsClusters(clusters,refclusters)
+	
+	return countdata
+
+def timeseries_repertoires(times,reps,refclusters,idxsbool=None,allpositive=False):
 	"""Create a time-series of the different clusters in refclusters.
 	
 	If allpositive is True, then it will limit itself to drawing timeseries
@@ -113,7 +132,43 @@ def timeseries_repertoires(times,reps,refclusters,allpositive=False):
 	sums = countdata.sum(0)
 	proportions = np.float_(countdata) / sums
 	
-	ax.plot(times,countdata.transpose(),'k-',linewidth=0.2)
+	if idxsbool == None:
+		if allpositive == True:
+			idxsbool = np.sum(proportions,axis=1) > 0
+		else:
+			idxsbool = np.array([True]*proportions.shape[0])
+	
+	ax.plot(times,countdata[idxsbool,:].transpose(),'k-',linewidth=0.2)
 	
 	plt.draw_if_interactive()
 	return ax
+
+def rep2spectratype(rep):
+	"""Compute spectratype curves from Repertoire object."""
+	
+	cdr3s = np.array([c.cdr3 for c in rep if c.junction != ''])
+	min_raw_cdr3 = np.min(cdr3)
+	max_raw_cdr3 = np.max(cdr3)
+	min_cdr3 = np.int(np.ceil( min_raw_cdr3 / 3.) * 3)	# will be a nonzero mult of 3
+	max_cdr3 = np.int(np.floor(max_raw_cdr3 / 3.) * 3)	# will be a mult of 3
+	
+	# bin the CDR3s lengths.  The first elt is rep zero len (and should be zero)
+	# and the last bin always represents one greater than the biggest mult of 3
+	binnedcdr3s = np.histogram(cdr3s,bins=np.arange(min_raw_cdr3,max_cdr3+2))[0]	# the +2 is due to the pecul. of np.hist.
+	
+	gaussians = []
+	for cdr3len in np.arange(min_cdr3,max_raw_cdr3,3):
+		totalcdr3s = np.sum(binnedcdr3s[cdr3len-1:cdr3len+2])
+		goodcdr3s  = binnedcdr3s[cdr3len]
+		mu = cdr3len
+		x = cdr3len-0.5
+		tail = np.float(goodcdr3s) / totalcdr3s / 2
+		sigma = (x-mu) / (np.sqrt(2.)*sp.special.erfinv(2*tail-1))
+		rv = sp.stats.norm(loc=mu,scale=sigma)
+		gaussians.append( (totalcdr3s,rv) )
+	
+	t = np.linspace(0,max_cdr3+1,1000)
+	y = np.zeros(len(t))
+	for (s,rv) in gaussians:
+		y += s*rv.pdf(t)
+	return (t,y)
