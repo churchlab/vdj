@@ -147,8 +147,8 @@ def rep2spectratype(rep):
 	"""Compute spectratype curves from Repertoire object."""
 	
 	cdr3s = np.array([c.cdr3 for c in rep if c.junction != ''])
-	min_raw_cdr3 = np.min(cdr3)
-	max_raw_cdr3 = np.max(cdr3)
+	min_raw_cdr3 = np.min(cdr3s)
+	max_raw_cdr3 = np.max(cdr3s)
 	min_cdr3 = np.int(np.ceil( min_raw_cdr3 / 3.) * 3)	# will be a nonzero mult of 3
 	max_cdr3 = np.int(np.floor(max_raw_cdr3 / 3.) * 3)	# will be a mult of 3
 	
