@@ -154,7 +154,7 @@ def rep2spectratype(rep):
 	
 	# bin the CDR3s lengths.  The first elt is rep zero len (and should be zero)
 	# and the last bin always represents one greater than the biggest mult of 3
-	binnedcdr3s = np.histogram(cdr3s,bins=np.arange(min_raw_cdr3,max_cdr3+2))[0]	# the +2 is due to the pecul. of np.hist.
+	binnedcdr3s = np.histogram(cdr3s,bins=np.arange(0,max_cdr3+2))[0]	# the +2 is due to the pecul. of np.hist.
 	
 	gaussians = []
 	for cdr3len in np.arange(min_cdr3,max_raw_cdr3,3):
