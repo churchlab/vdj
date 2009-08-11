@@ -1594,9 +1594,27 @@ def get_specificity(rep,spec_ref_rep):
 
 #===============================================================================
 
-# ==================
-# = Misc Utilities =
-# ==================
+# =============
+# = Utilities =
+# =============
+
+def split_rep(rep,IDs):
+	"""Split rep into multiple Repertoire objects based on identifiers in IDs."""
+	reps = np.empty(numBarcodes,dtype=np.object)
+	for (i,ID) in enumerate(IDs):
+		reps[i] = rep.get_chains_AND(ID)
+	return reps
+
+def reps2timeseries(reps,refclones):
+	"""Generate time series of clones from list of Repertoire objects, using refclones as reference."""
+	numClones = len(refclones)
+	numRepertoires = len(reps)
+	countdata = np.zeros((numClones,numRepertoires))
+	for (i,rep) in enumerate(reps):
+		clones = getClusters(rep)
+		countdata[:,i] = countsClusters(clones,refclones)
+	return countdata
+
 
 def timestamp():
 	return datetime.datetime.now().isoformat().split('.')[0]
