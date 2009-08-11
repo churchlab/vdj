@@ -1600,7 +1600,7 @@ def get_specificity(rep,spec_ref_rep):
 
 def split_rep(rep,IDs):
 	"""Split rep into multiple Repertoire objects based on identifiers in IDs."""
-	reps = np.empty(numBarcodes,dtype=np.object)
+	reps = np.empty(len(IDs),dtype=np.object)
 	for (i,ID) in enumerate(IDs):
 		reps[i] = rep.get_chains_AND(ID)
 	return reps
