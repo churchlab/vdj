@@ -1,0 +1,1 @@
+To "install", python setup.py build, and then copy the .so files from build/lib.whatever to the main vdj directory
