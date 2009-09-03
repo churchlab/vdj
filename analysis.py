@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.ma as ma
 import scipy as sp
 import scipy.stats
 import scipy.special
@@ -180,10 +181,39 @@ def circlemapVJ(ax,counts,rowlabels=None,collabels=None):
     numJ = counts.shape[1]
     X,Y = np.meshgrid(range(numJ),range(numV))
     
+    # mask zero positions
+    X,Y = ma.array(X), ma.array(Y)
+    C = ma.array(counts)
+    
+    zeromask = (counts == 0)
+    X.mask = zeromask
+    Y.mask = zeromask
+    C.mask = zeromask
+    
+    # ravel nonzero elts
+    x = ma.compressed(X)
+    y = ma.compressed(Y)
+    c = ma.compressed(C)
+    
+    # normalize counts to desired size-range
+    max_counts = ma.max(c)
+    min_counts = ma.min(c)
+    counts_range = max_counts - min_counts
+    
+    max_size = 100
+    min_size = 5
+    size_range = max_size - min_size
+    
+    sizes = (np.float(size_range) / counts_range) * (c - min_counts) + min_size
+    
     collection = mpl.collections.CircleCollection(
                                         sizes,
-                                        offsets = zip(x,y)
+                                        offsets = zip(x,y),
                                         transOffset = ax.transData) # i may need to explicitly set the xlim and ylim info for this to work correctly
+    
+    ax.add_collection(collection)
+    
+    return
 
 # define colormap for -1 to 1 (green-black-red) like gene expression
 redgreencdict = {'red':	[(0.0,   0.0,   0.0),
