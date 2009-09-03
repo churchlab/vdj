@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import scipy.stats
 import scipy.special
-#import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import vdj
@@ -174,3 +174,29 @@ def rep2spectratype(rep):
 	for (s,rv) in gaussians:
 		y += s*rv.pdf(t)
 	return (t,y)
+
+def circlemapVJ(ax,counts,rowlabels=None,collabels=None):
+    numV = counts.shape[0]
+    numJ = counts.shape[1]
+    X,Y = np.meshgrid(range(numJ),range(numV))
+    
+    collection = mpl.collections.CircleCollection(
+                                        sizes,
+                                        offsets = zip(x,y)
+                                        transOffset = ax.transData) # i may need to explicitly set the xlim and ylim info for this to work correctly
+
+# define colormap for -1 to 1 (green-black-red) like gene expression
+redgreencdict = {'red':	[(0.0,   0.0,   0.0),
+						 (0.5,   0.0,   0.0),
+						 (1.0,   1.0,   0.0)],
+						
+				'green':[(0.0,   0.0,   1.0),
+						 (0.5,   0.0,   0.0),
+						 (1.0,   0.0,   0.0)],
+						
+				'blue': [(0.0,   0.0,   0.0),
+						 (0.5,   0.0,   0.0),
+						 (1.0,   0.0,   0.0)]}
+
+redgreen = mpl.colors.LinearSegmentedColormap('redgreen',redgreencdict,256)
+redgreen.set_bad(color='w')
