@@ -1510,6 +1510,12 @@ def getCluster(chain):
             return tag
     raise Exception, "Chain " + chain.descr + " has no cluster identifier."
 
+def getBarcode(chain):
+    for tag in chain.tags:
+        if tag.startswith('barcode'):
+            return tag
+    return ''
+
 #===============================================================================
 
 # ======================
