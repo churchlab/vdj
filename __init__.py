@@ -503,7 +503,7 @@ def readVDJ(inputfile,mode='Repertoire'):
     
     return data
 
-def fastVDJiter(inputhandle,verbose=False):
+def fastVDJiter(inputhandle):
     """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
     
     NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
@@ -530,16 +530,13 @@ def fastVDJiter(inputhandle,verbose=False):
                 'tag'
                 ]
     
-    for line in ip:
+    for line in inputhandle:
         line = line.strip()
         endelementpos = line.find('>') + 1
         xmlelement = line[0:endelementpos]
         element = xmlelement[1:-1]
         
-        if xmlelement == '<metatag>':
-            if mode == 'Repertoire':
-                metatags.append(line[endelementpos:-1*(endelementpos+1)])
-        elif xmlelement == '<ImmuneChain>':
+        if xmlelement == '<ImmuneChain>':
             chain = ImmuneChain()
         elif xmlelement == '</ImmuneChain>':
             numChains += 1
@@ -551,7 +548,7 @@ def fastVDJiter(inputhandle,verbose=False):
                 chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
             else:
                 chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
-        return
+    return
 
 def fastreadVDJ(inputfile,mode='Repertoire',verbose=False):
     """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
