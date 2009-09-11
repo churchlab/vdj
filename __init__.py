@@ -1516,6 +1516,12 @@ def getBarcode(chain):
             return tag
     return ''
 
+def getTagWithPrefix(chain,prefix):
+    for tag in chain.tags:
+        if tag.startswith(prefix):
+            return tag
+    raise Exception, "Tag that starts with " + prefix + " not found."
+
 #===============================================================================
 
 # ======================
