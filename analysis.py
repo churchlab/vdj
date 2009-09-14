@@ -217,6 +217,25 @@ def circlemapVJ(ax,counts,rowlabels=None,collabels=None,log=False):
     
     ax.add_collection(collection)
     
+    ax.set_aspect('equal')
+    ax.autoscale_view()
+    
+    ax.xaxis.set_major_locator(mpl.ticker.FixedLocator(range(counts.shape[1])))
+    ax.yaxis.set_major_locator(mpl.ticker.FixedLocator(range(counts.shape[0])))
+    
+    if rowlabels != None:
+        ax.xaxis.set_major_formatter(mpl.ticker.FixedFormatter(collabels))
+    if collabels != None:
+        ax.yaxis.set_major_formatter(mpl.ticker.FixedFormatter(rowlabels))
+    
+    for ticklabel in ax.xaxis.get_ticklabels():
+        ticklabel.set_horizontalalignment('left')
+        ticklabel.set_rotation(-45)
+        ticklabel.set_size(8)
+    
+    for ticklabel in ax.yaxis.get_ticklabels():
+        ticklabel.set_size(8)
+    
     return
 
 # define colormap for -1 to 1 (green-black-red) like gene expression
