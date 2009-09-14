@@ -176,7 +176,7 @@ def rep2spectratype(rep):
 		y += s*rv.pdf(t)
 	return (t,y)
 
-def circlemapVJ(ax,counts,rowlabels=None,collabels=None):
+def circlemapVJ(ax,counts,rowlabels=None,collabels=None,log=False):
     numV = counts.shape[0]
     numJ = counts.shape[1]
     X,Y = np.meshgrid(range(numJ),range(numV))
@@ -190,10 +190,14 @@ def circlemapVJ(ax,counts,rowlabels=None,collabels=None):
     Y.mask = zeromask
     C.mask = zeromask
     
-    # ravel nonzero elts
+    # ravel nonzero elts (deletes zero-positions)
     x = ma.compressed(X)
     y = ma.compressed(Y)
     c = ma.compressed(C)
+    
+    # log normalize counts if requested
+    if log == True:
+        c = ma.log10(c)
     
     # normalize counts to desired size-range
     max_counts = ma.max(c)
