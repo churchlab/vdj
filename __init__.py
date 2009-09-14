@@ -1691,7 +1691,7 @@ def timestamp():
 # = Generating specificities reference data =
 # ===========================================
 
-if not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)) or not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)):
+if not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)) or not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecvdjxml)):
     refseq.get_LIGM_with_specificities(refseq.refdatadir,refseq.imgtdat,refseq.imgtfasta,refseq.imgtspecfasta,refseq.imgtspecvdjxml)
 
 

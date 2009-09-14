@@ -391,7 +391,7 @@ def get_LIGM_with_specificities(refdatadir,imgtdat,imgtfasta,outputfasta,outputv
 imgtspecfasta  = 'imgtspec.fasta'
 imgtspecvdjxml = 'imgtspec.vdjxml'
 
-if os.path.exists(os.path.join(refdatadir,imgtspecfasta)) and os.path.exists(os.path.join(refdatadir,imgtspecfasta)):
+if os.path.exists(os.path.join(refdatadir,imgtspecfasta)) and os.path.exists(os.path.join(refdatadir,imgtspecvdjxml)):
 	ipspecfasta = open(os.path.join(refdatadir,imgtspecfasta),'r')
 	
 	SPEC_list = set()
