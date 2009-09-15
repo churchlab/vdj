@@ -1,19 +1,24 @@
 import types
-import xml.sax
-import xml.sax.handler
-import time
-import datetime
-import operator
-import os
 
 import numpy as np
-import scipy as sp
-import scipy.cluster
 
-import seqtools
 import refseq
-import alignmentcore
-import clusteringcore
+
+# import xml.sax
+# import xml.sax.handler
+# import time
+# import datetime
+# import operator
+# import os
+# 
+# import numpy as np
+# import scipy as sp
+# import scipy.cluster
+# 
+# import seqtools
+# import refseq
+# import alignmentcore
+# import clusteringcore
 
 
 
@@ -54,6 +59,10 @@ class ImmuneChain(object):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
         self.tags.update(tagset)
     
+    def remove_tags(self,tagset):
+        if isinstance(tagset,types.StringTypes): tagset = [tagset]
+        for tag in tagset: self.tags.remove(tag)
+    
     def __len__(self):
         return len(self.seq)
     
@@ -79,6 +88,173 @@ class ImmuneChain(object):
             xmlstring += '\t<tag>' + tag + '</tag>\n'
         xmlstring += '</ImmuneChain>\n'
         return xmlstring
+
+
+
+# ================
+# = INPUT/OUTPUT =
+# ================
+
+def parseVDJXML(inputhandle):
+    """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
+    
+    NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
+    that takes input line by line.
+    
+    THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY ONE LINE
+    
+    """
+    if not isinstance(inputhandle,file):
+        raise Exception, "Function takes a file handle, not a filename."
+    
+    numChains = 0
+    
+    possible_elements = [
+                'descr',
+                'seq',
+                'v',
+                'd',
+                'j',
+                'ighc',
+                'cdr3',
+                'junction',
+                'func',
+                'tag'
+                ]
+    
+    for line in inputhandle:
+        line = line.strip()
+        endelementpos = line.find('>') + 1
+        xmlelement = line[0:endelementpos]
+        element = xmlelement[1:-1]
+        
+        if xmlelement == '<ImmuneChain>':
+            chain = ImmuneChain()
+        elif xmlelement == '</ImmuneChain>':
+            numChains += 1
+            yield chain
+        elif element in possible_elements:
+            if element == 'cdr3':
+                chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
+            elif element == 'tag':
+                chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
+            else:
+                chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
+
+def writeVDJXML(data, outputhandle):
+    """Write list of ImmuneChains to a file in VDJXML format"""
+    
+    if not isinstance(outputhandle,file):
+        raise Exception, "Function takes a file handle, not a filename."
+    
+    handle = outputhandle
+    
+    if isinstance(data,list) and isinstance(data[0],ImmuneChain):
+        for (i,chain) in enumerate(data):
+            #if verbose and i%5000==0:
+            #   print "Writing: " + str(i)
+            print >>handle, chain
+    else:
+        raise Exception, "Must supply a list of ImmuneChain objects."
+
+
+
+# ============
+# = Counting =
+# ============
+
+def countsVJ(inputfile):
+    if isinstance(inputfile,types.StringTypes):
+        ip = open(inputfile,'r')
+    elif isinstance(inputfile,file):
+        ip = inputfile
+    
+    counts = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list)) )
+    for chain in parseVDJXML(ip):
+        counts[refseq.IGHV_idx[chain.v],refseq.IGHJ_idx[chain.j]] += 1
+    
+    if isinstance(inputfile,types.StringTypes):
+        ip.close()
+    
+    return cn
+
+
+
+
+
+def countsVJ_1D(rep):
+    return countsVJ(rep).ravel()
+
+def countsVDJ(rep):
+    cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHD_list),len(refseq.IGHJ_list)) )
+    for chain in rep.chains:
+        cn[refseq.IGHV_idx[chain.v],refseq.IGHD_idx[chain.d],refseq.IGHJ_idx[chain.j]] += 1
+    return cn
+
+def countsVDJ_2D(rep):
+    cn = countsVDJ(rep)
+    return cn.reshape(len(refseq.IGHV_list),len(refseq.IGHD_list)*len(refseq.IGHJ_list))
+
+def countsVDJ_1D(rep):
+    return countsVDJ(rep).ravel()
+
+def countsVJCDR3(rep,cdrlow=3,cdrhigh=99):
+    numlens = (cdrhigh-cdrlow) + 1
+    cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list),numlens) )
+    for chain in rep.chains:
+        if chain.cdr3 >= cdrlow and chain.cdr3 <= cdrhigh:
+            cn[refseq.IGHVdict[chain.v],refseq.IGHJdict[chain.j],(chain.cdr3 - 3)] += 1
+    return cn
+
+def countsVJCDR3_2D(rep,cdrlow=3,cdrhigh=99):
+    cn = countsVJCDR3(rep,cdrlow,cdrhigh)
+    return cn.reshape(len(refseq.IGHV_list),cn.shape[1]*cn.shape[2])
+
+def countsVJCDR3_1D(rep,cdrlow=3,cdrhigh=99):
+    return countsVJCDR3(rep,cdrlow,cdrhigh).ravel()
+
+def counts_ontology_1D(rep,info,gooddata=False,refclusters=None):
+    if info == 'VJ':
+        if gooddata:
+            counts = countsVJ_1D(rep.get_chains_fullVJ())
+        else:
+            counts = countsVJ_1D(rep)
+    elif info == 'VDJ':
+        if gooddata:
+            counts = countsVDJ_1D(rep.get_chains_fullVDJ())
+        else:
+            counts = countsVDJ_1D(rep)
+    elif info == 'VJCDR3':
+        if gooddata:
+            counts = countsVJCDR3_1D(rep.get_chains_fullVJCDR3())
+        else:
+            counts = countsVJCDR3_1D(rep)
+    else:
+        raise Exception, info + " is not a recognized type of information to count."
+    
+    return counts
+
+def countsClusters(clusters,reference_clusters):
+    """Takes a dictionary of cluster names mapped to a sequence of indexes in a repertoire.
+    
+    Returns an np array of the same length as reference_clusters with the counts of each
+    cluster in reference_clusters.
+    
+    The need for reference_clusters is due to the fact that splitting a given repertoire
+    may result in some parts not observing any clusters, so there needs to be a common way
+    to compare two cluster sets
+    
+    """
+    
+    counts = np.zeros(len(reference_clusters))
+    for (i,name) in enumerate(reference_clusters):
+        counts[i] = len(clusters.get(name,[]))
+    return counts
+
+
+
+
+
 
 # ====================
 # = Repertoire class =
@@ -503,52 +679,7 @@ def readVDJ(inputfile,mode='Repertoire'):
     
     return data
 
-def fastVDJiter(inputhandle):
-    """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
-    
-    NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
-    that takes input line by line.
-    
-    THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY ONE LINE
-    
-    """
-    if not isinstance(inputhandle,file):
-        raise Exception, "Function takes a file handle, not a filename."
-    
-    numChains = 0
-    
-    possible_elements = [
-                'descr',
-                'seq',
-                'v',
-                'd',
-                'j',
-                'ighc',
-                'cdr3',
-                'junction',
-                'func',
-                'tag'
-                ]
-    
-    for line in inputhandle:
-        line = line.strip()
-        endelementpos = line.find('>') + 1
-        xmlelement = line[0:endelementpos]
-        element = xmlelement[1:-1]
-        
-        if xmlelement == '<ImmuneChain>':
-            chain = ImmuneChain()
-        elif xmlelement == '</ImmuneChain>':
-            numChains += 1
-            yield chain
-        elif element in possible_elements:
-            if element == 'cdr3':
-                chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
-            elif element == 'tag':
-                chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
-            else:
-                chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
-    return
+
 
 def fastreadVDJ(inputfile,mode='Repertoire',verbose=False):
     """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
@@ -628,54 +759,7 @@ def fastreadVDJ(inputfile,mode='Repertoire',verbose=False):
     
     return rep
 
-def writeVDJ(data, fileobj, verbose=True):
-    """Write Repertoire or list of ImmuneChains to a file in VDJXML format"""
-    if isinstance(fileobj,types.StringTypes):
-        handle = open(fileobj,'w')
-    elif isinstance(fileobj,file):
-        handle = fileobj
-    
-    if verbose == True:
-        print "WRITING VDJ XML"
-        if isinstance(data,Repertoire):
-            print "mode: Repertoire"
-            print "metatags:"
-            for tag in data.metatags:
-                print '\t' + tag
-        elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
-            print "mode: ImmuneChain"
-    
-    print >>handle, '<?xml version="1.0"?>'
-    if isinstance(data,Repertoire):
-        # header
-        xmlstring = ''
-        xmlstring += '<Repertoire>\n\n'
-        xmlstring += '<Meta>\n'
-        for tag in data.metatags:
-            xmlstring += '\t<metatag>' + tag + '</metatag>\n'
-        xmlstring += '</Meta>\n\n'
-        xmlstring += '<Data>\n'
-        print >>handle, xmlstring
-        
-        # data
-        for (i,chain) in enumerate(data.chains):
-            #if verbose and i%5000==0:
-            #   print "Writing: " + str(i)
-            print >>handle, str(chain) + '\n'
-        xmlstring = '</Data>\n\n'
-        xmlstring += '</Repertoire>\n'
-        print >>handle, xmlstring
-    elif isinstance(data,list) and isinstance(data[0],ImmuneChain):
-        for (i,chain) in enumerate(data):
-            #if verbose and i%5000==0:
-            #   print "Writing: " + str(i)
-            print >>handle, chain
-    
-    if verbose == True:
-        print "Number of ImmuneChain objects written: " + str(len(data)) + '\n'
-    
-    if isinstance(fileobj,types.StringTypes):
-        handle.close()
+
 
 #===============================================================================
 
