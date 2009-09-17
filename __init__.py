@@ -176,7 +176,7 @@ def countsVJ(inputfile):
     if isinstance(inputfile,types.StringTypes):
         ip.close()
     
-    return cn
+    return counts
 
 
 
