@@ -3,12 +3,14 @@
 import sys
 import optparse
 import subprocess
-import time
 
 import vdj
+import LSF
 
 parser = optparse.OptionParser()
 parser.add_option('-c','--cutoff',default=4.5,type='float')
+parser.add_option('-q','--queue')
+parser.add_option('-o','--LSFoutput',default=4.5,type='float')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -29,7 +31,7 @@ print >>sys.stderr, "NOTE: chains must be filtered for valid VJ aln and junction
 (VJ_parts,VJ_IDs) = vdj.split_vdjxml_into_VJ_parts(inhandle,outname)
 
 VJ_parts_clustered = []
-processes = []
+jobs = []
 for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
     vj_file_clustered = vj_file + '.clustered'
     VJ_parts_clustered.append(vj_file_clustered)
@@ -38,12 +40,10 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
               'infile':vj_file,
              'outfile':vj_file_clustered}
     cluster_cmd = r'python cluster_cdr3 --cutoff %(cutoff)f --tag %(tag)s %(infile)s %(outfile)s' % params
-    p = subprocess.Popen(cluster_cmd,shell=True)
-    processes.append(p)
-    # perform serially:
-    # vdj.cluster_chains(options.cutoff,vj_id,vj_file,vj_file_clustered)
+    jobID = LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
+    jobs.append(jobID)
 
-vdj.wait_for_subprocesses(processes)
+LSF.wait_for_LSF_jobs(jobs)
 
 for chain in vdj.parse_VDJXML_parts(VJ_parts_clustered):
     print >>outhandle, chain

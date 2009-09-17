@@ -462,3 +462,14 @@ def parse_VDJXML_parts(parts):
     for part in parts:
         for chain in parse_VDJXML(part):
             yield chain
+
+
+def wait_for_subprocesses(process_list,interval=30):
+    finished = False
+    while not finished:
+        finished = True
+        time.sleep(interval)
+        for p in process_list:
+            if p.poll() == None:
+                finished = False
+                break
