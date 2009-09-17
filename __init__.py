@@ -7,6 +7,7 @@ import Bio.SeqIO
 import refseq
 import sequtils
 import alignment
+import clustering
 
 # import xml.sax
 # import xml.sax.handler
@@ -372,59 +373,92 @@ def align_vdj(inhandle,outhandle):
         print >>outhandle, chain
 
 
+def cluster_chains(cutoff,tag,inhandle,outhandle):
+    # NOTE: this function requires there to be a well-defined junction
+    #       sequence.  It raises an exception if not.  Therefore, seqs
+    #       must be pre-filtered for having legit junctions
+    # NOTE: this function must hold all chains in memory in order to 
+    #       perform the clustering and then assign cluster names
+    
+    # load data
+    chains = []
+    junctions = []
+    for chain in parse_VDJXML(inhandle):
+        # check for presence of V, J, and non-trivial junction
+        if chain.v == '' or chain.j == '' or chain.junction == '':
+            raise ValueError, "Chain " + chain.descr + " has no junction of V-J aln."
+        chains.append(chain)
+        junctions.append(chain.junction)
+    
+    # perform the sequence clustering
+    (T,seq_idxs) = clustering.cluster_seqs(junctions,cutoff)
+    
+    # tag chains with unique cluster IDs
+    if tag == '':
+        tag = '|'
+    else:
+        tag = '|'+tag+'|'
+    for (i,chain) in enumerate(chains):
+        clusterID = 'clone' + tag + str(T[seq_idxs[chain.junction]])
+        chain.add_tags(clusterID)
+        print >>outhandle, chain
 
 
 
 
 
+def split_vdjxml_into_parts(packetsize,inhandle,outname):
+	parts = []
+	chain_num = 0
+	file_num = 0
+	curr_outname = outname+'.'+str(file_num)
+	op = open(curr_outname,'w')
+	parts.append(curr_outname)
+	for chain in parse_VDJXML(inhandle):
+	    print >>op, chain
+	    chain_num += 1
+	    if chain_num == packetsize:
+	        op.close()
+	        chain_num = 0
+	        file_num += 1
+	        curr_outname = outname+'.'+str(file_num)
+	        op = open(curr_outname,'w')
+	        parts.append(curr_outname)
+	op.close()
+	return parts
 
 
+def split_vdjxml_into_VJ_parts(inhandle,outname):
+    parts = []
+    vj_ids = []
+    outhandles = {}
+    
+    # for generating identifiers from VJ combos
+    cleanup_table = string.maketrans('/*','__')
+    def vj_id(v_seg,j_seg):
+        return v_seg.translate(cleanup_table)+'_'+j_seg.translate(cleanup_table)
+    
+    # open output files for all VJ combos
+    i = 0
+    for v_seg in refseq.IGHV_seqs.keys():
+        for j_seg in refseq.IGHJ_seqs.keys():
+            curr_outname = outname + '.' + str(i)
+            curr_vj_id = vj_id(v_seg,j_seg)
+            parts.append(curr_outname)
+            vj_ids.append(curr_vj_id)
+            outhandles[curr_vj_id] = open(curr_outname,'w')
+    
+    for chain in parse_VDJXML(inhandle):
+        curr_vj_id = vj_id(chain.v,chain.j)
+        print >>outhandles[curr_vj_id], chain
+    
+    for handle in outhandle.itervalues():
+        handle.close()
+    
+    return (parts,vj_ids)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-#===============================================================================
-
-# =============
-# = Utilities =
-# =============
-
-def split_rep(rep,IDs):
-    """Split rep into multiple Repertoire objects based on identifiers in IDs."""
-    reps = np.empty(len(IDs),dtype=np.object)
-    for (i,ID) in enumerate(IDs):
-        reps[i] = rep.get_chains_AND(ID)
-    return reps
-
-def reps2timeseries(reps,refclones):
-    """Generate time series of clones from list of Repertoire objects, using refclones as reference."""
-    numClones = len(refclones)
-    numRepertoires = len(reps)
-    countdata = np.zeros((numClones,numRepertoires))
-    for (i,rep) in enumerate(reps):
-        clones = getClusters(rep)
-        countdata[:,i] = countsClusters(clones,refclones)
-    return countdata
-
-
-
-
-#===============================================================================
-
-# ===========================================
-# = Generating specificities reference data =
-# ===========================================
-
-if not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)) or not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecvdjxml)):
-    refseq.get_LIGM_with_specificities(refseq.refdatadir,refseq.imgtdat,refseq.imgtfasta,refseq.imgtspecfasta,refseq.imgtspecvdjxml)
-
+def parse_VDJXML_parts(parts):
+    for part in parts:
+        for chain in parse_VDJXML(part):
+            yield chain
