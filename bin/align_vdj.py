@@ -17,5 +17,7 @@ elif len(args) == 1:
 elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
+else:
+    raise Exception, "Wrong number of arguments."
 
 vdj.align_vdj(inhandle,outhandle)

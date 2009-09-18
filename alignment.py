@@ -1,4 +1,7 @@
 import time
+import operator
+
+import numpy as np
 
 import refseq
 import sequtils
