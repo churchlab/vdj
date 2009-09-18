@@ -9,22 +9,6 @@ import sequtils
 import alignment
 import clustering
 
-# import xml.sax
-# import xml.sax.handler
-# import time
-# import datetime
-# import operator
-# import os
-# 
-# import numpy as np
-# import scipy as sp
-# import scipy.cluster
-# 
-# import seqtools
-# import refseq
-# import alignmentcore
-# import clusteringcore
-
 
 
 # ===================
@@ -50,9 +34,11 @@ class ImmuneChain(object):
         self.junction = junction
         self.func = func
     
-    @property
-    def cdr3(self):
+    def get_cdr3(self):
         return len(self.junction)
+    def set_cdr3(self,value):
+        pass
+    cdr3 = property(fget=get_cdr3,fset=set_cdr3)
     
     @property
     def all_tags(self):
@@ -282,7 +268,7 @@ def fasta2vdjxml(inhandle,outhandle):
     
     for record in Bio.SeqIO.parse(inhandle,'fasta'):
         description = record.description.split()
-        sequence = record.seq.tostring()   # SeqRecord object
+        sequence = record.seq.tostring().upper()   # SeqRecord object
         if not multiple_fields and len(description) > 1:
             multiple_fields = True
         chain = ImmuneChain(descr=description[0],seq=sequence)
@@ -292,7 +278,13 @@ def fasta2vdjxml(inhandle,outhandle):
         print "WARNING: input fasta file has descriptions with multiple fields"
 
 
-def size_select(min_=None,max_=None,inhandle,outhandle):
+def vdjxml2fasta(inhandle,outhandle):
+    for chain in parse_VDJXML(inhandle):
+        print >>outhandle, '>'+chain.descr
+        print >>outhandle, chain.seq
+
+
+def size_select(inhandle,outhandle,min_=None,max_=None):
     if min_ == None:
         min_ = 0
     if max_ == None:
@@ -312,7 +304,7 @@ def barcode_id(barcode_fasta,inhandle,outhandle):
     
     barcodes = {}
     for record in Bio.SeqIO.parse(bcip,'fasta'):
-        barcodes[record.seq.tostring()] = record.id
+        barcodes[record.seq.tostring().upper()] = record.id
     
     barcode_len = len(barcodes.keys()[0])
     for bc in barcodes.keys():
@@ -326,9 +318,9 @@ def barcode_id(barcode_fasta,inhandle,outhandle):
         if curr_barcode != '':
             chain.seq = chain.seq[barcode_len:] # remove barcode from seq
             chain.add_tags(curr_barcode)
-            print >>op, chain
+            print >>outhandle, chain
         else:   # no barcode found; print chain unchanged
-            print >>op, chain
+            print >>outhandle, chain
     
     if isinstance(barcode_fasta,types.StringTypes):
         bcip.close()
@@ -341,8 +333,8 @@ def isotype_id(ighc_fasta,inhandle,outhandle):
         ighcip = ighc_fasta
     
     isotypes = {}
-    for record in Bio.SeqIO.parse(ighcip.'fasta'):
-        isotypes[record.seq.reverse_complement().tostring()] = record.id
+    for record in Bio.SeqIO.parse(ighcip,'fasta'):
+        isotypes[record.seq.reverse_complement().tostring().upper()] = record.id
     
     for chain in parse_VDJXML(inhandle):
         get_tag_with_prefix(chain,'positive')   # will throw ValueError if finds non-positive chain

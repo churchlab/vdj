@@ -91,7 +91,7 @@ def get_refseq_elements(locus,alleles,func,species,getcoords,refdatadir,imgtrefs
         
         refIDs.append( currID )
         refacc[currID] = curracc
-        refseqs[currID] = seqtools.seqString(seq)
+        refseqs[currID] = seq.seq.tostring().upper()
         if getcoords:
             refcoords[currID] = currcoords
         
@@ -350,7 +350,7 @@ def get_LIGM_with_specificities(refdatadir,imgtdat,imgtfasta,outputfasta,outputv
             continue
         else:
             print >>opSpecificityfasta, ">" + seq.id + " | " + spec
-            print >>opSpecificityfasta, seqtools.seqString(seq)
+            print >>opSpecificityfasta, seq.seq.tostring().upper()
             numFasta += 1
     
     print "Number of Fasta records with specificities found and printed: " + str(numFasta)
@@ -379,8 +379,8 @@ def get_LIGM_with_specificities(refdatadir,imgtdat,imgtfasta,outputfasta,outputv
     return
 
 
-if not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecfasta)) or not os.path.exists(os.path.join(refseq.refdatadir,refseq.imgtspecvdjxml)):
-    refseq.get_LIGM_with_specificities(refseq.refdatadir,refseq.imgtdat,refseq.imgtfasta,refseq.imgtspecfasta,refseq.imgtspecvdjxml)
+if not os.path.exists(os.path.join(params.refdatadir,params.imgtspecfasta)) or not os.path.exists(os.path.join(params.refdatadir,params.imgtspecvdjxml)):
+    get_LIGM_with_specificities(params.refdatadir,params.imgtdat,params.imgtfasta,params.imgtspecfasta,params.imgtspecvdjxml)
 
 
 if os.path.exists(os.path.join(params.refdatadir,params.imgtspecfasta)) and os.path.exists(os.path.join(params.refdatadir,params.imgtspecvdjxml)):

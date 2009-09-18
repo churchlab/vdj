@@ -6,7 +6,6 @@ import optparse
 import vdj
 
 parser = optparse.OptionParser()
-parser.add_option('-b','--barcodes',dest='barcodes_fasta')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -19,4 +18,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.barcode_id(options.barcodes_fasta,inhandle,outhandle)
+vdj.vdjxml2fasta(inhandle,outhandle)

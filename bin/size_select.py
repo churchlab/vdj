@@ -20,4 +20,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.size_select(min_,max_,inhandle,outhandle)
+vdj.size_select(inhandle,outhandle,options.min,options.max)
