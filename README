@@ -1,3 +1,5 @@
 To "install", python setup.py build, and then copy the .so files from build/lib.whatever to the main vdj directory
 
 params.py must be updated upon install to point to the proper places
+
+the bin directory must be added to the path for the scripts to work

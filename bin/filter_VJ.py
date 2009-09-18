@@ -6,7 +6,6 @@ import optparse
 import vdj
 
 parser = optparse.OptionParser()
-parser.add_option('-i','--IGHC',dest='ighc_fasta')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -19,4 +18,7 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.isotype_id(options.ighc_fasta,inhandle,outhandle)
+
+for chain in vdj.parse_VDJXML(inhandle):
+    if chain.v in vdj.refseq.IGHV_seqs.keys() and chain.j in vdj.refseq.IGHJ_seqs.keys():
+        print >>outhandle, chain
