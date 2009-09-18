@@ -36,24 +36,24 @@ class vdj_aligner(object):
         negJseqlistannot,negJseqlistkeys = vdj_aligner.seqdict2kmerannot( vdj_aligner.seqdict2revcompseqdict(refseq.IGHJ_seqs), [self.patternPos] )
         
         # collect possible keys
-        self.posset=set([])
+        posset = set([])
         for key in posVseqlistkeys.keys():
-            self.posset.update(posVseqlistkeys[key][self.patternPos])
+            posset.update(posVseqlistkeys[key][self.patternPos])
         for key in posJseqlistkeys.keys():
-            self.posset.update(posJseqlistkeys[key][self.patternPos])
+            posset.update(posJseqlistkeys[key][self.patternPos])
         
-        self.negset=set([])
+        negset = set([])
         for key in negVseqlistkeys.keys():
-            self.negset.update(negVseqlistkeys[key][self.patternPos])
+            negset.update(negVseqlistkeys[key][self.patternPos])
         for key in negJseqlistkeys.keys():
-            self.negset.update(negJseqlistkeys[key][self.patternPos])
+            negset.update(negJseqlistkeys[key][self.patternPos])
         
         # get keys unique to positive or negative versions of reference set
-        possetnew=self.posset-self.negset
-        negsetnew=self.negset-self.posset
+        possetnew = posset - negset
+        negsetnew = negset - posset
         
-        self.posset=possetnew
-        self.negset=negsetnew
+        self.posset = possetnew
+        self.negset = negsetnew
         
         t1 = time.time()
         
