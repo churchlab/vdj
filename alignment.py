@@ -3,6 +3,7 @@ import operator
 
 import numpy as np
 
+import vdj
 import refseq
 import sequtils
 import alignmentcore
@@ -62,6 +63,11 @@ class vdj_aligner(object):
         
         if verbose: print "Database init:", t1-t0
     
+    def align_seq(self,seq,verbose=False):
+        chain = vdj.ImmuneChain(descr='sequence',seq=seq)
+        self.align_chain(chain)
+        return chain
+    
     def align_chain(self,chain,verbose=False):
         
         query = chain.seq
@@ -85,6 +91,9 @@ class vdj_aligner(object):
         # get numCrudeVCandidates highest scores in Vscores and store their names in descending order
         goodVseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Vscores_hash,'value')[0:self.numCrudeVCandidates] ]
         
+        if verbose:
+            print goodVseglist
+        
         t2 = time.time()
         
         bestVseg = ''
@@ -96,7 +105,7 @@ class vdj_aligner(object):
         for goodVseg in goodVseglist:
             # C implementation:
             # carve out memory
-            # note that we are using zero initial conditions, so matrices are initialize too
+            # note that we are using zero initial conditions, so matrices are initialized too
             # notation is like Durbin p.29
             seq1 = refseq.IGHV_seqs[goodVseg]
             seq2 = query
@@ -105,9 +114,6 @@ class vdj_aligner(object):
             Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
             trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
             alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
-            
-            # pure python:
-            # scores,trace = vdj_aligner.alignNW( refseq.IGHV_seqs[goodVseg], query )
             
             currscore = vdj_aligner.scoreVJalign(scores)
             if currscore > bestVscore:
@@ -123,7 +129,8 @@ class vdj_aligner(object):
         # reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
         if bestVseg != '':
             Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
-            query = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg, query )
+            query,v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg, query )
+            chain.add_tags('v_end_idx|%d'%v_end_idx)
         
         t4 = time.time()
         
@@ -143,6 +150,9 @@ class vdj_aligner(object):
         
         # get numCrudeJCandidates highest scores in Jscores and store their names in descending order
         goodJseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Jscores_hash,'value')[0:self.numCrudeJCandidates] ]
+        
+        if verbose:
+            print goodJseglist
         
         t6 = time.time()
         
@@ -182,7 +192,8 @@ class vdj_aligner(object):
         # reconstruct the alignment and chop off J region after the TRP (IMGT)
         if bestJseg != '':
             Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
-            query = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg, query )
+            (query,j_start_idx) = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg, query )
+            chain.add_tags('j_start_idx|%d'%j_start_idx)
         
         t8 = time.time()
         
@@ -193,28 +204,31 @@ class vdj_aligner(object):
             
             # compute hashes from junction sequence using mini seed patterns
             queryannot,querykeys = vdj_aligner.seq2kmerannot(query,self.miniseedpatterns)
-        
+            
             t9 = time.time()
-        
+            
             Dscores_hash = {}
-        
+            
             # for each reference D segment and each pattern, how many shared k-mers are there?
             for Dseg in refseq.IGHD_seqs.keys():
                 score = 0
                 for pattern in self.miniseedpatterns:
                     score += len( self.Dseqlistkeysmini[Dseg][pattern] & querykeys[pattern] )
                 Dscores_hash[Dseg] = score
-        
+            
             # get numCrudeDCandidates highest scores in Dscores and store their names in descending order
             goodDseglist = [ seg[0] for seg in vdj_aligner.dict2sorteddecreasingitemlist(Dscores_hash,'value')[0:self.numCrudeDCandidates] ]
-        
+            
+            if verbose:
+                print goodDseglist
+            
             t10 = time.time()
-        
+            
             bestDseg = ''
             bestDscore = 4      # derived from calibration data 20090710
             bestDscoremat = []
             bestDtracemat = []
-        
+            
             # perform Smith-Waterman on top D seg candidates and remember which had the highest score
             for goodDseg in goodDseglist:
                 # C implementation:
@@ -236,9 +250,9 @@ class vdj_aligner(object):
                     bestDseg = goodDseg
                     bestDscoremat = scores
                     bestDtracemat = trace
-        
+            
             t11 = time.time()
-        
+            
             chain.d = bestDseg
             
         else:
@@ -348,7 +362,7 @@ class vdj_aligner(object):
         # v_end_idx = idx of start of aln of query + distance into aln - # of gaps
         v_end_idx = alnquerycoords[0] + FR3end - querygaps
         
-        return queryseq[v_end_idx:]
+        return (queryseq[v_end_idx:], v_end_idx)
     
     @staticmethod
     def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID, queryseq ):
@@ -378,7 +392,7 @@ class vdj_aligner(object):
         # v_end_idx = idx of start of aln of query + distance into aln - # of gaps + 3 nt for J-TRP
         j_start_idx = alnquerycoords[0] + FR4start - querygaps + 3
         
-        return queryseq[:j_start_idx]
+        return (queryseq[:j_start_idx],j_start_idx)
     
     @staticmethod
     def construct_alignment(seq1,seq2,scoremat,tracemat):
