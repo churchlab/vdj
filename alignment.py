@@ -65,7 +65,7 @@ class vdj_aligner(object):
     
     def align_seq(self,seq,verbose=False):
         chain = vdj.ImmuneChain(descr='sequence',seq=seq)
-        self.align_chain(chain)
+        self.align_chain(chain,verbose)
         return chain
     
     def align_chain(self,chain,verbose=False):
@@ -193,7 +193,7 @@ class vdj_aligner(object):
         if bestJseg != '':
             Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
             (query,j_start_idx) = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg, query )
-            chain.add_tags('j_start_idx|%d'%j_start_idx)
+            chain.add_tags('j_start_idx|%d'%(v_end_idx+j_start_idx))
         
         t8 = time.time()
         
