@@ -24,7 +24,7 @@ else:
 
 cmd1 = 'fasta2vdjxml.py'
 cmd2 = 'size_select.py --min %d --max %d' % (options.min,options.max)
-cmd3 = 'vdjxml2parts --packetsize %d --basename %s' % (options.packetsize,args[0])
+cmd3 = 'vdjxml2parts.py --packetsize %d --basename %s' % (options.packetsize,args[0])
 cmd = ' | '.join([cmd1,cmd2,cmd3])
 p = subprocess.Popen(cmd,shell=True,stdin=inhandle,stdout=subprocess.PIPE)
 parts = [f.strip() for f in p.stdout.readlines()]
@@ -33,7 +33,7 @@ outparts = [part+'.out' for part in parts]
 cmd4 = 'cat %s'
 cmd5 = 'barcode_id.py --barcodes %s' % (options.barcodes_fasta)
 cmd6 = 'positive_strand.py'
-cmd7 = 'align_vdj > %s'
+cmd7 = 'align_vdj.py > %s'
 cmd = ' | '.join([cmd4,cmd5,cmd6,cmd7])
 jobs = []
 for part,outpart in zip(parts,outparts):
