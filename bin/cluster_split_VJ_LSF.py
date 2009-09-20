@@ -9,8 +9,9 @@ import LSF
 
 parser = optparse.OptionParser()
 parser.add_option('-c','--cutoff',default=4.5,type='float')
+parser.add_option('-l','--linkage',type='choice',choices=['single','complete'],default='single')
 parser.add_option('-q','--queue')
-parser.add_option('-o','--LSFoutput',default=4.5,type='float')
+parser.add_option('-o','--LSFoutput')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -36,10 +37,11 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
     vj_file_clustered = vj_file + '.clustered'
     VJ_parts_clustered.append(vj_file_clustered)
     params = {'cutoff':options.cutoff,
+             'linkage':options.linkage,
                  'tag':vj_id,
               'infile':vj_file,
              'outfile':vj_file_clustered}
-    cluster_cmd = r'python cluster_cdr3 --cutoff %(cutoff)f --tag %(tag)s %(infile)s %(outfile)s' % params
+    cluster_cmd = r'python cluster_cdr3 --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
     jobID = LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
     jobs.append(jobID)
 

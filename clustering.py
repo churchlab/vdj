@@ -17,10 +17,11 @@ def pdist(X,metric):
     return dm
 
 
-def cluster_seqs(seqs,cutoff=4.5):
+def cluster_seqs(seqs,cutoff=4.5,linkage='single'):
     # check trivial cases
     if len(seqs) == 0:
-        raise Exception, "chains has nothing it"
+        return (np.array([]),{})
+        # raise Exception, "chains has nothing it"
     
     # collapse identical seqs into each other
     unique_seqs = list(set(seqs))
@@ -29,18 +30,19 @@ def cluster_seqs(seqs,cutoff=4.5):
     # check trivial case
     if len(unique_seqs) == 1:
         T = np.array([1]*len(seqs))
-        return T
+        return (T,seq_idxs)
     
     # compute the distance matrix
     Y = pdist( unique_seqs, clusteringcore.levenshtein )
     
     # compute the linkage
-    Z = sp.cluster.hierarchy.linkage(Y,method='single')
+    Z = sp.cluster.hierarchy.linkage(Y,method=linkage)
     
     # determine the clusters at level cutoff
     T = sp.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
     
     return (T,seq_idxs)
+
 
 
 
