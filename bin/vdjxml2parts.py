@@ -18,3 +18,6 @@ else:
     raise Exception, "Too many arguments."
 
 parts = vdj.split_vdjxml_into_parts(options.packetsize,inhandle,options.basename)
+
+for part in parts:
+    print part
