@@ -5,7 +5,6 @@ import optparse
 import subprocess
 
 import vdj
-import LSF
 
 parser = optparse.OptionParser()
 parser.add_option('-c','--cutoff',default=4.5,type='float')
@@ -42,10 +41,10 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
               'infile':vj_file,
              'outfile':vj_file_clustered}
     cluster_cmd = r'python cluster_cdr3 --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
-    jobID = LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
+    jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
     jobs.append(jobID)
 
-LSF.wait_for_LSF_jobs(jobs)
+vdj.LSF.wait_for_LSF_jobs(jobs)
 
 for chain in vdj.parse_VDJXML_parts(VJ_parts_clustered):
     print >>outhandle, chain
