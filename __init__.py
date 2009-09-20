@@ -398,27 +398,25 @@ def cluster_chains(cutoff,tag,inhandle,outhandle):
         print >>outhandle, chain
 
 
-
-
-
 def split_vdjxml_into_parts(packetsize,inhandle,outname):
 	parts = []
-	chain_num = 0
+	chains_processed = 0
 	file_num = 0
 	curr_outname = outname+'.'+str(file_num)
-	op = open(curr_outname,'w')
-	parts.append(curr_outname)
 	for chain in parse_VDJXML(inhandle):
-	    print >>op, chain
-	    chain_num += 1
-	    if chain_num == packetsize:
-	        op.close()
-	        chain_num = 0
-	        file_num += 1
-	        curr_outname = outname+'.'+str(file_num)
+	    if chains_processed == 0:
 	        op = open(curr_outname,'w')
 	        parts.append(curr_outname)
-	op.close()
+	    
+	    print >>op, chain
+	    chains_processed += 1
+	    
+	    if chains_processed == packetsize:
+	        op.close()
+	        chains_processed = 0
+	        file_num += 1
+	        curr_outname = outname+'.'+str(file_num)
+	
 	return parts
 
 
