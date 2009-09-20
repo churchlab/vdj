@@ -12,7 +12,7 @@ import vdj
 def submit_to_LSF(queue,LSFopfile,cmd_to_submit):
     LSF_params = {'LSFoutput':LSFopfile,
                       'queue':queue}
-    LSF_cmd = r'bsub -q%(queue)s -o%(LSFoutput)s' % LSF_params
+    LSF_cmd = 'bsub -q%(queue)s -o%(LSFoutput)s' % LSF_params
     cmd = ' '.join([LSF_cmd,cmd_to_submit])
     p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     p.wait()

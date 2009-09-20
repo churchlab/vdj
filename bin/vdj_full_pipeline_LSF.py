@@ -30,10 +30,10 @@ p = subprocess.Popen(cmd,shell=True,stdin=inhandle,stdout=subprocess.PIPE)
 parts = [f.strip() for f in p.stdout.readlines()]
 outparts = [part+'.out' for part in parts]
 
-cmd4 = 'cat %s'
+cmd4 = r'"cat %s'
 cmd5 = 'barcode_id.py --barcodes %s' % (options.barcodes_fasta)
 cmd6 = 'positive_strand.py'
-cmd7 = 'align_vdj.py > %s'
+cmd7 = r'align_vdj.py > %s"'
 cmd = ' | '.join([cmd4,cmd5,cmd6,cmd7])
 jobs = []
 for part,outpart in zip(parts,outparts):
