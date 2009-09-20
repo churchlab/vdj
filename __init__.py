@@ -439,12 +439,13 @@ def split_vdjxml_into_VJ_parts(inhandle,outname):
             parts.append(curr_outname)
             vj_ids.append(curr_vj_id)
             outhandles[curr_vj_id] = open(curr_outname,'w')
+            i += 1
     
     for chain in parse_VDJXML(inhandle):
         curr_vj_id = vj_id(chain.v,chain.j)
         print >>outhandles[curr_vj_id], chain
     
-    for handle in outhandle.itervalues():
+    for handle in outhandles.itervalues():
         handle.close()
     
     return (parts,vj_ids)
