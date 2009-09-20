@@ -367,7 +367,7 @@ def align_vdj(inhandle,outhandle):
         print >>outhandle, chain
 
 
-def cluster_chains(cutoff,tag,inhandle,outhandle):
+def cluster_chains(cutoff,tag,inhandle,outhandle,linkage='single'):
     # NOTE: this function requires there to be a well-defined junction
     #       sequence.  It raises an exception if not.  Therefore, seqs
     #       must be pre-filtered for having legit junctions
@@ -385,7 +385,7 @@ def cluster_chains(cutoff,tag,inhandle,outhandle):
         junctions.append(chain.junction)
     
     # perform the sequence clustering
-    (T,seq_idxs) = clustering.cluster_seqs(junctions,cutoff)
+    (T,seq_idxs) = clustering.cluster_seqs(junctions,cutoff,linkage)
     
     # tag chains with unique cluster IDs
     if tag == '':
