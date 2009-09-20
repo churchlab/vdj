@@ -40,7 +40,7 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
                  'tag':vj_id,
               'infile':vj_file,
              'outfile':vj_file_clustered}
-    cluster_cmd = r'python cluster_cdr3.py --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
+    cluster_cmd = r'cluster_cdr3.py --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
     jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
     jobs.append(jobID)
 
