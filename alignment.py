@@ -127,6 +127,7 @@ class vdj_aligner(object):
         t3 = time.time()
         
         # reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
+        v_end_idx = 0   # to ensure it gets defined (for processing j_start_idx below)
         if bestVseg != '':
             Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
             query,v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg, query )
