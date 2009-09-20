@@ -24,7 +24,7 @@ else:
 
 cmd1 = 'fasta2vdjxml.py'
 cmd2 = 'size_select.py --min %d --max %d' % (options.min,options.max)
-cmd3 = 'vdjxml2parts.py --packetsize %d --basename %s' % (options.packetsize,args[0])
+cmd3 = 'vdjxml2parts.py --packetsize %d --basename %s' % (options.packetsize,args[1])
 cmd = ' | '.join([cmd1,cmd2,cmd3])
 p = subprocess.Popen(cmd,shell=True,stdin=inhandle,stdout=subprocess.PIPE)
 parts = [f.strip() for f in p.stdout.readlines()]
