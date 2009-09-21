@@ -260,6 +260,16 @@ def is_full_VJ(chain):
         return False
 
 
+def get_clone_idxs(inhandle):
+    clusters = {}
+    i = 0
+    for chain in parse_VDJXML(inhandle):
+        try: clusters[get_clone(chain)] += [i]
+        except KeyError: clusters[get_clone(chain)] = [i]
+        i += 1
+    return clusters
+
+
 
 # ======================
 # = Pipeline functions =
