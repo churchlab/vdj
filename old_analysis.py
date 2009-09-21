@@ -8,47 +8,6 @@ import matplotlib.pyplot as plt
 
 import vdj
 
-
-def clone_timeseries(inhandle,time_tags):
-    time_tags_set = set(time_tags)
-    clone_counts = {}
-    for tag in time_tags:
-        clone_counts[tag]={}
-    for chain in vdj.parse_VDJXML(inhandle):
-        try: clone_counts[(chain.tags&time_tags_set).pop()][vdj.get_clone(chain)] += 1
-        except KeyError: clone_counts[(chain.tags&time_tags_set).pop()][vdj.get_clone(chain)] = 1
-    
-    
-    
-    
-    
-    
-    
-
-
-
-def reps2timeseries(reps,refclusters):
-	"""Return time series matrix from list or Repertoire objs in chron order.
-	
-	reps is list of Repertoire objects
-	refclusters is the master list of reference clusters
-	"""
-	numreps = len(reps)
-	numclusters = len(refclusters)
-	
-	countdata = np.zeros((numclusters,numreps))
-	for (i,rep) in enumerate(reps):
-		clusters = vdj.getClusters(rep)
-		countdata[:,i] = vdj.countsClusters(clusters,refclusters)
-	
-	return countdata
-
-
-
-
-
-
-
 def scatter_repertoires_ontology(reps,info='VJCDR3',gooddata=False,measurement='proportions'):
 	"""Create a grid of scatter plots showing corelations between all pairs of repertoires.
 	

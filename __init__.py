@@ -58,6 +58,12 @@ class ImmuneChain(object):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
         for tag in tagset: self.tags.remove(tag)
     
+    def has_tag(tag,chain):
+        if tag in chain.tags:
+            return True
+        else:
+            return False
+    
     def __len__(self):
         return len(self.seq)
     
@@ -192,7 +198,7 @@ def reshape_counts_VDJ_2D(counts):
     return counts.reshape(len(refseq.IGHV_list),len(refseq.IGHD_list)*len(refseq.IGHJ_list))
 
 
-def counts_clones(clone_idxs,reference_clones=None):
+def counts_clones_idxs(clone_idxs,reference_clones=None):
     """Takes a dictionary of cluster names mapped to a sequence of indices into an ImmuneChain list.
     
     Returns an np array of the same length as reference_clones with the counts of each
@@ -212,6 +218,14 @@ def counts_clones(clone_idxs,reference_clones=None):
         counts[i] = len(clone_idxs.get(name,[]))
     return counts
 
+
+def counts_clones_counts(clone_counts,reference_clones=None):
+    if reference_clones == None:
+        reference_clones = clone_counts.keys()
+    counts = np.zeros(len(reference_clones))
+    for (i,name) in enumerate(reference_clones):
+        counts[i] = clone_counts.get(name,0)
+    return counts
 
 
 # =================================
@@ -269,6 +283,13 @@ def get_clone_idxs(inhandle):
         i += 1
     return clusters
 
+
+def get_clone_counts(inhandle):
+    clusters = {}
+    for chain in parse_VDJXML(inhandle):
+        try: clusters[get_clone(chain)] += 1
+        except KeyError: clusters[get_clone(chain)] = 1
+    return clusters
 
 
 # ======================
