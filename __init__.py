@@ -10,6 +10,7 @@ import alignment
 import clustering
 import LSF
 import params
+import analysis
 
 
 
@@ -48,7 +49,9 @@ class ImmuneChain(object):
         
         This includes all tags, v, d, j, ighc, and descr
         """
-        return (self.tags | set([self.v,self.d,self.j,self.ighc,self.descr])).discard('')
+        tagset = self.tags | set([self.v,self.d,self.j,self.ighc,self.descr])
+        tagset.discard('')
+        return tagset
     
     def add_tags(self,tagset):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
