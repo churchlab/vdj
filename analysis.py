@@ -9,39 +9,38 @@ import matplotlib.pyplot as plt
 import vdj
 
 
-def clone_timeseries(inhandle,time_tags):
+def clone_timeseries(inhandle,time_tags,reference_clones=None):
+    # get count data
     time_tags_set = set(time_tags)
     clone_counts = {}
     for tag in time_tags:
         clone_counts[tag]={}
     for chain in vdj.parse_VDJXML(inhandle):
-        try: clone_counts[(chain.tags&time_tags_set).pop()][vdj.get_clone(chain)] += 1
-        except KeyError: clone_counts[(chain.tags&time_tags_set).pop()][vdj.get_clone(chain)] = 1
+        try:
+            curr_time_tag = (chain.tags&time_tags_set).pop()
+        except KeyError:
+            continue    
+        
+        try:
+            clone_counts[curr_time_tag][vdj.get_clone(chain)] += 1
+        except KeyError:
+            clone_counts[curr_time_tag][vdj.get_clone(chain)] = 1
     
+    # set up reference clones
+    if reference_clones == None:
+        reference_clones = set()
+        for counts in clone_counts.itervalues():
+            reference_clones.update(counts.keys())
+        reference_clones = list(reference_clones)
     
+    # build timeseries matrix
+    num_clones = len(reference_clones)
+    num_times = len(time_tags)
+    countdata = np.zeros((num_clones,num_times))
+    for (i,tag) in enumerate(time_tags):
+        countdata[:,i] = vdj.counts_clones_counts(clone_counts[tag],reference_clones)
     
-    
-    
-    
-    
-
-
-
-def reps2timeseries(reps,refclusters):
-	"""Return time series matrix from list or Repertoire objs in chron order.
-	
-	reps is list of Repertoire objects
-	refclusters is the master list of reference clusters
-	"""
-	numreps = len(reps)
-	numclusters = len(refclusters)
-	
-	countdata = np.zeros((numclusters,numreps))
-	for (i,rep) in enumerate(reps):
-		clusters = vdj.getClusters(rep)
-		countdata[:,i] = vdj.countsClusters(clusters,refclusters)
-	
-	return countdata
+    return countdata
 
 
 
