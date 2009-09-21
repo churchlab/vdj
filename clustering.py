@@ -42,17 +42,3 @@ def cluster_seqs(seqs,cutoff=4.5,linkage='single'):
     T = sp.cluster.hierarchy.fcluster(Z,cutoff,criterion='distance')
     
     return (T,seq_idxs)
-
-
-
-
-
-def getClusters(rep):
-    clusters = {}
-    for (tag,idxs) in rep.tags.iteritems():
-        if tag.startswith('cluster'):
-            # error checking: make sure every new cluster is unique
-            if clusters.has_key(tag):
-                raise Exception, "repertoire object's tags has multiple copies of the same tag"
-            clusters[tag]=idxs
-    return clusters
