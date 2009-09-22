@@ -14,3 +14,8 @@ def load_fasta(filename):
     seqs = list(Bio.SeqIO.parse(ip,'fasta'))
     ip.close()
     return seqs
+
+# for generating 'safe' filenames from identifiers
+cleanup_table = string.maketrans('/*|','___')
+def cleanup_id(identifier):
+    return identifier.translate(cleanup_table)
