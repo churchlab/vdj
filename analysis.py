@@ -1,13 +1,13 @@
 import numpy as np
+import scipy as sp
+import scipy.stats
+import scipy.special
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import vdj
 
 # import numpy.ma as ma
-# import scipy as sp
-# import scipy.stats
-# import scipy.special
 
 
 def clone_timeseries(inhandle,time_tags,reference_clones=None):
@@ -92,7 +92,11 @@ def spectratype_curves(inhandle):
     spectras = {}
     for v_seg in vdj.refseq.IGHV_seqs.keys():
         for j_seg in vdj.refseq.IGHJ_seqs.keys():
-            spectras[vdj.vj_id(v_seg,j_seg)] = cdr3s2spectratype(cdr3s[vdj.vj_id(v_seg,j_seg)])
+            if len(cdr3s[vdj.vj_id(v_seg,j_seg)]) == 0:
+                # empty VJ combo:
+                spectras[vdj.vj_id(v_seg,j_seg)] = (np.array([0,150]),np.array([0,0]))
+            else:
+                spectras[vdj.vj_id(v_seg,j_seg)] = cdr3s2spectratype(cdr3s[vdj.vj_id(v_seg,j_seg)])
     
     return spectras
 
