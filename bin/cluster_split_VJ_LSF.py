@@ -3,6 +3,8 @@
 import sys
 import optparse
 import subprocess
+import os
+import tempfile
 
 import vdj
 
@@ -28,12 +30,15 @@ elif len(args) == 0:
 
 print >>sys.stderr, "NOTE: chains must be filtered for valid VJ aln and junctions BEFORE clustering."
 
-(VJ_parts,VJ_IDs) = vdj.split_vdjxml_into_VJ_parts(inhandle,outname)
+# temporary directory to dump intermediate files
+tempdir = tempfile.mkdtemp(prefix=outname+'.intermediate.',dir='.')
+
+(VJ_parts,VJ_IDs) = vdj.split_vdjxml_into_VJ_parts(inhandle,os.path.join(tempdir,outname))
 
 VJ_parts_clustered = []
 jobs = []
 for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
-    vj_file_clustered = vj_file + '.clustered'
+    vj_file_clustered = os.path.join(tempdir,vj_file+'.clustered')
     VJ_parts_clustered.append(vj_file_clustered)
     params = {'cutoff':options.cutoff,
              'linkage':options.linkage,
@@ -41,7 +46,10 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
               'infile':vj_file,
              'outfile':vj_file_clustered}
     cluster_cmd = r'cluster_cdr3.py --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
-    jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
+    if os.stat(inpart).st_size < 8e6:
+        jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
+    else:
+        jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd,mem_usage=6000)
     jobs.append(jobID)
 
 vdj.LSF.wait_for_LSF_jobs(jobs)
