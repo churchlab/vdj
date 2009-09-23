@@ -46,10 +46,10 @@ for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
               'infile':vj_file,
              'outfile':vj_file_clustered}
     cluster_cmd = r'cluster_cdr3.py --cutoff %(cutoff)f --tag %(tag)s --linkage %(linkage)s %(infile)s %(outfile)s' % params
-    if os.stat(inpart).st_size < 8e6:
+    if os.stat(vj_file).st_size < 8e6:
         jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd)
     else:
-        jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd,mem_usage=6000)
+        jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cluster_cmd,mem_usage=4096)
     jobs.append(jobID)
 
 vdj.LSF.wait_for_LSF_jobs(jobs)
