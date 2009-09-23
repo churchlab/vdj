@@ -9,10 +9,12 @@ import vdj
 # = LSF Dispatching =
 # ===================
 
-def submit_to_LSF(queue,LSFopfile,cmd_to_submit):
+def submit_to_LSF(queue,LSFopfile,cmd_to_submit,mem_usage=None):
     LSF_params = {'LSFoutput':LSFopfile,
                       'queue':queue}
     LSF_cmd = 'bsub -q%(queue)s -o%(LSFoutput)s' % LSF_params
+    if mem_usage != None:
+        LSF_cmd += r' -R "rusage[mem=%d]"' % mem_usage
     cmd = ' '.join([LSF_cmd,cmd_to_submit])
     p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     p.wait()
