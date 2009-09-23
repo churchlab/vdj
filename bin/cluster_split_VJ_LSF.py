@@ -38,7 +38,7 @@ tempdir = tempfile.mkdtemp(prefix=outname+'.intermediate.',dir='.')
 VJ_parts_clustered = []
 jobs = []
 for (vj_file,vj_id) in zip(VJ_parts,VJ_IDs):
-    vj_file_clustered = os.path.join(tempdir,vj_file+'.clustered')
+    vj_file_clustered = vj_file+'.clustered'    # NOTE: vj_file already has directory prefix
     VJ_parts_clustered.append(vj_file_clustered)
     params = {'cutoff':options.cutoff,
              'linkage':options.linkage,
