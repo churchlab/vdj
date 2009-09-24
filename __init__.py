@@ -151,6 +151,66 @@ def parse_VDJXML(inputfile):
     if isinstance(inputfile,types.StringTypes):
         ip.close()
 
+
+def filter_parse_VDJXML(inputfile,predicate):
+    """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
+    
+    predicate is a function that takes a chain and return True or False.  Things
+    that return false are skipped.
+    
+    NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
+    that takes input line by line.
+    
+    THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY ONE LINE
+    
+    """
+    
+    if isinstance(inputfile,types.StringTypes):
+        ip = open(inputfile,'r')
+    elif isinstance(inputfile,file):
+        ip = inputfile
+    
+    numChains = 0
+    
+    possible_elements = [
+                'descr',
+                'seq',
+                'v',
+                'd',
+                'j',
+                'ighc',
+                'cdr3',
+                'junction',
+                'func',
+                'tag'
+                ]
+    
+    for line in ip:
+        line = line.strip()
+        endelementpos = line.find('>') + 1
+        xmlelement = line[0:endelementpos]
+        element = xmlelement[1:-1]
+        
+        if xmlelement == '<ImmuneChain>':
+            chain = ImmuneChain()
+        elif xmlelement == '</ImmuneChain>':
+            numChains += 1
+            if predicate(chain) == True:
+                yield chain
+            else:
+                pass
+        elif element in possible_elements:
+            if element == 'cdr3':
+                chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
+            elif element == 'tag':
+                chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
+            else:
+                chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
+    
+    if isinstance(inputfile,types.StringTypes):
+        ip.close()
+
+
 def write_VDJXML(data, outputfile):
     """Write list of ImmuneChains to a file in VDJXML format"""
     
