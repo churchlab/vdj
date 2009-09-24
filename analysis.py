@@ -101,6 +101,131 @@ def spectratype_curves(inhandle):
     return spectras
 
 
+
+# ========================
+# = Diversity estimation =
+# ========================
+
+def coverage_good(counts):
+    """J. Amer Stat Assoc 88: 364 (p. 366)"""
+    n = np.sum(counts)
+    c1 = np.sum(np.int_(counts)==1)
+    mu_good = 1 - (np.float_(c1) / n)
+    return mu_good
+
+
+def coeff_var_gamma_squared(counts):
+    """J Amer Stat Assoc 87: 210"""
+    mu = coverage_good(counts)
+    c = len(counts)
+    n = np.sum(counts)
+    N1 = np.float_(c)/mu
+    f = lambda i: np.sum(np.int_(counts)==i)
+    terms = [i*(i-1)*f(i) for i in range(1,np.max(counts)+1)]
+    gamma_squared = N1*np.sum(terms) / (n*(n-1)) - 1
+    if gamma_squared < 0:
+        return 0
+    else:
+        return gamma_squared
+
+
+def estimator_chao1(counts):
+    """J. Amer Stat Assoc 88: 364 (p. 368)"""
+    c = len(counts)
+    c1 = np.sum(np.int_(counts)==1)
+    c2 = np.sum(np.int_(counts)==2)
+    chao1_ = c + np.float_(c1**2)/(2*c2)
+    return chao1_
+
+
+def estimator_cov_equal(counts):
+    """J. Amer Stat Assoc 88: 364 (p. 366)"""
+    c = len(counts)
+    cov_equal_ = np.float_(c) / coverage_good(counts)
+    return cov_equal_
+
+
+def estimator_chao2(counts):
+    """J. Amer Stat Assoc 88: 364 (p. 368)
+    J Amer Stat Assoc 87: 210"""
+    c = len(counts)
+    mu = coverage_good(counts)
+    n = np.sum(counts)
+    gam_squared = coeff_var_gamma_squared(counts)
+    chao2 = (np.float_(c)/mu) + (np.float_(n)*(1-mu) * gam_squared / mu)
+    return chao2
+
+
+
+# =========================
+# = Statistical utilities =
+# =========================
+
+def counts2sample(counts):
+    """Computes a consistent sample from a vector of counts.
+    
+    Takes a vector of counts and returns a vector of indices x
+       such that len(x) = sum(c) and each elt of x is the index of
+       a corresponding elt in c
+    """
+    x = np.ones(np.sum(counts),dtype=np.int_)
+    
+    start_idx = 0
+    end_idx = 0
+    for i in xrange(len(counts)):
+        start_idx = end_idx
+        end_idx = end_idx + counts[i]
+        x[start_idx:end_idx] = x[start_idx:end_idx] * i 
+    return x
+
+
+def sample2counts(sample, categories=0):
+    """Return count vector from list of samples.
+    
+    Take vector of samples and return a vector of counts.  The elts
+       refer to indices in something that would ultimately map to the
+       originating category (like from a multinomial).  Therefore, if there
+       are, say, 8 categories, then valid values in sample should be 0-7.
+       If categories is not given, then i compute it from the highest value
+       present in sample (+1).
+    """
+    counts = np.bincount(sample)
+    if (categories > 0) and (categories > len(counts)):
+        counts = np.append( counts, np.zeros(categories-len(counts)) )
+    return counts
+
+
+def scoreatpercentile(values,rank):
+    return sp.stats.scoreatpercentile(values,rank)
+
+
+def percentileofscore(values,score):
+    values.sort()
+    return values.searchsorted(score) / np.float_(len(values))
+
+
+def bootstrap(x, nboot, theta, *args):
+    '''return n bootstrap replications of theta from x'''
+    N = len(x)
+    th_star = numpy.zeros(nboot)
+    
+    for i in xrange(nboot):
+        th_star[i] = theta( x[ randint(0,N,N) ], *args )    # bootstrap repl from x
+    
+    return th_star
+
+
+
+
+
+
+
+
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
+
 def rep2spectratype(rep):
     """Compute spectratype curves from Repertoire object."""
     
