@@ -353,7 +353,8 @@ class vdj_aligner(object):
         #FR3end = refseq.IGHV_offset[refID]     # first candidate position  
         refgaps = alnref[:FR3end].count('-')    # count gaps up to putative CYS pos
         seengaps = 0
-        while refgaps != 0:     # iteratively find all gaps up to the CYS
+        #while refgaps != 0:     # iteratively find all gaps up to the CYS
+        while refgaps > 0:     # iteratively find all gaps up to the CYS
             seengaps += refgaps
             FR3end   += refgaps     # adjust if for gaps in ref alignment
             refgaps   = alnref[:FR3end].count('-') - seengaps   # any add'l gaps?
@@ -383,14 +384,15 @@ class vdj_aligner(object):
         FR4start = refseq.IGHJ_offset[refID] - alnrefcoords[0]  # first candidate position of J-TRP start   
         refgaps = alnref[:FR4start].count('-')  # count gaps up to putative TRP pos
         seengaps = 0
-        while refgaps != 0:     # iteratively find all gaps up to the TRP
+        #while refgaps != 0:     # iteratively find all gaps up to the TRP
+        while refgaps > 0:     # iteratively find all gaps up to the TRP
             seengaps += refgaps
             FR4start += refgaps     # adjust for gaps in ref alignment
             refgaps   = alnref[:FR4start].count('-') - seengaps # any add'l gaps?
         
         querygaps = alnquery[:FR4start].count('-')
         
-        # v_end_idx = idx of start of aln of query + distance into aln - # of gaps + 3 nt for J-TRP
+        # j_start_idx = idx of start of aln of query + distance into aln - # of gaps + 3 nt for J-TRP
         j_start_idx = alnquerycoords[0] + FR4start - querygaps + 3
         
         return (queryseq[:j_start_idx],j_start_idx)
