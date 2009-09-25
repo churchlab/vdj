@@ -147,58 +147,6 @@ def estimator_ace(counts,rare_cutoff=10):
     return Sace
 
 
-# def coverage_good(counts):
-#     """J. Amer Stat Assoc 88: 364 (p. 366)"""
-#     n = np.sum(counts)
-#     c1 = np.sum(np.int_(counts)==1)
-#     mu_good = 1 - (np.float_(c1) / n)
-#     return mu_good
-# 
-# 
-# def coeff_var_gamma_squared(counts):
-#     """J Amer Stat Assoc 87: 210"""
-#     mu = coverage_good(counts)
-#     c = len(counts)
-#     n = np.sum(counts)
-#     N1 = np.float_(c)/mu
-#     f = lambda i: np.sum(np.int_(counts)==i)
-#     terms = [i*(i-1)*f(i) for i in range(1,np.max(counts)+1)]
-#     gamma_squared = N1*np.sum(terms) / (n*(n-1)) - 1
-#     if gamma_squared < 0:
-#         return 0
-#     else:
-#         return gamma_squared
-# 
-# 
-# def estimator_chao1(counts):
-#     """J. Amer Stat Assoc 88: 364 (p. 368)"""
-#     c = len(counts)
-#     c1 = np.sum(np.int_(counts)==1)
-#     c2 = np.sum(np.int_(counts)==2)
-#     if c2 == 0:
-#         c2 += 1
-#     chao1_ = c + np.float_(c1**2)/(2*c2)
-#     return chao1_
-# 
-# 
-# def estimator_cov_equal(counts):
-#     """J. Amer Stat Assoc 88: 364 (p. 366)"""
-#     c = len(counts)
-#     cov_equal_ = np.float_(c) / coverage_good(counts)
-#     return cov_equal_
-# 
-# 
-# def estimator_chao2(counts):
-#     """J. Amer Stat Assoc 88: 364 (p. 368)
-#     J Amer Stat Assoc 87: 210"""
-#     c = len(counts)
-#     mu = coverage_good(counts)
-#     n = np.sum(counts)
-#     gam_squared = coeff_var_gamma_squared(counts)
-#     chao2 = (np.float_(c)/mu) + (np.float_(n)*(1-mu) * gam_squared / mu)
-#     return chao2
-
-
 
 # =========================
 # = Statistical utilities =
