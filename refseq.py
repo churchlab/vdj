@@ -22,6 +22,7 @@ IGHJ_J_TRP_start_coord -- dict where the keys are refseq IDs and the values are 
 """
 
 import os
+import cPickle
 
 import vdj
 import params
@@ -281,8 +282,28 @@ IGHC_idx = dict([(g,i) for i,g in enumerate(IGHC_list)])
 ALL_IDs = list(set(IGHV_list + IGHD_list + IGHJ_list + IGHC_list))
 ALL_IDs.sort()
 
-IGHV_FR3_IMGT_end_coord = get_FR3_IMGT_end(IGHV_acc=IGHV_acc, refdatadir=params.refdatadir, imgtdat=params.imgtdat, verbose=False)
-IGHJ_J_TRP_start_coord  = get_J_TRP_start(IGHJ_acc=IGHJ_acc, refdatadir=params.refdatadir, imgtdat=params.imgtdat, verbose=False)
+imgtrefseqFR3endcoords = 'imgtrefseqFR3endcoords.dat'
+imgtrefseqJTRPstartcoords = 'imgtrefseqJTRPstartcoords.dat'
+
+if os.path.exists(os.path.join(params.refdatadir,params.imgtrefseqFR3endcoords)):
+    pickle_in = open(os.path.join(params.refdatadir,params.imgtrefseqFR3endcoords),'r')
+    IGHV_FR3_IMGT_end_coord = cPickle.load(pickle_in)
+    pickle_in.close()
+else:
+    IGHV_FR3_IMGT_end_coord = get_FR3_IMGT_end(IGHV_acc=IGHV_acc, refdatadir=params.refdatadir, imgtdat=params.imgtdat, verbose=False)
+    pickle_out = open(os.path.join(params.refdatadir,params.imgtrefseqFR3endcoords),'w')
+    cPickle.dump(IGHV_FR3_IMGT_end_coord,pickle_out)
+    pickle_out.close()
+
+if os.path.exists(os.path.join(params.refdatadir,params.imgtrefseqJTRPstartcoords)):
+    pickle_in = open(os.path.join(params.refdatadir,params.imgtrefseqJTRPstartcoords),'r')
+    IGHJ_J_TRP_start_coord = cPickle.load(pickle_in)
+    pickle_in.close()
+else:
+    IGHJ_J_TRP_start_coord  = get_J_TRP_start(IGHJ_acc=IGHJ_acc, refdatadir=params.refdatadir, imgtdat=params.imgtdat, verbose=False)
+    pickle_out = open(os.path.join(params.refdatadir,params.imgtrefseqJTRPstartcoords),'w')
+    cPickle.dump(IGHJ_J_TRP_start_coord,pickle_out)
+    pickle_out.close()
 
 IGHV_offset = {}
 IGHJ_offset = {}
