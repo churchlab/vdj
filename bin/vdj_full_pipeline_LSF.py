@@ -33,8 +33,9 @@ outparts = [part+'.out' for part in parts]
 cmd4 = r'"cat %s'
 cmd5 = 'barcode_id.py --barcodes %s' % (options.barcodes_fasta)
 cmd6 = 'positive_strand.py'
-cmd7 = r'align_vdj.py > %s"'
-cmd = ' | '.join([cmd4,cmd5,cmd6,cmd7])
+cmd7 = 'isotype_id.py'
+cmd8 = r'align_vdj.py > %s"'
+cmd = ' | '.join([cmd4,cmd5,cmd6,cmd7,cmd8])
 jobs = []
 for part,outpart in zip(parts,outparts):
     jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cmd % (part,outpart))
