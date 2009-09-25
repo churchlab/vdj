@@ -3,6 +3,8 @@
 import subprocess
 import sys
 import optparse
+import tempfile
+import os
 
 import vdj
 
@@ -21,6 +23,10 @@ if len(args) == 2:
     outhandle = open(args[1],'w')
 else:
     raise Exception, "Must have an input file and output file."
+
+# temporary directory to dump intermediate files
+tempdir = tempfile.mkdtemp(prefix=args[1]+'.intermediate.',dir='.')
+os.chdir(tempdir)
 
 cmd1 = 'fasta2vdjxml.py'
 cmd2 = 'size_select.py --min %d --max %d' % (options.min,options.max)
