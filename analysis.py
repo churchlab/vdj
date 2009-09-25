@@ -106,54 +106,97 @@ def spectratype_curves(inhandle):
 # = Diversity estimation =
 # ========================
 
-def coverage_good(counts):
-    """J. Amer Stat Assoc 88: 364 (p. 366)"""
-    n = np.sum(counts)
-    c1 = np.sum(np.int_(counts)==1)
-    mu_good = 1 - (np.float_(c1) / n)
-    return mu_good
-
-
-def coeff_var_gamma_squared(counts):
-    """J Amer Stat Assoc 87: 210"""
-    mu = coverage_good(counts)
-    c = len(counts)
-    n = np.sum(counts)
-    N1 = np.float_(c)/mu
-    f = lambda i: np.sum(np.int_(counts)==i)
-    terms = [i*(i-1)*f(i) for i in range(1,np.max(counts)+1)]
-    gamma_squared = N1*np.sum(terms) / (n*(n-1)) - 1
-    if gamma_squared < 0:
-        return 0
-    else:
-        return gamma_squared
-
 
 def estimator_chao1(counts):
-    """J. Amer Stat Assoc 88: 364 (p. 368)"""
-    c = len(counts)
-    c1 = np.sum(np.int_(counts)==1)
-    c2 = np.sum(np.int_(counts)==2)
-    chao1_ = c + np.float_(c1**2)/(2*c2)
-    return chao1_
+    """Bias corrected.  See EstimateS doc (Colwell)"""
+    Sobs = len(counts)
+    F1 = np.float_(np.sum(np.int_(counts)==1))
+    F2 = np.float_(np.sum(np.int_(counts)==2))
+    chao1 = Sobs + F1*(F1-1)/(2*(F2+1))
+    return chao1
 
 
-def estimator_cov_equal(counts):
-    """J. Amer Stat Assoc 88: 364 (p. 366)"""
-    c = len(counts)
-    cov_equal_ = np.float_(c) / coverage_good(counts)
-    return cov_equal_
+def estimator_chao1_variance(counts):
+    F1 = np.float_(np.sum(np.int_(counts)==1))
+    F2 = np.float_(np.sum(np.int_(counts)==2))
+    if F1 > 0 and F2 > 0:
+        chao1_var = (F1*(F1-1)/(2*(F2+1))) + (F1*(2*F1-1)*(2*F1-1)/(4*(F2+1)*(F2+1))) + (F1*F1*F2*(F1-1)*(F1-1)/(4*(F2+1)*(F2+1)*(F2+1)*(F2+1)))
+    elif F1 > 0 and F2 = 0:
+        Schao1 = estimator_chao1(counts)
+        chao1_var = (F1*(F1-1)/2) + (F1*(2*F1-1)*(2*F1-1)/4) - (F1*F1*F1*F1/(4*Schao1))
+    elif F1 = 0:
+        N = np.float_(np.sum(counts))
+        Sobs = np.float_(len(counts))
+        chao1_var = Sobs*np.exp(-1*N*Sobs) * (1-np.exp(-1*N*Sobs))
+    return chao1_var
 
 
-def estimator_chao2(counts):
-    """J. Amer Stat Assoc 88: 364 (p. 368)
-    J Amer Stat Assoc 87: 210"""
-    c = len(counts)
-    mu = coverage_good(counts)
-    n = np.sum(counts)
-    gam_squared = coeff_var_gamma_squared(counts)
-    chao2 = (np.float_(c)/mu) + (np.float_(n)*(1-mu) * gam_squared / mu)
-    return chao2
+def estimator_ace(counts,rare_cutoff=10):
+    Sobs = np.float_(len(counts))
+    Srare = np.float_(np.sum(np.int_(counts)<=rare_cutoff))
+    Sabund = Sobs - Srare
+    F1 = np.float_(np.sum(np.int_(counts)==1))
+    F = lambda i: np.sum(np.int_(counts)==i)
+    Nrare = np.float_(np.sum([i*F(i) for i in range(1,rare_cutoff+1)]))
+    #Nrare = np.float_(np.sum(counts[np.int_(counts)<=rare_cutoff]))
+    Cace = 1 - (F1/Nrare)
+    gamma_squared = Srare*np.sum([i*(i-1)*F(i) for i in range(1,rare_cutoff+1)])/(Cace*Nrare*(Nrare-1))
+    if gamma_squared < 0:
+        gamma_squared = 0
+    Sace = Sabund + (Srare/Cace) + (F1/Cace)*gamma_squared
+    return Sace
+
+
+# def coverage_good(counts):
+#     """J. Amer Stat Assoc 88: 364 (p. 366)"""
+#     n = np.sum(counts)
+#     c1 = np.sum(np.int_(counts)==1)
+#     mu_good = 1 - (np.float_(c1) / n)
+#     return mu_good
+# 
+# 
+# def coeff_var_gamma_squared(counts):
+#     """J Amer Stat Assoc 87: 210"""
+#     mu = coverage_good(counts)
+#     c = len(counts)
+#     n = np.sum(counts)
+#     N1 = np.float_(c)/mu
+#     f = lambda i: np.sum(np.int_(counts)==i)
+#     terms = [i*(i-1)*f(i) for i in range(1,np.max(counts)+1)]
+#     gamma_squared = N1*np.sum(terms) / (n*(n-1)) - 1
+#     if gamma_squared < 0:
+#         return 0
+#     else:
+#         return gamma_squared
+# 
+# 
+# def estimator_chao1(counts):
+#     """J. Amer Stat Assoc 88: 364 (p. 368)"""
+#     c = len(counts)
+#     c1 = np.sum(np.int_(counts)==1)
+#     c2 = np.sum(np.int_(counts)==2)
+#     if c2 == 0:
+#         c2 += 1
+#     chao1_ = c + np.float_(c1**2)/(2*c2)
+#     return chao1_
+# 
+# 
+# def estimator_cov_equal(counts):
+#     """J. Amer Stat Assoc 88: 364 (p. 366)"""
+#     c = len(counts)
+#     cov_equal_ = np.float_(c) / coverage_good(counts)
+#     return cov_equal_
+# 
+# 
+# def estimator_chao2(counts):
+#     """J. Amer Stat Assoc 88: 364 (p. 368)
+#     J Amer Stat Assoc 87: 210"""
+#     c = len(counts)
+#     mu = coverage_good(counts)
+#     n = np.sum(counts)
+#     gam_squared = coeff_var_gamma_squared(counts)
+#     chao2 = (np.float_(c)/mu) + (np.float_(n)*(1-mu) * gam_squared / mu)
+#     return chao2
 
 
 
@@ -207,18 +250,58 @@ def percentileofscore(values,score):
 def bootstrap(x, nboot, theta, *args):
     '''return n bootstrap replications of theta from x'''
     N = len(x)
-    th_star = numpy.zeros(nboot)
+    th_star = np.zeros(nboot)
     
     for i in xrange(nboot):
-        th_star[i] = theta( x[ randint(0,N,N) ], *args )    # bootstrap repl from x
+        th_star[i] = theta( x[ np.random.randint(0,N,N) ], *args )    # bootstrap repl from x
     
     return th_star
 
 
+def subsample(x, num_samples, sample_size, theta, *args):
+    """return num_samples evaluations of the statistic theta
+    on subsamples of size sample_size"""
+    N = len(x)
+    th_star = np.zeros(num_samples)
+    
+    for i in xrange(num_samples):
+        th_star[i] = theta( x[ np.random.randint(0,N,sample_size) ], *args )    # subsample from from x
+    
+    return th_star
 
 
+def randint_without_replacement(low,high=None,size=None):
+    if high == None:
+        high = low
+        low = 0
+    if size == None:
+        size = 1
+    urn = range(low,high)
+    N = len(urn)
+    flip = False
+    if size > N/2:
+        flip = True
+        size = N - size
+    sample = []
+    for i in xrange(size):
+        draw = np.random.randint(0,N-i)
+        sample.append(urn.pop(draw))
+    if not flip:
+        return np.asarray(sample)
+    else:
+        return np.asarray(urn)
 
 
+def subsample_without_replacement(x, num_samples, sample_size, theta, *args):
+    """return num_samples evaluations of the statistic theta
+    on subsamples of size sample_size"""
+    N = len(x)
+    th_star = np.zeros(num_samples)
+    
+    for i in xrange(num_samples):
+        th_star[i] = theta( x[ randint_without_replacement(0,N,sample_size) ], *args )    # subsample from from x
+    
+    return th_star
 
 
 
