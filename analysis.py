@@ -121,10 +121,10 @@ def estimator_chao1_variance(counts):
     F2 = np.float_(np.sum(np.int_(counts)==2))
     if F1 > 0 and F2 > 0:
         chao1_var = (F1*(F1-1)/(2*(F2+1))) + (F1*(2*F1-1)*(2*F1-1)/(4*(F2+1)*(F2+1))) + (F1*F1*F2*(F1-1)*(F1-1)/(4*(F2+1)*(F2+1)*(F2+1)*(F2+1)))
-    elif F1 > 0 and F2 = 0:
+    elif F1 > 0 and F2 == 0:
         Schao1 = estimator_chao1(counts)
         chao1_var = (F1*(F1-1)/2) + (F1*(2*F1-1)*(2*F1-1)/4) - (F1*F1*F1*F1/(4*Schao1))
-    elif F1 = 0:
+    elif F1 == 0:
         N = np.float_(np.sum(counts))
         Sobs = np.float_(len(counts))
         chao1_var = Sobs*np.exp(-1*N*Sobs) * (1-np.exp(-1*N*Sobs))
@@ -250,6 +250,13 @@ def subsample_without_replacement(x, num_samples, sample_size, theta, *args):
         th_star[i] = theta( x[ randint_without_replacement(0,N,sample_size) ], *args )    # subsample from from x
     
     return th_star
+
+
+
+
+
+
+
 
 
 
