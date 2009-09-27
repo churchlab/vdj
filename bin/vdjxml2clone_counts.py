@@ -3,6 +3,8 @@
 import sys
 import optparse
 
+import numpy as np
+
 import vdj
 
 parser = optparse.OptionParser()
@@ -22,4 +24,4 @@ counts_dict = vdj.get_clone_counts(inhandle)
 counts = vdj.count_dict_clone_counts(counts_dict)
 
 for count in counts:
-    print >>outhandle, count
+    print >>outhandle, np.int_(count)
