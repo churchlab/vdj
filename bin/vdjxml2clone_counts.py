@@ -19,7 +19,7 @@ elif len(args) == 0:
     outhandle = sys.stdout
 
 counts_dict = vdj.get_clone_counts(inhandle)
-counts = count_dict_clone_counts(counts_dict)
+counts = vdj.count_dict_clone_counts(counts_dict)
 
 for count in counts:
     print >>outhandle, count
