@@ -139,6 +139,8 @@ def estimator_ace(counts,rare_cutoff=10):
     F = lambda i: np.sum(np.int_(counts)==i)
     Nrare = np.float_(np.sum([i*F(i) for i in range(1,rare_cutoff+1)]))
     #Nrare = np.float_(np.sum(counts[np.int_(counts)<=rare_cutoff]))
+    if Nrare == F1: # in accordance with EstimateS
+        return estimator_chao1(counts)
     Cace = 1 - (F1/Nrare)
     gamma_squared = Srare*np.sum([i*(i-1)*F(i) for i in range(1,rare_cutoff+1)])/(Cace*Nrare*(Nrare-1))
     if gamma_squared < 0:
