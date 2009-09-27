@@ -170,20 +170,34 @@ def counts2sample(counts):
     return x
 
 
-def sample2counts(sample, categories=0):
+def sample2counts(sample):
     """Return count vector from list of samples.
     
-    Take vector of samples and return a vector of counts.  The elts
-       refer to indices in something that would ultimately map to the
-       originating category (like from a multinomial).  Therefore, if there
-       are, say, 8 categories, then valid values in sample should be 0-7.
-       If categories is not given, then i compute it from the highest value
-       present in sample (+1).
+    The ordering etc is ignored; only the uniqueness
+    of the objects is considered.
     """
-    counts = np.bincount(sample)
-    if (categories > 0) and (categories > len(counts)):
-        counts = np.append( counts, np.zeros(categories-len(counts)) )
-    return counts
+    num_categories = len(set(sample))
+    count_dict = {}
+    for elt in sample:
+        try: count_dict[elt] += 1
+        except KeyError: count_dict[elt] = 1
+    return count_dict.values()
+
+
+# def sample2counts(sample, categories=0):
+#     """Return count vector from list of samples.
+#     
+#     Take vector of samples and return a vector of counts.  The elts
+#        refer to indices in something that would ultimately map to the
+#        originating category (like from a multinomial).  Therefore, if there
+#        are, say, 8 categories, then valid values in sample should be 0-7.
+#        If categories is not given, then i compute it from the highest value
+#        present in sample (+1).
+#     """
+#     counts = np.bincount(sample)
+#     if (categories > 0) and (categories > len(counts)):
+#         counts = np.append( counts, np.zeros(categories-len(counts)) )
+#     return counts
 
 
 def scoreatpercentile(values,rank):
