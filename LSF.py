@@ -17,7 +17,7 @@ def submit_to_LSF(queue,LSFopfile,cmd_to_submit,mem_usage=None):
         LSF_cmd += r' -R "rusage[mem=%d]"' % mem_usage
     cmd = ' '.join([LSF_cmd,cmd_to_submit])
     p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
-    p.wait()
+    #p.wait()
     return p.stdout.read().split('<')[1].split('>')[0]
 
 
@@ -26,7 +26,7 @@ def wait_for_LSF_jobs(PIDs,interval=30):
     while not finished:
         time.sleep(interval)
         p = subprocess.Popen('bjobs',shell=True,stdout=subprocess.PIPE)
-        p.wait()
+        #p.wait()
         status = p.stdout.read().split('\n')
         if status[0].split()[0] != 'JOBID':
             finished = False

@@ -147,6 +147,9 @@ def estimator_ace(counts,rare_cutoff=10):
     return Sace
 
 
+def accumulation_curve(sample,sampling_levels):
+    pass
+
 
 # =========================
 # = Statistical utilities =
