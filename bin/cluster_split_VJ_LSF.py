@@ -18,20 +18,23 @@ parser.add_option('-o','--LSFoutput')
 if len(args) == 2:
     inhandle = open(args[0],'r')
     outname = args[0]
+    tempdirname = args[1]
     outhandle = open(args[1],'w')
 elif len(args) == 1:
     inhandle = open(args[0],'r')
     outname = args[0]
+    tempdirname = outname
     outhandle = sys.stdout
 elif len(args) == 0:
     inhandle = sys.stdin
     outname = 'VJ_parts.vdjxml'
+    tempdirname = outname
     outhandle = sys.stdout
 
 print >>sys.stderr, "NOTE: chains must be filtered for valid VJ aln and junctions BEFORE clustering."
 
 # temporary directory to dump intermediate files
-tempdir = tempfile.mkdtemp(prefix=outname+'.intermediate.',dir='.')
+tempdir = tempfile.mkdtemp(prefix=tempdirname+'.intermediate.',dir='.')
 
 (VJ_parts,VJ_IDs) = vdj.split_vdjxml_into_VJ_parts(inhandle,os.path.join(tempdir,outname))
 
