@@ -2,6 +2,7 @@
 
 import sys
 import optparse
+import os
 
 import vdj
 
@@ -9,18 +10,27 @@ parser = optparse.OptionParser()
 parser.add_option('-t','--tag',action='append',dest='tags')
 (options, args) = parser.parse_args()
 
-if len(args) == 2:
+if len(args) == 1:
+    inname = args[0]
     inhandle = open(args[0],'r')
-    outhandle = open(args[1],'w')
-elif len(args) == 1:
-    inhandle = open(args[0],'r')
-    outhandle = sys.stdout
-elif len(args) == 0:
-    inhandle = sys.stdin
-    outhandle = sys.stdout
+else:
+    raise Exception, "Need a single input file."
 
-empty_set = set()
+(basename,ext) = os.path.splitext(inname)
+basename = os.path.basename(basename)
+
+outhandles = {}
+for tag in options.tags:
+    outname = basename+'.'+vdj.sequtils.cleanup_id(tag)+ext
+    outhandles[tag] = open(outname,'w')
+
 query_tags = set(options.tags)
 for chain in vdj.parse_VDJXML(inhandle):
-    if query_tags & chain.all_tags != empty_set:
-        print >>outhandle, chain
+    try:
+        tag = (query_tags & chain.all_tags).pop()
+        print >>outhandles[tag], chain
+    except KeyError:
+        continue
+
+for handle in outhandles.itervalues():
+    handle.close()
