@@ -9,6 +9,9 @@ import vdj
 
 # import numpy.ma as ma
 
+# ===============
+# = Time series =
+# ===============
 
 def clone_timeseries(inhandle,time_tags,reference_clones=None):
     # get count data
@@ -41,8 +44,28 @@ def clone_timeseries(inhandle,time_tags,reference_clones=None):
     for (i,tag) in enumerate(time_tags):
         countdata[:,i] = vdj.count_dict_clone_counts(clone_counts[tag],reference_clones)
     
-    return countdata
+    return countdata,reference_clones
 
+
+def timeseries2proportions(countdata,log=True,pseudocount=1e-1):
+    num_time_series, num_times = countdata.shape
+    num_transitions = num_times - 1
+    proportions = np.zeros((num_time_series,num_transitions))
+    for i in range(num_transitions):
+        proportions[:,i] = (countdata+np.float_(pseudocount))[:,i+1] / (countdata+pseudocount)[:,i]
+    if log==True:
+        return np.log10(proportions)
+    else:
+        return proportions
+
+
+def timeseries2autocorrelation(timeseries):
+    ac = [1.] + [sp.stats.pearsonr(timeseries[:-i],timeseries[i:])[0] for i in range(1,len(timeseries)-2)]
+    return ac
+
+# ================
+# = Spectratypes =
+# ================
 
 def cdr3s2spectratype(cdr3s):
     min_raw_cdr3 = np.min(cdr3s)
