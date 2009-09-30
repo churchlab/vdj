@@ -295,6 +295,125 @@ def subsample_without_replacement(x, num_samples, sample_size, theta, *args):
 
 
 
+# =================
+# = Visualization =
+# =================
+
+class ConstWidthRectangle(mpl.patches.Patch):
+    
+    def __init__(self, x, y1, y2, w, **kwargs):
+        self.x  = x
+        self.y1 = y1
+        self.y2 = y2
+        self.w  = w
+        mpl.patches.Patch.__init__(self,**kwargs)
+    
+    def get_path(self):
+        return mpl.path.Path.unit_rectangle()
+    
+    def get_transform(self):
+        box = np.array([[self.x,self.y1],
+                        [self.x,self.y2]])
+        box = self.axes.transData.transform(box)
+        
+        w = self.w * self.axes.bbox.width / 2.0
+        
+        box[0,0] -= w
+        box[1,0] += w
+        
+        return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
+
+
+class ConstWidthLine(mpl.lines.Line2D):
+    
+    def __init__(self,x,y,w,**kwargs):
+        self.x = x
+        self.y = y
+        self.w = w
+        mpl.lines.Line2D.__init__(self,[0,1],[0,0],**kwargs) # init to unit line
+    
+    def get_path(self):
+        return mpl.path.Path([(0,0),(1,0)],None)
+    
+    def get_transform(self):
+        # define transform that takes unit horiz line seg
+        # and places it in correct position using display
+        # coords
+        
+        box = np.array([[self.x,self.y],
+                        [self.x,self.y+1]])
+        box = self.axes.transData.transform(box)
+        
+        w = self.w * self.axes.bbox.width / 2.0
+        
+        box[0,0] -= w
+        box[1,0] += w
+        
+        #xdisp,ydisp = self.axes.transData.transform_point([self.x,self.y])
+        #xdisp -= w
+        #xleft  = xdisp - w
+        #xright = xdisp + w
+        
+        return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
+        #return mpl.transforms.Affine2D().scale(w,1).translate(xdisp,ydisp)
+
+
+def boxplot(ax, x, positions=None, widths=None):
+    # adapted from matplotlib
+    
+    # convert x to a list of vectors
+    if hasattr(x, 'shape'):
+        if len(x.shape) == 1:
+            if hasattr(x[0], 'shape'):
+                x = list(x)
+            else:
+                x = [x,]
+        elif len(x.shape) == 2:
+            nr, nc = x.shape
+            if nr == 1:
+                x = [x]
+            elif nc == 1:
+                x = [x.ravel()]
+            else:
+                x = [x[:,i] for i in xrange(nc)]
+        else:
+            raise ValueError, "input x can have no more than 2 dimensions"
+    if not hasattr(x[0], '__len__'):
+        x = [x]
+    col = len(x)
+    
+    # get some plot info
+    if positions is None:
+        positions = range(1, col + 1)
+    if widths is None:
+        widths = min(0.3/len(positions),0.05)
+    if isinstance(widths, float) or isinstance(widths, int):
+        widths = np.ones((col,), float) * widths
+    
+    # loop through columns, adding each to plot
+    for i,pos in enumerate(positions):
+        d = np.ravel(x[i])
+        row = len(d)
+        if row==0:
+            # no data, skip this position
+            continue
+        # get distrib info
+        q1, med, q3 = mpl.mlab.prctile(d,[25,50,75])
+        dmax = np.max(d)
+        dmin = np.min(d)
+        
+        medline = ConstWidthLine(pos,med,widths[i],color='yellow')
+        box = ConstWidthRectangle(pos,q1,q3,widths[i])
+        
+        ax.add_patch(box)
+        ax.add_line(medline)
+
+
+
+
+
+
+
 
 
 
