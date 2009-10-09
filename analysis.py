@@ -50,9 +50,15 @@ def clone_timeseries(inhandle,time_tags,reference_clones=None):
 def timeseries2proportions(countdata,log=True,pseudocount=1e-1):
     num_time_series, num_times = countdata.shape
     num_transitions = num_times - 1
-    proportions = np.zeros((num_time_series,num_transitions))
-    for i in range(num_transitions):
-        proportions[:,i] = (countdata+np.float_(pseudocount))[:,i+1] / (countdata+pseudocount)[:,i]
+    if pseudocount != 0:
+        proportions = np.zeros((num_time_series,num_transitions))
+        for i in range(num_transitions):
+            proportions[:,i] = (countdata+np.float_(pseudocount))[:,i+1] / (countdata+pseudocount)[:,i]
+    else:   # only look at time series that are non-zero the whole way through
+        idxs = np.sum(countdata>0,axis=1)==num_times
+        proportions = np.zeros((np.sum(idxs),num_transitions))
+        for i in range(num_transitions):
+            proportions[:,i] = countdata[idxs,i+1] / countdata[idxs,i]
     if log==True:
         return np.log10(proportions)
     else:
@@ -159,7 +165,7 @@ def estimator_ace(counts,rare_cutoff=10):
     Srare = np.float_(np.sum(np.int_(counts)<=rare_cutoff))
     Sabund = Sobs - Srare
     F1 = np.float_(np.sum(np.int_(counts)==1))
-    F = lambda i: np.sum(np.int_(counts)==i)
+    F = lambda i: np.float_(np.sum(np.int_(counts)==i))
     Nrare = np.float_(np.sum([i*F(i) for i in range(1,rare_cutoff+1)]))
     #Nrare = np.float_(np.sum(counts[np.int_(counts)<=rare_cutoff]))
     if Nrare == F1: # in accordance with EstimateS
