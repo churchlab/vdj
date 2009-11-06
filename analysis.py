@@ -421,11 +421,13 @@ def boxplot(ax, x, positions=None, widths=None):
         
         medline = ConstWidthLine(pos,med,widths[i],color='k')
         box = ConstWidthRectangle(pos,q1,q3,widths[i])
-        hiline = mpl.lines.Line2D([pos,pos],[q3,dmax])
-        loline = mpl.lines.Line2D([pos,pos],[q1,dmin])
+        vertline = mpl.lines.Line2D([pos,pos],[dmin,dmax])
+        # hiline = mpl.lines.Line2D([pos,pos],[q3,dmax])
+        # loline = mpl.lines.Line2D([pos,pos],[q1,dmin])
         
-        ax.add_line(hiline)
-        ax.add_line(loline)
+        ax.add_line(vertline)
+        # ax.add_line(hiline)
+        # ax.add_line(loline)
         ax.add_patch(box)
         ax.add_line(medline)
 
