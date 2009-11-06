@@ -47,18 +47,25 @@ def clone_timeseries(inhandle,time_tags,reference_clones=None):
     return countdata,reference_clones
 
 
-def timeseries2proportions(countdata,log=True,pseudocount=1e-1):
+def timeseries2proportions(countdata,freq=True,log=True,pseudocount=1e-1):
     num_time_series, num_times = countdata.shape
     num_transitions = num_times - 1
     if pseudocount != 0:
         proportions = np.zeros((num_time_series,num_transitions))
+        countdata_pseudo = countdata + np.float_(pseudocount)
+        if freq == True:
+            countdata_pseudo = countdata_pseudo / countdata_pseudo.sum(axis=0)
         for i in range(num_transitions):
-            proportions[:,i] = (countdata+np.float_(pseudocount))[:,i+1] / (countdata+pseudocount)[:,i]
+            proportions[:,i] = countdata_pseudo[:,i+1] / countdata_pseudo[:,i]
     else:   # only look at time series that are non-zero the whole way through
         idxs = np.sum(countdata>0,axis=1)==num_times
         proportions = np.zeros((np.sum(idxs),num_transitions))
+        if freq == True:
+            countdata_modified = np.float_(countdata) / countdata.sum(axis=0)
+        else:
+            countdata_modified = np.float_(countdata)
         for i in range(num_transitions):
-            proportions[:,i] = countdata[idxs,i+1] / countdata[idxs,i]
+            proportions[:,i] = countdata_modified[idxs,i+1] / countdata_modified[idxs,i]
     if log==True:
         return np.log10(proportions)
     else:
@@ -329,7 +336,6 @@ class ConstWidthRectangle(mpl.patches.Patch):
         
         return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
 
-
 class ConstWidthLine(mpl.lines.Line2D):
     
     def __init__(self,x,y,w,**kwargs):
@@ -337,9 +343,6 @@ class ConstWidthLine(mpl.lines.Line2D):
         self.y = y
         self.w = w
         mpl.lines.Line2D.__init__(self,[0,1],[0,0],**kwargs) # init to unit line
-    
-    def get_path(self):
-        return mpl.path.Path([(0,0),(1,0)],None)
     
     def get_transform(self):
         # define transform that takes unit horiz line seg
@@ -362,6 +365,14 @@ class ConstWidthLine(mpl.lines.Line2D):
         
         return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
         #return mpl.transforms.Affine2D().scale(w,1).translate(xdisp,ydisp)
+    
+    def draw(self,renderer):
+        # the ONLY purpose of redefining this function is to force the Line2D
+        # object to execute recache().  Otherwise, certain changes in the scale
+        # do not invalidate the Line2D object, and the transform will not be
+        # recomputed (and so the Axes coords computed earlier will be obsolete)
+        self.recache()
+        return mpl.lines.Line2D.draw(self,renderer)
 
 
 def boxplot(ax, x, positions=None, widths=None):
@@ -408,11 +419,16 @@ def boxplot(ax, x, positions=None, widths=None):
         dmax = np.max(d)
         dmin = np.min(d)
         
-        medline = ConstWidthLine(pos,med,widths[i],color='yellow')
+        medline = ConstWidthLine(pos,med,widths[i],color='k')
         box = ConstWidthRectangle(pos,q1,q3,widths[i])
+        hiline = mpl.lines.Line2D([pos,pos],[q3,dmax])
+        loline = mpl.lines.Line2D([pos,pos],[q1,dmin])
         
+        ax.add_line(hiline)
+        ax.add_line(loline)
         ax.add_patch(box)
         ax.add_line(medline)
+
 
 
 
