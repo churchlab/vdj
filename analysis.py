@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ma
 import scipy as sp
 import scipy.stats
 import scipy.special
@@ -375,7 +376,75 @@ class ConstWidthLine(mpl.lines.Line2D):
         return mpl.lines.Line2D.draw(self,renderer)
 
 
-def boxplot(ax, x, positions=None, widths=None):
+class ConstHeightRectangle(mpl.patches.Patch):
+    
+    def __init__(self, x1, x2, y, h, **kwargs):
+        self.x1 = x1
+        self.x2 = x2
+        self.y  = y
+        self.h  = h
+        mpl.patches.Patch.__init__(self,**kwargs)
+    
+    def get_path(self):
+        return mpl.path.Path.unit_rectangle()
+    
+    def get_transform(self):
+        box = np.array([[self.x1,self.y],
+                        [self.x2,self.y]])
+        box = self.axes.transData.transform(box)
+        
+        h = self.h * self.axes.bbox.height / 2.0
+        
+        box[0,1] -= h
+        box[1,1] += h
+        
+        return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
+
+class ConstHeightLine(mpl.lines.Line2D):
+    
+    def __init__(self,x,y,h,**kwargs):
+        self.x = x
+        self.y = y
+        self.h = h
+        mpl.lines.Line2D.__init__(self,[0,0],[0,1],**kwargs) # init to unit line
+        
+        # self.x = x
+        # self.y = y
+        # self.w = w
+        # mpl.lines.Line2D.__init__(self,[0,1],[0,0],**kwargs) # init to unit line
+    
+    def get_transform(self):
+        # define transform that takes unit horiz line seg
+        # and places it in correct position using display
+        # coords
+        
+        box = np.array([[self.x,self.y],
+                        [self.x+1,self.y]])
+        box = self.axes.transData.transform(box)
+        
+        h = self.h * self.axes.bbox.height / 2.0
+        
+        box[0,1] -= h
+        box[1,1] += h
+        
+        #xdisp,ydisp = self.axes.transData.transform_point([self.x,self.y])
+        #xdisp -= w
+        #xleft  = xdisp - w
+        #xright = xdisp + w
+        
+        return mpl.transforms.BboxTransformTo(mpl.transforms.Bbox(box))
+        #return mpl.transforms.Affine2D().scale(w,1).translate(xdisp,ydisp)
+    
+    def draw(self,renderer):
+        # the ONLY purpose of redefining this function is to force the Line2D
+        # object to execute recache().  Otherwise, certain changes in the scale
+        # do not invalidate the Line2D object, and the transform will not be
+        # recomputed (and so the Axes coords computed earlier will be obsolete)
+        self.recache()
+        return mpl.lines.Line2D.draw(self,renderer)
+
+
+def boxplot(ax, x, positions=None, widths=None, vert=1):
     # adapted from matplotlib
     
     # convert x to a list of vectors
@@ -419,26 +488,20 @@ def boxplot(ax, x, positions=None, widths=None):
         dmax = np.max(d)
         dmin = np.min(d)
         
-        medline = ConstWidthLine(pos,med,widths[i],color='k')
-        box = ConstWidthRectangle(pos,q1,q3,widths[i])
-        vertline = mpl.lines.Line2D([pos,pos],[dmin,dmax])
-        # hiline = mpl.lines.Line2D([pos,pos],[q3,dmax])
-        # loline = mpl.lines.Line2D([pos,pos],[q1,dmin])
+        line_color = '#074687'
+        face_color = '#96B7EC'
+        if vert == 1:
+            medline = ConstWidthLine(pos,med,widths[i],color=line_color,zorder=3)
+            box = ConstWidthRectangle(pos,q1,q3,widths[i],facecolor=face_color,edgecolor=line_color,zorder=2)
+            vertline = mpl.lines.Line2D([pos,pos],[dmin,dmax],color=line_color,zorder=1)
+        else:
+            medline = ConstHeightLine(med,pos,widths[i],color=line_color,zorder=3)
+            box = ConstHeightRectangle(q1,q3,pos,widths[i],facecolor=face_color,edgecolor=line_color,zorder=2)
+            vertline = mpl.lines.Line2D([dmin,dmax],[pos,pos],color=line_color,zorder=1)
         
         ax.add_line(vertline)
-        # ax.add_line(hiline)
-        # ax.add_line(loline)
         ax.add_patch(box)
         ax.add_line(medline)
-
-
-
-
-
-
-
-
-
 
 
 
@@ -653,7 +716,7 @@ def rep2spectratype(rep):
         y += s*rv.pdf(t)
     return (t,y)
 
-def circlemapVJ(ax,counts,rowlabels=None,collabels=None,log=False):
+def circlemapVJ(ax,counts,rowlabels=None,collabels=None,scale='linear'):
     numV = counts.shape[0]
     numJ = counts.shape[1]
     X,Y = np.meshgrid(range(numJ),range(numV))
@@ -673,24 +736,50 @@ def circlemapVJ(ax,counts,rowlabels=None,collabels=None,log=False):
     c = ma.compressed(C)
     
     # log normalize counts if requested
-    if log == True:
+    if scale == 'log':
         c = ma.log10(c)
     
-    # normalize counts to desired size-range
-    max_counts = ma.max(c)
-    min_counts = ma.min(c)
-    counts_range = max_counts - min_counts
+    if scale == 'linear' or scale == 'log':
+        # normalize counts to desired size-range
+        max_counts = ma.max(c)
+        min_counts = ma.min(c)
+        counts_range = max_counts - min_counts
     
-    max_size = 100
-    min_size = 5
-    size_range = max_size - min_size
+        max_size = 100
+        min_size = 5
+        size_range = max_size - min_size
     
-    sizes = (np.float(size_range) / counts_range) * (c - min_counts) + min_size
+        sizes = (np.float(size_range) / counts_range) * (c - min_counts) + min_size
+    
+    if scale == 'custom':
+        trans_counts = 1000
+        linear_positions = c >= trans_counts
+        log_positions = c < trans_counts
+        
+        min_size = 3
+        trans_size = 40 # 30
+        max_size = 200 # 150
+        log_size_range = trans_size - min_size
+        linear_size_range = max_size - trans_size
+        
+        linear_max_counts = ma.max(c[linear_positions])
+        linear_min_counts = ma.min(c[linear_positions])
+        linear_counts_range = linear_max_counts - linear_min_counts
+        log_max_counts = ma.max(c[log_positions])
+        log_min_counts = ma.min(c[log_positions])
+        log_counts_range = np.log10(log_max_counts) - np.log10(log_min_counts)
+        
+        sizes = np.zeros(len(c))
+        sizes[linear_positions] = (np.float(linear_size_range) / linear_counts_range) * (c[linear_positions] - linear_min_counts) + trans_size
+        sizes[log_positions] = (np.float(log_size_range) / log_counts_range) * (ma.log10(c[log_positions]) - ma.log10(log_min_counts)) + min_size
     
     collection = mpl.collections.CircleCollection(
                                         sizes,
                                         offsets = zip(x,y),
-                                        transOffset = ax.transData) # i may need to explicitly set the xlim and ylim info for this to work correctly
+                                        transOffset = ax.transData, # i may need to explicitly set the xlim and ylim info for this to work correctly
+                                        facecolors = '#1873C1',
+                                        linewidths = 0.25,
+                                        clip_on = False)
     
     ax.add_collection(collection)
     
@@ -713,7 +802,10 @@ def circlemapVJ(ax,counts,rowlabels=None,collabels=None,log=False):
     for ticklabel in ax.yaxis.get_ticklabels():
         ticklabel.set_size(8)
     
-    return
+    if scale == 'linear' or scale == 'log':
+        return (min_counts,max_counts),(min_size,max_size)
+    else:
+        return (linear_min_counts,trans_counts,log_max_counts),(min_size,trans_size,max_size)
 
 # define colormap for -1 to 1 (green-black-red) like gene expression
 redgreencdict = {'red': [(0.0,   0.0,   0.0),
