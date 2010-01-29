@@ -7,43 +7,38 @@
 
 using namespace std;
 
-inline short int score(
-    short int *dp_matrix,
-    unsigned short int x,
-    unsigned short int y,
-    unsigned short int index,
-    unsigned short int max_col,
-    unsigned char L,
-    unsigned char R,
-    bool match){
+inline short int Alignment::getScore(
+        unsigned short int x,
+        unsigned short int y,
+        unsigned short int index){
 
-    short int diag, top, left;
+    short int diag, top, prv;
     short int di, ti, li;
     unsigned short int overflow  = 0;
     unsigned short int underflow = 0;
 
     // Get the overflow for the previous row
-    if( R + y - max_col > 0 ){
-        overflow = R + y - max_col;
+    if( right + y - max_cols > 0 ){
+        overflow = right + y - max_cols;
     }
 
     // How much did the previous row underflow by?
-    if( y - L < 1 ){
-        underflow = L - y;
+    if( y - left < 1 ){
+        underflow = left - y;
     }
 
     // If the cell to our left exists, get the value
-    if( y - x < L ) {
+    if( y - x < left && x > 0 ) {
         li = index - 1;
-        left = dp_matrix[li] + GAP;
+        prv = dp_matrix[li] + gap;
     } else {
         li = -1;
-        left = MIN_INT;
+        prv = MIN_INT;
     }
-    
+
     // Do the same with the cell above us
-    if( x - y < R && y != 0 ){
-        ti = index - (L - underflow) - (R - overflow);
+    if( x - y < right && y != 0 ){
+        ti = index - ( left - underflow) - ( right - overflow);
         top = dp_matrix[ti] + GAP;
     } else {
         ti = -1;
@@ -52,109 +47,278 @@ inline short int score(
 
     // and finally the diagonal
     if( y > 0 && x > 0 ){
-        di = index - (L - underflow) - (R - overflow) - 1;
+        di = index - ( left - underflow) - ( right - overflow) - 1;
         diag = dp_matrix[di];
-        diag += ( match ? MATCH : MISMATCH );
+        diag += ( row_seq[y] == col_seq[x] ? match : mismatch );
     } else {
-        diag = GAP * x + GAP * y + ( match ? MATCH : MISMATCH );
+        diag = gap * x + gap * y + ( row_seq[y] == col_seq[x] ? match : mismatch );
         di = -1;
     }
-   // take the max of the three neighbors
-    dp_matrix[index] = (diag > top ? (diag > left ? diag : left) : (top > left ? top : left));
+    // take the max of the three neighbors
+    dp_matrix[index] = (diag > top ? (diag > prv ? diag : prv) : (top > prv ? top : prv));
 
-    // printf("x:%3d y:%3d [%3d] %3d %3d (%3d %3d %3d %2d)\n", x, y, index, diag, dp_matrix[index], di, ti, li, underflow);
+    printf("x:%3d y:%3d [%3d] %3d %3d (%3d %3d %3d [%c, %c])\n", x, y, index, diag, dp_matrix[index], di, ti, li, row_seq[y], col_seq[x]);
     return dp_matrix[index];
 }
 
-int align( char* seqA, char* seqB ){
+short int Alignment::globalScore(){
+    if( aligned ){
+        return score;
+    } else {
+        return lBound;
+    }   
+}
 
-    int max_rows = strlen(seqA);
-    int max_cols = strlen(seqB);
-    
-    // Let's avoid dealing with twice as many edge cases:
-    if( max_cols > max_rows ){
-        return align(seqB, seqA);
+Alignment::Alignment( string seqA, string seqB ){
+    dp_matrix = NULL; 
+    max_rows = seqA.size();
+    max_cols = seqB.size();
+
+    if( max_rows < max_cols ){
+        Alignment( seqB, seqA );
+        return;
     }
 
-    int right = 1;
-    int left  = 1;
-    //ensure that we reach the bottom corner.
-    //TODO should I guarantee that this is a power of 2?
-    if( max_cols < max_rows ){
-        left = max_rows - max_cols; 
-    }
-    int d = max_rows - max_cols;    
-   int ii; // index variable
-   while( left < max_cols / 2 && right < max_cols / 2 ){
-        ii = 0; // reset the index
-        int size = max_rows 
-                   * (left + right + 1) 
-                   - (left * (left + 1) / 2) 
-                   - (right * (right + 1) / 2)
-                   - (right * d)
-                   - (d * (d+1) / 2); // account for left hand overflow and the diagonal
+    row_seq = seqA.c_str();
+    col_seq = seqB.c_str();
+
+    right = 1;
+    left  = (max_cols < max_rows ? max_rows - max_cols : 1); // ensure that we reach the bottom corner
+
+    uBound = setUpperBound(0,0,0);
+    lBound = setLowerBound(0,0,0);
+    score = lBound;
+
+    aligned = false;
+    failure = false;
+    resize(1,1);
+}
+
+Alignment::~Alignment(){
+    if( dp_matrix ){ free(dp_matrix); dp_matrix = NULL; }
+}
+
+string Alignment::seqA(){
+    return string(row_seq);
+}
+
+string Alignment::seqB(){
+    return string(col_seq);
+}
+
+bool Alignment::canStep(){
+
+    return (!aligned && !failure);
+
+}
+
+bool Alignment::isAligned(){
+    return aligned;
+}
+
+short int Alignment::upperBound(){ return uBound; }
+short int Alignment::lowerBound(){ return lBound; }
+
+short int Alignment::setUpperBound(short int x, short int y, int score){
+    int d = min(max_cols - x, max_rows - y); // get the maximum score along the diagonal
+    int h = max(max_cols - x - d, max_rows - y - d);
+
+    assert(h >= 0);
+    uBound = score + d * match - h * gap;
+    return uBound;
+}
+
+short int Alignment::setLowerBound(short int x, short int y, int score){
+    int perimeter     = (max_cols - x) + (max_rows - y);
+    int mismatchPath  = min(max_cols - x, max_rows - y);
+    int mismatchPerimeter = max(max_cols - x - mismatchPath, max_rows - y - mismatchPath);
+
+    assert(perimeter >= 0);
+    assert(mismatchPath >= 0);
+    assert(mismatchPerimeter >= 0);
+
+    int perimeterScore = perimeter * gap;
+    int mismatchScore = mismatchPath * mismatch + mismatchPerimeter * gap;
+
+    lBound = score + max(perimeterScore, mismatchScore);
+    return lBound;
+}
+
+short int Alignment::resize(short int l, short int r){
+    int left = l;
+    int right = r;
+    short int d = max_rows - max_cols;    
+    size = max_rows 
+        * (left + right + 1) 
+        - (left * (left + 1) / 2) 
+        - (right * (right + 1) / 2)
+        - (right * d)
+        - (d * (d+1) / 2); // account for left hand overflow and the diagonal
+
+    // printf("Size: %d\n", size);
+    if(dp_matrix){ free(dp_matrix); }
+    dp_matrix = (short int*) malloc(sizeof(short int) * size);
+    return size;
+}
+short int Alignment::step(){
+
+    printf("[%d, %d]\n", lowerBound(), upperBound());
+    assert( canStep() );
+    //printf("Size at Step: %d\n", size);
     /*
-        printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
-        printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
-      */
-        bool boundary = false;
-        short int *dp_matrix = (short int*) malloc(sizeof(short int) * size);
+       printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
+       printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
+     */
+    bool boundary = false;
+    int ii = 0;
 
+    for(int y = 0; y < max_rows; ++y ){
+        int start = (y >= left ? y - left : 0 );
+        int stop  = (max_cols < y + right + 1 ? max_cols : y + right + 1);
+        int lmax = MIN_INT;
+        int rmax = MIN_INT;
+        int line_max = MIN_INT;
 
-        for(int y = 0; y < max_rows; ++y ){
-            int start = (y >= left ? y - left : 0 );
-            int stop  = (max_cols < y + right + 1 ? max_cols : y + right + 1);
-            int lmax = MIN_INT;
-            int rmax = MIN_INT;
-            int line_max = MIN_INT;
-            
-            for( int x = start ; x < stop; ++x){ 
-                // add a matrix entry
-                int t = score(dp_matrix, x, y, ii, max_cols, left, right, seqB[x] == seqA[y]);
-                    
-                // we need to know if we've run into a boundary
-                if( x == start && x > 0){ lmax = t; }
-                if( x == stop - 1 && x < max_cols - 1){ rmax = t; }
-                if( t > line_max ){ line_max = t; }
+        int max_x, max_y;
+        for( int x = start ; x < stop; ++x){ 
+            // add a matrix entry
+            int t = getScore(x, y, ii);
 
-                ++ii; // advance the index
+            // we need to know if we've run into a boundary
+            if( x == start && x > 0){ lmax = t; }
+            if( x == stop - 1 && x < max_cols - 1){ rmax = t; }
+            if( t > line_max ){
+                line_max = t; 
+                max_x = x; 
+                max_y = y; 
             }
-            
-            // if we've hit a boundary, short circuit our way out of the loop
-            // and increase the boundary sizes
-            // unless we're in the end game
-            if( max_cols > y + right + 1 ){
-                if( line_max == lmax){ left  *= 2; boundary = true; }
-                if( line_max == rmax ){ right *= 2; boundary = true; }
-                if( boundary ){ 
-                    printf("Hit the boundary...(%d < %d - %d)\n", y, max_rows, right); 
-                    break;
-                }
-            }
+
+            ++ii; // advance the index
         }
 
-    
-        int s = dp_matrix[size - 1];
-        printf("%d\t%d\n", ii, size);
-        printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
-        printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
-        printf("Size: %d\tScore: %d\tLeft: %d\tRight: %d\n", size, s, left, right);
-        assert(boundary || ii == size);
-        free(dp_matrix);
-        
-        if( !boundary ){ return s; }
+        // if we've hit a boundary, short circuit our way out of the loop
+        // and increase the boundary sizes
+        // unless we're in the end game
+        if( max_cols > y + right + 1 ){
+
+            if( line_max == lmax){ 
+                if( left * 2 < max_cols / 2 ){
+                    left  *= 2; boundary = true; 
+                } else {
+                    failure = true;
+                    return MIN_INT;
+                }
+            }
+            if( line_max == rmax ){ 
+                if( right * 2 < max_cols / 2 ){
+                    right *= 2; boundary = true; 
+                } else {
+                    failure = true;
+                    return MIN_INT;
+                }
+            }
+            if( boundary ){ 
+                // printf("Hit the boundary...(%d < %d - %d)\n", y, max_rows, right);
+                resize(left, right);
+                setUpperBound(max_x, max_y, line_max);
+                setLowerBound(max_x, max_y, line_max);
+                return MIN_INT;
+            }
+        }
     }
-    
+
+
+    int s = dp_matrix[size - 1];
+    // printf("%d\t%d\n", ii, size);
+    //printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
+    //printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
+    //printf("Size: %d\tScore: %d\tLeft: %d\tRight: %d\n", size, s, left, right);
+
+    assert(boundary || ii == size);
+
+    if( !boundary ){ 
+        aligned = true; 
+        score = s;
+        return s; 
+    }
+
     return MIN_INT;
 }
 
-pair<char*, int> round_robin( list<char*> references, char* target ){
+short int Alignment::align(){
 
+    int score;
+    while(canStep()){
+        score = step();
+
+    }
+
+    return score;
 }
+
+Alignment* Alignment::round_robin( list<string> references, string target ){
+    queue<Alignment*> robin;
+    list<string>::iterator refItr;
+    Alignment *bestAlign;
+    Alignment *algn;
+    int bestScore = MIN_INT;
+    
+
+    for( refItr = references.begin(); refItr != references.end(); refItr++ ){
+        algn = new Alignment((*refItr), target);
+        robin.push(algn);
+    }
+
+    int robinSize = robin.size();
+    while( !robin.empty() ){
+        // ensure that I'm not growing the robin accidentally.
+        assert( robin.size() <= robinSize );
+        robinSize = robin.size();
+
+        
+
+        algn = robin.front();
+        robin.pop();
+
+        // If this alignment might be better than the best lower bound, continue.
+        if( algn->upperBound() >= bestScore ){
+
+            assert(algn->canStep());
+            algn->step();
+            
+            printf("[%d, %d]\n", algn->lowerBound(), algn->upperBound());
+
+            if( algn->lowerBound() > bestScore ){
+                bestScore = algn->lowerBound();
+                bestAlign = algn;
+            }
+
+            if( algn->upperBound() >= bestScore && algn->canStep() ){
+                robin.push(algn);
+            }
+        } else {
+            delete algn;
+        }                 
+    }
+
+    if( !bestAlign->isAligned() ){
+        bestAlign->align();
+    }
+
+    return bestAlign;
+}
+
 
 int main( int argc, void** argv ){
 
-    printf("%d\n", align("aaxaaxxaaaaaa", "aaaaaaaxaaa"));
+    list<string> ref;
+    ref.push_front(string("abceefghijkl"));
+    ref.push_front(string("abceefghijxl"));
+    ref.push_front(string("abcdefghxxxijkl"));
+    ref.push_front(string("xxxxxxxxxxxx"));
+
+    Alignment* a = Alignment::round_robin(ref, string("abcdefghijkl"));
+    printf("[%d,%d]: %d %s\n", a->lowerBound(), a->upperBound(), a->globalScore(), a->seqA().c_str());
     return 0;
 
 }
