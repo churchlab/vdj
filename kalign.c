@@ -3,28 +3,11 @@
 //   Where n,m are inputs and e is the edit distance:
 //     O(e^2) + O(n) + O(m)
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include "kalign.h"
 
-#ifndef GAP
-#define GAP (-1)
-#endif
+using namespace std;
 
-#ifndef MATCH
-#define MATCH (1)
-#endif
-
-#ifndef MISMATCH
-#define MISMATCH (-1)
-#endif
-
-#ifndef MIN_INT
-#define MIN_INT (-16384)
-#endif
-
-inline int score(
+inline short int score(
     short int *dp_matrix,
     unsigned short int x,
     unsigned short int y,
@@ -163,6 +146,10 @@ int align( char* seqA, char* seqB ){
     }
     
     return MIN_INT;
+}
+
+pair<char*, int> round_robin( list<char*> references, char* target ){
+
 }
 
 int main( int argc, void** argv ){
