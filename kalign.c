@@ -7,15 +7,20 @@
 
 using namespace std;
 
-inline short int Alignment::getScore(
-        unsigned short int x,
-        unsigned short int y,
-        unsigned short int index){
+inline int Alignment::getScore(
+        int x,
+        int y,
+        int index){
+    
+    int gap = -1;
+    int match = 1;
+    int mismatch = -1;
 
-    short int diag, top, prv;
-    short int di, ti, li;
-    unsigned short int overflow  = 0;
-    unsigned short int underflow = 0;
+
+    int diag, top, prv;
+    int di, ti, li;
+    int overflow  = 0;
+    int underflow = 0;
 
     // Get the overflow for the previous row
     if( right + y - max_cols > 0 ){
@@ -39,7 +44,7 @@ inline short int Alignment::getScore(
     // Do the same with the cell above us
     if( x - y < right && y != 0 ){
         ti = index - ( left - underflow) - ( right - overflow);
-        top = dp_matrix[ti] + GAP;
+        top = dp_matrix[ti] + gap;
     } else {
         ti = -1;
         top = MIN_INT;
@@ -56,6 +61,11 @@ inline short int Alignment::getScore(
     }
     // take the max of the three neighbors
     dp_matrix[index] = (diag > top ? (diag > prv ? diag : prv) : (top > prv ? top : prv));
+    
+    assert( li >= -1 && li <= size );
+    assert( di >= -1 && li <= size );
+    assert( ti >= -1 && li <= size );
+    assert( index >= 0 && index <= size );
 
     //Dump everything that we could plausibly want to know about the program
     // state at this point:
@@ -64,7 +74,7 @@ inline short int Alignment::getScore(
     return dp_matrix[index];
 }
 
-short int Alignment::globalScore(){
+int Alignment::globalScore(){
     if( aligned ){
         return score;
     } else {
@@ -82,8 +92,9 @@ Alignment::Alignment( string seqA, string seqB ){
         return;
     }
 
-    row_seq = (char*) malloc(sizeof(char) * max_rows);
-    col_seq = (char*) malloc(sizeof(char) * max_cols);
+    
+    row_seq = (char*) malloc(sizeof(char) * (max_rows + 1));
+    col_seq = (char*) malloc(sizeof(char) * (max_cols + 1));
 
     strcpy(row_seq, seqA.c_str());
     strcpy(col_seq, seqB.c_str());
@@ -101,6 +112,8 @@ Alignment::Alignment( string seqA, string seqB ){
 
 Alignment::~Alignment(){
     if( dp_matrix ){ free(dp_matrix); dp_matrix = NULL; }
+    free(row_seq);
+    free(col_seq);
 }
 
 string Alignment::seqA(){
@@ -121,10 +134,12 @@ bool Alignment::isAligned(){
     return aligned;
 }
 
-short int Alignment::upperBound(){ return uBound; }
-short int Alignment::lowerBound(){ return lBound; }
+int Alignment::upperBound(){ return uBound; }
+int Alignment::lowerBound(){ return lBound; }
 
-short int Alignment::setUpperBound(short int x, short int y, int score){
+int Alignment::setUpperBound(int x, int y, int score){
+    int match = 1;
+    int gap = -1;
     int d = min(max_cols - x, max_rows - y); // get the maximum score along the diagonal
     int h = max(max_cols - x - d, max_rows - y - d);
 
@@ -133,7 +148,11 @@ short int Alignment::setUpperBound(short int x, short int y, int score){
     return uBound;
 }
 
-short int Alignment::setLowerBound(short int x, short int y, int score){
+int Alignment::setLowerBound(int x, int y, int score){
+    int match = 1;
+    int gap = -1;
+    int mismatch = -1;
+    
     int perimeter     = (max_cols - x) + (max_rows - y);
     int mismatchPath  = min(max_cols - x, max_rows - y);
     int mismatchPerimeter = max(max_cols - x - mismatchPath, max_rows - y - mismatchPath);
@@ -149,22 +168,23 @@ short int Alignment::setLowerBound(short int x, short int y, int score){
     return lBound;
 }
 
-short int Alignment::resize(short int l, short int r){
+int Alignment::resize(int l, int r){
     left = l;
     right = r;
-    short int d = max_rows - max_cols;    
+    int d = max_rows - max_cols;    
     size = max_rows 
         * (left + right + 1) 
         - (left * (left + 1) / 2) 
         - (right * (right + 1) / 2)
         - (right * d)
         - (d * (d+1) / 2); // account for left hand overflow and the diagonal
-
+    
     if(dp_matrix){ free(dp_matrix); }
-    dp_matrix = (short int*) malloc(sizeof(short int) * size);
+    // printf("Size: %d %d\n", size, sizeof(int)* size);
+    dp_matrix = (int*) malloc(sizeof(int) * size);
     return size;
 }
-short int Alignment::step(){
+int Alignment::step(){
 
     assert( canStep() );
     
@@ -195,7 +215,7 @@ short int Alignment::step(){
             ++ii; // advance the index
         }
 
-        // if we've hit a boundary, short circuit our way out of the loop
+        // if we've hit a boundary, circuit our way out of the loop
         // and increase the boundary sizes
         if( max_cols > y + right + 1 ){
 
@@ -233,7 +253,7 @@ short int Alignment::step(){
     return MIN_INT;
 }
 
-short int Alignment::align(){
+int Alignment::align(){
 
     int score;
     while(canStep()){
@@ -256,7 +276,7 @@ Alignment* Alignment::round_robin( list<string> references, string target ){
         robin.push(algn);
     }
 
-    int robinSize = robin.size();
+    unsigned int robinSize = robin.size();
     while( !robin.empty() ){
         // ensure that I'm not growing the robin accidentally.
         assert( robin.size() <= robinSize );
@@ -311,8 +331,8 @@ Alignment* Alignment::round_robin( list<string> references, string target ){
 }
 
 
-int main( int argc, void** argv ){
-
+int main( int argc, char** argv ){
+/*
     list<string> ref;
     ref.push_front(string("abcdefghijkl"));
     ref.push_front(string("abceefghijkl"));
@@ -331,10 +351,23 @@ int main( int argc, void** argv ){
     }
 
     printf("-- -- -- -- -- -- -- --\n");
-    
+   
+    */
 
-    Alignment* a = Alignment::round_robin(ref, string("abcdefghijkl"));
+    for( int jj = 0; jj < 10000; ++jj ){
+    string x;
+    string y;
+    for( int ii = 0; ii < 500; ++ii ){
+        x += "x";
+        y += "y";
+    }
+    Alignment n = Alignment(x, y);
+    n.align();
+
+    }   
+    /* Alignment* a = Alignment::round_robin(ref, string("abcdefghijkl"));
     printf("[%d,%d]: %d %s\n", a->lowerBound(), a->upperBound(), a->globalScore(), a->seqA().c_str());
+    */
 
     return 0;
 
