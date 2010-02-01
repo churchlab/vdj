@@ -57,7 +57,10 @@ inline short int Alignment::getScore(
     // take the max of the three neighbors
     dp_matrix[index] = (diag > top ? (diag > prv ? diag : prv) : (top > prv ? top : prv));
 
-    //printf("x:%3d y:%3d [%3d] %3d %3d (%3d %3d %3d [%c, %c] %s)\n", x, y, index, diag, dp_matrix[index], di, ti, li, row_seq[y], col_seq[x], col_seq);
+    //Dump everything that we could plausibly want to know about the program
+    // state at this point:
+    // sprintf(stderr, "x:%3d y:%3d [%3d] %3d %3d (%3d %3d %3d [%c, %c] %s)\n", x, y, index, diag, dp_matrix[index], di, ti, li, row_seq[y], col_seq[x], col_seq);
+    
     return dp_matrix[index];
 }
 
@@ -93,7 +96,6 @@ Alignment::Alignment( string seqA, string seqB ){
     score = lBound;
 
     aligned = false;
-    failure = false;
     resize(1,1);
 }
 
@@ -111,7 +113,7 @@ string Alignment::seqB(){
 
 bool Alignment::canStep(){
 
-    return (!aligned && !failure);
+    return (!aligned);
 
 }
 
@@ -158,20 +160,14 @@ short int Alignment::resize(short int l, short int r){
         - (right * d)
         - (d * (d+1) / 2); // account for left hand overflow and the diagonal
 
-    //printf("Left: %d\tRight: %d\td: %d\tSize: %d\n", left, right, d, size);
     if(dp_matrix){ free(dp_matrix); }
     dp_matrix = (short int*) malloc(sizeof(short int) * size);
     return size;
 }
 short int Alignment::step(){
 
-    printf("[%d, %d]\n", lowerBound(), upperBound());
     assert( canStep() );
-    //printf("Size at Step: %d\n", size);
-    /*
-       printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
-       printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
-     */
+    
     bool boundary = false;
     int ii = 0;
 
@@ -214,7 +210,6 @@ short int Alignment::step(){
             }
             
             if( boundary ){ 
-                // printf("Hit the boundary...(%d < %d - %d)\n", y, max_rows, right);
                 resize(left, right);
                 setUpperBound(max_x, max_y, line_max);
                 setLowerBound(max_x, max_y, line_max);
@@ -225,11 +220,8 @@ short int Alignment::step(){
 
 
     int s = dp_matrix[size - 1];
-    // printf("%d\t%d\n", ii, size);
-    //printf("Rows: %d\tCols: %d\tLeft: %d\tRight: %d\n", max_rows, max_cols, left, right);
-    //printf("%d - %d - %d - %d - %d = %d\n", (max_rows * (left + right + 1)), (left * (left + 1) / 2), (right * (right + 1) / 2), (right * d), (d * (d+1) / 2), size); 
-    //printf("Size: %d\tScore: %d\tLeft: %d\tRight: %d\n", size, s, left, right);
 
+    // Ensure that my matrix diagonal size calculations were correct.
     assert(boundary || ii == size);
 
     if( !boundary ){ 
@@ -253,10 +245,10 @@ short int Alignment::align(){
 
 Alignment* Alignment::round_robin( list<string> references, string target ){
     queue<Alignment*> robin;
+    list<Alignment*>  alignedList;
     list<string>::iterator refItr;
-    Alignment *bestAlign;
     Alignment *algn;
-    int bestScore = MIN_INT;
+    int bestLowerBound = MIN_INT;
     
 
     for( refItr = references.begin(); refItr != references.end(); refItr++ ){
@@ -270,37 +262,52 @@ Alignment* Alignment::round_robin( list<string> references, string target ){
         assert( robin.size() <= robinSize );
         robinSize = robin.size();
 
-        
-
+        // initialize...
         algn = robin.front();
         robin.pop();
 
         // If this alignment might be better than the best lower bound, continue.
-        if( algn->upperBound() >= bestScore ){
+        if( algn->upperBound() >= bestLowerBound ){
 
+            // ensure that we don't have any dead alignments
             assert(algn->canStep());
             algn->step();
             
-            printf("[%d, %d]\n", algn->lowerBound(), algn->upperBound());
-
-            if( algn->lowerBound() > bestScore ){
-                bestScore = algn->lowerBound();
-                bestAlign = algn;
+            // Should we raise our lower bound?
+            if( algn->lowerBound() > bestLowerBound ){
+                bestLowerBound = algn->lowerBound();
             }
 
-            if( algn->upperBound() >= bestScore && algn->canStep() ){
-                robin.push(algn);
+            // If we can beat the lower bound, chuck it in the queue
+            if( algn->upperBound() >= bestLowerBound ){
+                if( algn->isAligned() ){
+                    alignedList.push_back(algn);
+                } else {
+                    robin.push(algn); // Insert incomplete alignments into the robin
+                }
+            } else {
+                delete algn;
             }
-        } else {
-            delete algn;
         }                 
     }
 
-    if( !bestAlign->isAligned() ){
-        bestAlign->align();
+    // pick out the best alignment
+    // NOTE it's conceivable that we might want to examine suboptimal alignments
+    list<Alignment*>::iterator algItr;
+    Alignment* bestAlignment = NULL;
+    for( algItr = alignedList.begin(); algItr != alignedList.end(); algItr++ ){
+        if( bestAlignment ){
+            if( bestAlignment->globalScore() < (*algItr)->globalScore() ){
+                delete bestAlignment;
+                bestAlignment = (*algItr);
+            } else {
+                delete (*algItr);
+            }
+        } else {
+            bestAlignment = (*algItr);
+        }
     }
-
-    return bestAlign;
+    return bestAlignment;
 }
 
 
@@ -314,17 +321,21 @@ int main( int argc, void** argv ){
     ref.push_front(string("xxxxxxxxxxxx"));
 
     list<string>::iterator itr;
-
+    
+    printf("Performing all alignments: \n");
     for( itr = ref.begin() ; itr != ref.end() ; itr++ ){
         Alignment n = Alignment(*itr, string("abcdefghijkl"));
         n.align();
         
         printf("%s: %d\n", (*itr).c_str(), n.globalScore());
     }
-/*
+
+    printf("-- -- -- -- -- -- -- --\n");
+    
+
     Alignment* a = Alignment::round_robin(ref, string("abcdefghijkl"));
     printf("[%d,%d]: %d %s\n", a->lowerBound(), a->upperBound(), a->globalScore(), a->seqA().c_str());
-    */
+
     return 0;
 
 }
