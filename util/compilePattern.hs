@@ -3,6 +3,8 @@
 
 import Text.Printf
 import Data.List 
+import System.Environment
+
 -- count, mask, id -> count, mask, shift
 computeShift :: [(Int, Int, Bool)] -> [(Int, Int, Int)]
 computeShift al =
@@ -34,14 +36,29 @@ makeOffset :: [(Int, Bool)] -> [(Int, Int, Bool)]
 makeOffset a = 
   snd $ foldr (\ (i, a) (n, r) -> (n + i, (i, n, a):r)) (0, []) a
 
-maskShiftToC :: (Int, Int) -> String
-maskShiftToC (mask, shift) =
-  printf "((0x%x & xx) >> %d)" mask shift
+maskShiftToC :: String -> (Int, Int) -> String
+maskShiftToC n (mask, shift) =
+  printf "((0x%x & %s) >> %d)" mask n shift
 
-patternToMasks :: [Bool] -> String
-patternToMasks p =
-  (concat $ "return " : (intersperse " | " $ map maskShiftToC $ makeShiftMask $ computeShift $ makeOffset $ count p)) ++ ";"
+binToNum :: [Bool] -> String
+binToNum n = binToNumH n 0
+binToNumH :: [Bool] -> Int -> String
+binToNumH [] n = printf "0x%X" n
+binToNumH (True:tl)  n = binToNumH tl (2 * n + 1)
+binToNumH (False:tl) n = binToNumH tl (2 * n)
 
-processComb :: String -> String
-processComb c =
-  patternToMasks $ map (\ x -> if x == '1' then True else False) c 
+patternToMasks :: (Show a) => a -> [Bool] -> String
+patternToMasks x p =
+ let sm = makeShiftMask $ computeShift $ makeOffset $ count p in
+   let accShift = concat $ intersperse " | " $ map (maskShiftToC ("xx" ++ (show x))) sm
+       mskShift = "(" ++ (binToNum p) ++ " & mask)" in
+     concat $ "if(!(" : mskShift : ") && (ii >  " : (show (length p)) : ")) { insertBump(hm, " : accShift : "); }" : []
+
+processComb :: (Show a) => a -> String -> String
+processComb var c =
+  patternToMasks var $ map (\ x -> if x == '1' then True else False) c 
+
+main = do
+  n <- getArgs
+  putStr $ unlines $ zipWith ($) (map processComb "xx") n
+  
