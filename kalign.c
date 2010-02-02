@@ -61,7 +61,9 @@ inline int Alignment::getScore(
     }
     // take the max of the three neighbors
     dp_matrix[index] = (diag > top ? (diag > prv ? diag : prv) : (top > prv ? top : prv));
-    
+
+
+    // Sanity check our indices
     assert( li >= -1 && li <= size );
     assert( di >= -1 && li <= size );
     assert( ti >= -1 && li <= size );
@@ -125,9 +127,7 @@ string Alignment::seqB(){
 }
 
 bool Alignment::canStep(){
-
     return (!aligned);
-
 }
 
 bool Alignment::isAligned(){
@@ -308,7 +308,9 @@ Alignment* Alignment::round_robin( list<string> references, string target ){
             } else {
                 delete algn;
             }
-        }                 
+        } else {
+            delete algn;
+        }
     }
 
     // pick out the best alignment
