@@ -1,3 +1,5 @@
+Make the K-Band Aligner use the same memory space for *everything*.
+
 Clean up refseq and make it so vdj loads instantly by precomputing reference stuff and checking for changed versions of IMGT.
 
 Calibrate aligner
