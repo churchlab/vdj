@@ -190,7 +190,8 @@ static PyObject *alignmentcore_alignSW( PyObject *self, PyObject *args ) {
 }
 
 static PyMethodDef alignmentcoremethods[] = {
-	{"alignNW", alignmentcore_alignNW, METH_VARARGS},
+    {"alignK",  alignmentcore_alignk,  METH_VARARGS},
+    {"alignNW", alignmentcore_alignNW, METH_VARARGS},
 	{"alignSW", alignmentcore_alignSW, METH_VARARGS}
 } ;
 
