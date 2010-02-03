@@ -2,6 +2,12 @@
 from numpy.distutils.core import setup, Extension
 from numpy.distutils.misc_util import get_numpy_include_dirs
 
+import os
+os.environ['CC'] = 'g++'
+os.environ['CXX'] = 'g++'
+os.environ['CPP'] = 'g++'
+os.environ['LDSHARED'] = 'g++'
+
 alignmentcoreext = Extension(
                         "alignmentcore",
                         ["alignmentcore.c"],
