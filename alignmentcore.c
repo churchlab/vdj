@@ -1,4 +1,3 @@
-#include "kbandalign.h"
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <stdlib.h>
@@ -124,27 +123,6 @@ void alignSW( PyArrayObject *F, PyArrayObject *BT,
 	}
 	return ;
 }
-
-static PyObject *alignmentcore_alignk( PyObject *self, PyObject *args ){
-    
-    char *seq1, *seq2;
-
-    if( !PyArg_ParseTuple(args, "ss",
-                            &seq1,
-                            &seq2) ){
-        return NULL;
-    }
-
-    KAlignment *algn = new KAlignment(seq1,seq2);
-    algn->align();
-
-    int similarity = algn->globalScore();
-    delete algn;
-
-    return Py_BuildValue( "i", similarity ); 
-
-}
-
 static PyObject *alignmentcore_alignNW( PyObject *self, PyObject *args ) {
 	char *seq1, *seq2 ;
 	int len1, len2 ;
@@ -190,7 +168,6 @@ static PyObject *alignmentcore_alignSW( PyObject *self, PyObject *args ) {
 }
 
 static PyMethodDef alignmentcoremethods[] = {
-    {"alignK",  alignmentcore_alignk,  METH_VARARGS},
     {"alignNW", alignmentcore_alignNW, METH_VARARGS},
 	{"alignSW", alignmentcore_alignSW, METH_VARARGS}
 } ;

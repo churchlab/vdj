@@ -9,6 +9,7 @@
 #include <list>
 #include <queue>
 
+
 #ifndef GAP
 #define GAP (-1)
 #endif
