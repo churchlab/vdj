@@ -136,9 +136,9 @@ static PyObject *alignmentcore_kalign( PyObject *self, PyObject *args ){
     }
 
     KAlignment *algn = new KAlignment(seq1,seq2);
-    algn.align();
+    algn->align();
 
-    int similarity = algn.globalScore();
+    int similarity = algn->globalScore();
     delete algn;
 
     return Py_BuildValue( "i", similarity ); 
