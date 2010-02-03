@@ -3,11 +3,11 @@
 //   Where n,m are inputs and e is the edit distance:
 //     O(e^2) + O(n) + O(m)
 
-#include "kalign.h"
+#include "kbandalign.h"
 
 using namespace std;
 
-inline int Alignment::getScore(
+inline int KAlignment::getScore(
         int x,
         int y,
         int index){
@@ -76,7 +76,7 @@ inline int Alignment::getScore(
     return dp_matrix[index];
 }
 
-int Alignment::globalScore(){
+int KAlignment::globalScore(){
     if( aligned ){
         return score;
     } else {
@@ -84,22 +84,29 @@ int Alignment::globalScore(){
     }   
 }
 
-Alignment::Alignment( string seqA, string seqB ){
-    dp_matrix = NULL; 
-    max_rows = seqA.size();
-    max_cols = seqB.size();
+KAlignment::KAlignment( string seqA, string seqB ){
 
-    if( max_rows < max_cols ){
-        Alignment( seqB, seqA );
-        return;
-    }
-
-    
     row_seq = (char*) malloc(sizeof(char) * (max_rows + 1));
     col_seq = (char*) malloc(sizeof(char) * (max_cols + 1));
 
     strcpy(row_seq, seqA.c_str());
     strcpy(col_seq, seqB.c_str());
+
+    KAlignment(row_seq, col_seq, false);
+    return;
+}
+
+KAlignment::KAlignment( char *seqA, char *seqB, bool external=true ){
+    
+    
+    dp_matrix = NULL; 
+    max_rows = strlen(seqA);
+    max_cols = strlen(seqB);
+
+    if( max_rows < max_cols ){
+        KAlignment( seqB, seqA );
+        return;
+    }
 
     right = 1;
     left  = (max_cols < max_rows ? max_rows - max_cols : 1); // ensure that we reach the bottom corner
@@ -112,32 +119,35 @@ Alignment::Alignment( string seqA, string seqB ){
     resize(1,1);
 }
 
-Alignment::~Alignment(){
+KAlignment::~KAlignment(){
     if( dp_matrix ){ free(dp_matrix); dp_matrix = NULL; }
-    free(row_seq);
-    free(col_seq);
+    
+    if( !fromExternal ){
+        free(row_seq);
+        free(col_seq);
+    }
 }
 
-string Alignment::seqA(){
+string KAlignment::seqA(){
     return string(row_seq);
 }
 
-string Alignment::seqB(){
+string KAlignment::seqB(){
     return string(col_seq);
 }
 
-bool Alignment::canStep(){
+bool KAlignment::canStep(){
     return (!aligned);
 }
 
-bool Alignment::isAligned(){
+bool KAlignment::isAligned(){
     return aligned;
 }
 
-int Alignment::upperBound(){ return uBound; }
-int Alignment::lowerBound(){ return lBound; }
+int KAlignment::upperBound(){ return uBound; }
+int KAlignment::lowerBound(){ return lBound; }
 
-int Alignment::setUpperBound(int x, int y, int score){
+int KAlignment::setUpperBound(int x, int y, int score){
     int match = 1;
     int gap = -1;
     int d = min(max_cols - x, max_rows - y); // get the maximum score along the diagonal
@@ -148,7 +158,7 @@ int Alignment::setUpperBound(int x, int y, int score){
     return uBound;
 }
 
-int Alignment::setLowerBound(int x, int y, int score){
+int KAlignment::setLowerBound(int x, int y, int score){
     int match = 1;
     int gap = -1;
     int mismatch = -1;
@@ -168,7 +178,7 @@ int Alignment::setLowerBound(int x, int y, int score){
     return lBound;
 }
 
-int Alignment::resize(int l, int r){
+int KAlignment::resize(int l, int r){
     left = l;
     right = r;
     int d = max_rows - max_cols;    
@@ -184,7 +194,7 @@ int Alignment::resize(int l, int r){
     dp_matrix = (int*) malloc(sizeof(int) * size);
     return size;
 }
-int Alignment::step(){
+int KAlignment::step(){
 
     assert( canStep() );
     
@@ -253,7 +263,7 @@ int Alignment::step(){
     return MIN_INT;
 }
 
-int Alignment::align(){
+int KAlignment::align(){
 
     int score;
     while(canStep()){
@@ -263,16 +273,16 @@ int Alignment::align(){
     return score;
 }
 
-Alignment* Alignment::round_robin( list<string> references, string target ){
-    queue<Alignment*> robin;
-    list<Alignment*>  alignedList;
+KAlignment* KAlignment::round_robin( list<string> references, string target ){
+    queue<KAlignment*> robin;
+    list<KAlignment*>  alignedList;
     list<string>::iterator refItr;
-    Alignment *algn;
+    KAlignment *algn;
     int bestLowerBound = MIN_INT;
     
 
     for( refItr = references.begin(); refItr != references.end(); refItr++ ){
-        algn = new Alignment((*refItr), target);
+        algn = new KAlignment((*refItr), target);
         robin.push(algn);
     }
 
@@ -315,21 +325,21 @@ Alignment* Alignment::round_robin( list<string> references, string target ){
 
     // pick out the best alignment
     // NOTE it's conceivable that we might want to examine suboptimal alignments
-    list<Alignment*>::iterator algItr;
-    Alignment* bestAlignment = NULL;
+    list<KAlignment*>::iterator algItr;
+    KAlignment* bestKAlignment = NULL;
     for( algItr = alignedList.begin(); algItr != alignedList.end(); algItr++ ){
-        if( bestAlignment ){
-            if( bestAlignment->globalScore() < (*algItr)->globalScore() ){
-                delete bestAlignment;
-                bestAlignment = (*algItr);
+        if( bestKAlignment ){
+            if( bestKAlignment->globalScore() < (*algItr)->globalScore() ){
+                delete bestKAlignment;
+                bestKAlignment = (*algItr);
             } else {
                 delete (*algItr);
             }
         } else {
-            bestAlignment = (*algItr);
+            bestKAlignment = (*algItr);
         }
     }
-    return bestAlignment;
+    return bestKAlignment;
 }
 
 
@@ -346,7 +356,7 @@ int main( int argc, char** argv ){
     
     printf("Performing all alignments: \n");
     for( itr = ref.begin() ; itr != ref.end() ; itr++ ){
-        Alignment n = Alignment(*itr, string("abcdefghijkl"));
+        KAlignment n = KAlignment(*itr, string("abcdefghijkl"));
         n.align();
         
         printf("%s: %d\n", (*itr).c_str(), n.globalScore());
@@ -363,11 +373,11 @@ int main( int argc, char** argv ){
         x += "x";
         y += "y";
     }
-    Alignment n = Alignment(x, y);
+    KAlignment n = KAlignment(x, y);
     n.align();
 
     }   
-    /* Alignment* a = Alignment::round_robin(ref, string("abcdefghijkl"));
+    /* KAlignment* a = KAlignment::round_robin(ref, string("abcdefghijkl"));
     printf("[%d,%d]: %d %s\n", a->lowerBound(), a->upperBound(), a->globalScore(), a->seqA().c_str());
     */
 

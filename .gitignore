@@ -1,4 +1,8 @@
 *.pyc
 *.so
+*.swp
+*.out
+*.hi
+*.o
 build/
 .DS_Store

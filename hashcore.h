@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 
+#include <Python.h>
+
 enum nucleotide {A,T,C,G};
 unsigned short getNucleotide(char);
 void runCombs(std::map<unsigned long, int>*, unsigned long, unsigned long, int);

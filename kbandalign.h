@@ -29,10 +29,11 @@
 #define MAX_INT (16384)
 #endif
 
-class Alignment {
+class KAlignment {
     public:
-        Alignment(std::string seqA, std::string seqB);
-        ~Alignment();
+        KAlignment(std::string seqA, std::string seqB);
+        KAlignment(char* seqA, char* seqB, bool);
+        ~KAlignment();
         std::string seqA();
         std::string seqB();
         int upperBound();
@@ -42,7 +43,7 @@ class Alignment {
         int step();
         bool canStep();
         bool isAligned();
-        static Alignment* round_robin(std::list<std::string>, std::string);
+        static KAlignment* round_robin(std::list<std::string>, std::string);
     private:
         int getScore(int x,  int y,  int index);
         int resize(int, int);
@@ -61,6 +62,7 @@ class Alignment {
         int lBound;
         int score;
 
+        bool fromExternal;
         bool aligned;
 };
 
