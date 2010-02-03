@@ -79,6 +79,7 @@ static PyObject *hashcore_seq2hash( PyObject *self, PyObject *args ) {
     // perform computation
     
     // build python value
+    return Py_BuildValue( ) ;   // we possibly want to return a dictionary here
 }
 
 static PyMethodDef hashcoremethods[] = {
