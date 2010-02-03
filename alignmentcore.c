@@ -125,7 +125,7 @@ void alignSW( PyArrayObject *F, PyArrayObject *BT,
 	return ;
 }
 
-static PyObject *alignmentcore_kalign( PyObject *self, PyObject *args ){
+static PyObject *alignmentcore_alignk( PyObject *self, PyObject *args ){
     
     char *seq1, *seq2;
 
