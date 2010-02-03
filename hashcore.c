@@ -68,6 +68,28 @@ std::map<unsigned long, int>* loadSequence(char* seq){
     return res;
 }
 
+static PyObject *hashcore_seq2hash( PyObject *self, PyObject *args ) {
+    // define data
+    
+    // parse python objects
+    if ( !PyArg_ParseTuple(args,"", ) ) {
+        return NULL ;
+    }
+    
+    // perform computation
+    
+    // build python value
+}
+
+static PyMethodDef hashcoremethods[] = {
+    {"seq2hash", hashcore_seq2hash, METH_VARARGS},
+} ;
+
+void initalignmentcore() {
+    Py_InitModule( "hashcore", hashcoremethods ) ;
+    import_array();
+}
+
 /*
 std::list<std::set<unsigned long>* > makeSignatures( std::list<std::set<unsigned long>* > subunits ){
 

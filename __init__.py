@@ -493,25 +493,25 @@ def cluster_chains(cutoff,tag,inhandle,outhandle,linkage='single'):
 
 
 def split_vdjxml_into_parts(packetsize,inhandle,outname):
-	parts = []
-	chains_processed = 0
-	file_num = 0
-	curr_outname = outname+'.'+str(file_num)
-	for chain in parse_VDJXML(inhandle):
-	    if chains_processed == 0:
-	        op = open(curr_outname,'w')
-	        parts.append(curr_outname)
-	    
-	    print >>op, chain
-	    chains_processed += 1
-	    
-	    if chains_processed == packetsize:
-	        op.close()
-	        chains_processed = 0
-	        file_num += 1
-	        curr_outname = outname+'.'+str(file_num)
-	
-	return parts
+    parts = []
+    chains_processed = 0
+    file_num = 0
+    curr_outname = outname+'.'+str(file_num)
+    for chain in parse_VDJXML(inhandle):
+        if chains_processed == 0:
+            op = open(curr_outname,'w')
+            parts.append(curr_outname)
+        
+        print >>op, chain
+        chains_processed += 1
+        
+        if chains_processed == packetsize:
+            op.close()
+            chains_processed = 0
+            file_num += 1
+            curr_outname = outname+'.'+str(file_num)
+    
+    return parts
 
 
 # for generating identifiers from VJ combos
