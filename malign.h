@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #include <assert.h>
 
 #include <algorithm>
@@ -21,8 +23,9 @@ typedef struct{
 
 class MAlignerEntry {
             public:
-                MAlignerEntry(char *nm, char *seq, dp_matrix *dp);
-                bool initialize(char*, int);
+                MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp);
+                ~MAlignerEntry();
+                bool initialize(const char*, int);
                 bool isAligned();
                 bool isInitialized();
                 int align();
@@ -40,7 +43,7 @@ class MAlignerEntry {
                 
                 char *name;
                 char *refSequence;
-                char *testSequence;
+                const char *testSequence;
                 dp_matrix *dpm;
                 int uBound;
                 int lBound;
@@ -64,6 +67,7 @@ class MAlignerEntry {
 class MAligner {
     public:
         MAligner(int nseq, char** seqs, char** names);
+        ~MAligner();
         bool initialize(char* input);
         std::priority_queue<MAlignerEntry*> align(char* input);
         std::priority_queue<MAlignerEntry*> alignWith(char* input, int nnames, char** names);
