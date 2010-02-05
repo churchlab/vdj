@@ -15,19 +15,87 @@ MAligner::MAligner(int nseq, char** seqs, char** names){
 
     for( int ii = 0; ii < nseq; ++ii ){
         MAlignerEntry *en = new MAlignerEntry(names[ii], seqs[ii], global_matrix);
-        entries.push_back(en);
+        entries.insert(pair<string,MAlignerEntry*>(string(seqs[ii]),en));
     }
 
 }
 
-const char* MAligner::align(char* input){
-    list<MAlingerEntry*>::iterator entry_itr;
+priority_queue<MAlignerEntry*> MAligner::align(char* input){
+    queue<MAlignerEntry*> robin; 
+    map<string, MAlignerEntry*>::iterator entry_itr;
+
+    int len = strlen(input);
+
+    for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
+        MAlignerEntry *e = (*entry_itr).second;
+        e->initialize(input, len);
+        robin.push(e);
+    }
+
+    return this->roundRobin(robin);
+
+}
+
+priority_queue<MAlignerEntry*> MAligner::alignWith(char* input, int nnames, char** names){
+
+    queue<MAlignerEntry*> robin;
+    int len = strlen(input);
+
+    map<string,MAlignerEntry*>::iterator search_itr;
+    for( int ii = 0; ii < nnames ; ++ii ){
+        search_itr = entries.find(string(names[ii]));
+        if( search_itr != entries.end() ){
+            (*search_itr).second->initialize(input, len);
+            robin.push( (*search_itr).second );
+        }
+    }
+
+    return this->roundRobin(robin);
+
+}
+
+priority_queue<MAlignerEntry*> MAligner::roundRobin(queue<MAlignerEntry*> robin){
+    
+    priority_queue<MAlignerEntry*> results;
+    int bestLowerBound = MINVAL;
+    
+    while( !robin.empty() ){
+        MAlignerEntry *mae = robin.front();
+        robin.pop();
+
+        if( mae->upperBound() > bestLowerBound ){
+            mae->step();
+
+            if( mae->lowerBound() > bestLowerBound ){
+                bestLowerBound = mae->lowerBound();
+            }
+
+            if( mae->upperBound() >= bestLowerBound
+                && !mae->isAligned() ){
+                robin.push(mae);
+            }
+        }
+
+        if( mae->isAligned() ){
+            results.push(mae); 
+        }
+    }
+
+    return results;
+}
+
+bool  MAligner::initialize(char* input){
+    map<string, MAlignerEntry*>::iterator entry_itr;
+
+    int len = strlen(input);
 
     for( entry_itr = entries.begin() ; entry_itr != entries.end() ; entry_itr++ ){
-        (*entry_itr)->initialize(input);
+        (*entry_itr).second->initialize(input, len);
     }
 
 
+
+    return true;
 }
 
 /*
@@ -45,13 +113,56 @@ MAlignerEntry::MAlignerEntry(char *nm, char *seq, dp_matrix *dp){
     this->mismatch = -1;
 
     this->initialized = false;
+    this->setLowerBound(0,0,0);
+    this->setUpperBound(0,0,0);
+}
+
+bool MAlignerEntry::isAligned() {
+    return aligned;
+}
+
+const bool MAlignerEntry::operator< (MAlignerEntry& entry){
+    return this->getScore() > entry.getScore(); 
+}
+const bool MAlignerEntry::operator> (MAlignerEntry& entry){
+    return this->getScore() < entry.getScore();
+}
+
+int MAlignerEntry::getScore(){
+    return score; 
 }
 
 int MAlignerEntry::upperBound(){
-    return uBound;
+    return this->uBound;
 }
 
 int MAlignerEntry::lowerBound(){
+    return this->lBound;
+}
+
+int MAlignerEntry::setUpperBound(int x, int y, int score){
+    int d = min(this->max_cols - x, this->max_rows - y); // get the maximum score along the diagonal
+    int h = max(this->max_cols - x - d, this->max_rows - y - d);
+
+    assert(h >= 0);
+    this->uBound = score + d * this->match - h * this->gap;
+    return uBound;
+}
+
+int MAlignerEntry::setLowerBound(int x, int y, int score){
+    int perimeter     = (this->max_cols - x) + (this->max_rows - y);
+    int mismatchPath  = min(this->max_cols - x, this->max_rows - y);
+    int mismatchPerimeter = 
+          max(this->max_cols - x - mismatchPath, this->max_rows - y - mismatchPath);
+
+    assert(perimeter >= 0);
+    assert(mismatchPath >= 0);
+    assert(mismatchPerimeter >= 0);
+
+    int perimeterScore = perimeter * this->gap;
+    int mismatchScore = mismatchPath * this->mismatch + mismatchPerimeter * this->gap;
+
+    this->lBound = score + max(perimeterScore, mismatchScore);
     return lBound;
 }
 
@@ -156,9 +267,9 @@ bool MAlignerEntry::step(){
             }
             
             if( boundary ){ 
-                grow(grow_left, grow_right);
-             //   setUpperBound(max_x, max_y, line_max);
-             //   setLowerBound(max_x, max_y, line_max);
+                this->grow(grow_left, grow_right);
+                this->setUpperBound(max_x, max_y, line_max);
+                this->setLowerBound(max_x, max_y, line_max);
             
                 return MINVAL;
             }
