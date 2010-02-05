@@ -141,6 +141,9 @@ int MAlignerEntry::lowerBound(){
 }
 
 int MAlignerEntry::setUpperBound(int x, int y, int score){
+    
+    if( !this->initialized ){ return MINVAL; }
+    
     int d = min(this->max_cols - x, this->max_rows - y); // get the maximum score along the diagonal
     int h = max(this->max_cols - x - d, this->max_rows - y - d);
 
@@ -150,6 +153,9 @@ int MAlignerEntry::setUpperBound(int x, int y, int score){
 }
 
 int MAlignerEntry::setLowerBound(int x, int y, int score){
+
+    if( !this->initialized ){ return MINVAL; }
+
     int perimeter     = (this->max_cols - x) + (this->max_rows - y);
     int mismatchPath  = min(this->max_cols - x, this->max_rows - y);
     int mismatchPerimeter = 
@@ -320,4 +326,15 @@ int MAlignerEntry::scoreDP(
 
     thisRow[rowOffset] = max(upleftVal, max(leftVal, upVal));
     return thisRow[rowOffset];
+}
+
+int main(int argc, void** argv){
+
+    char** seqs = (char**) malloc(sizeof(char));
+    char** names = (char**) malloc(sizeof(char));
+    seqs[0] = "ABCDEFGHIJKL";
+    names[0] = "Sample";
+
+    MAligner *aligner = new MAligner(1,seqs, names);
+    return 0;
 }
