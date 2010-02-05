@@ -226,7 +226,11 @@ bool MAlignerEntry::step(){
     const int left  = this->left;
     const int right = this->right;
 
+    int ii = 0;
+
     for(int y = 0; y < max_rows; ++y ){
+        
+
         int start = (y >= left ? y - left : 0 );
         int stop  = (max_cols < y + right + 1 ? max_cols : y + right + 1);
         int lmax = MINVAL;
@@ -236,6 +240,8 @@ bool MAlignerEntry::step(){
         int max_x, max_y;
         int rowOffset = 0;
         for( int x = start ; x < stop; ++x){ 
+            assert( (ii > 0 && !(x == 0 && y == 0)) || ii == 0 );
+            printf("index %p: ", (this->dpm->matrix + ii));
             // add a matrix entry
             int t = this->scoreDP(x, y, rowOffset, prevRow, thisRow);
 
@@ -249,6 +255,7 @@ bool MAlignerEntry::step(){
             }
 
             ++rowOffset;
+            ++ii;
         }
 
         prevRow = thisRow;
@@ -282,10 +289,10 @@ bool MAlignerEntry::step(){
         }
     }
 
-    int s = this->dpm->matrix[this->size - 1];
-
+    int s = this->dpm->matrix[ii - 1];
     if( !boundary ){ 
         this->aligned = true; 
+        printf("Score: %d (%p)\n", s, (this->dpm->matrix + ii -1));
         this->score = s;
         return s; 
     }
@@ -325,6 +332,8 @@ int MAlignerEntry::scoreDP(
     }
 
     thisRow[rowOffset] = max(upleftVal, max(leftVal, upVal));
+    
+    printf("%d: <%d, %d, %d> [x:%d y:%d] %d (%p)\n", rowOffset, upleftVal, upVal, leftVal, x, y, thisRow[rowOffset], (thisRow + rowOffset));
     return thisRow[rowOffset];
 }
 
@@ -336,5 +345,8 @@ int main(int argc, void** argv){
     names[0] = "Sample";
 
     MAligner *aligner = new MAligner(1,seqs, names);
+
+    printf("%d\n", aligner->align("ABCDEFGHIJKL").top()->getScore());
+
     return 0;
 }
