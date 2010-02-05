@@ -1,3 +1,5 @@
+Turn the hasher into a naive bayes classifier.
+
 Make the K-Band Aligner use the same memory space for *everything*.
 
 Break up alignment function into pretty pieces.  Brendan may implement whole thing in C++?
