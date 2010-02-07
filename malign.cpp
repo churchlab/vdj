@@ -22,11 +22,11 @@ MAligner::MAligner(int nseq, char** seqs, char** names){
 
 MAligner::~MAligner(){
     list<MAlignerEntry*>::iterator entry_itr;
-
+/*
     for( entry_itr = this->entries->begin() ; entry_itr != this->entries->end(); entry_itr++ ){
-        delete (*entry_itr);
+        delete (&entry_itr);
     }
-
+*/
     if( global_matrix->matrix != NULL ){
         free(global_matrix->matrix);
     }
@@ -134,6 +134,8 @@ MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
     this->lBound = MINVAL;
     this->matrix_size = MINVAL;
 
+    this->doGrow = false;
+
     this->gap      = -1;
     this->match    =  1;
     this->mismatch = -1;
@@ -228,7 +230,7 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
   
     printf("diff: %d Left: %d Right: %d Rows: %d Cols: %d Size: %d\n", d, l, r, this->num_rows, this->num_cols, this->matrix_size);
     // Ask for a bigger scratch space if we need it
-    if(this->dpm->size < this->matrix_size ){ 
+    if(this->doGrow && this->dpm->size < this->matrix_size ){ 
         free(this->dpm->matrix);
         this->dpm->matrix = (int*) malloc(sizeof(int) * this->matrix_size);
         this->dpm->size = this->matrix_size;
@@ -238,7 +240,8 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
 }
 
 bool MAlignerEntry::initialize(const char* testSeq, int len=0){
-   
+  
+
     this->test_length = strlen(testSeq);
     
     //printf("Initialized entry with '%s' and length %d...\n", testSeq, len);
@@ -262,6 +265,7 @@ bool MAlignerEntry::initialize(const char* testSeq, int len=0){
     this->left  = (this->num_cols < this->num_rows ? this->num_rows - this->num_cols : 1);
     this->right = 1;
     this->aligned = false;
+    this->doGrow = true;
     grow(false, false);
     return true;
 }
@@ -279,6 +283,11 @@ int MAlignerEntry::align(){
 }
 
 bool MAlignerEntry::step(){
+
+    if( this->doGrow ){
+        this->grow(false, false);
+        this->doGrow = false;
+    }
 
     int num_rows = this->num_rows;
     int num_cols = this->num_cols;
@@ -352,7 +361,10 @@ bool MAlignerEntry::step(){
             }
             
             if( boundary ){ 
+                this->doGrow = false;
                 this->grow(grow_left, grow_right);
+                this->doGrow = true;
+
                 this->setUpperBound(max_x, max_y, line_max);
                 this->setLowerBound(max_x, max_y, line_max);
             

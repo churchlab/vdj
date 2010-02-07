@@ -62,6 +62,7 @@ class MAlignerEntry {
                 int right;
 
                 int grow(bool, bool);
+                bool doGrow;
                 int setLowerBound(int, int, int);
                 int setUpperBound(int, int, int);
 
