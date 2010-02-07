@@ -31,7 +31,7 @@ if(!((0x7747 & mask)) && (ii >  15)) { insertBump(hm, ((0x7000 & xx) >> 5) | ((0
 
 inline void insertBump(map<unsigned long, int>* mp, unsigned long key){
 
-    std::map<unsigned long, int>::iterator itr = mp->lower_bound(key);
+    map<unsigned long, int>::iterator itr = mp->lower_bound(key);
 
     // Are we in the right place?
     if( (*itr).first == key ){
@@ -43,10 +43,24 @@ inline void insertBump(map<unsigned long, int>* mp, unsigned long key){
     return;
 }
 
+// add one to the observations
+void pseudocount(map<unsigned long, int>* mp){
+    map<unsigned long, int>::iterator mp_itr;
 
-std::map<unsigned long, int>* loadSequence(char* seq){
+    for( mp_itr = mp->begin(); mp_itr != mp->end(); mp_itr++ ){
+        (*mp_itr) += 1;
+    }
+
+    return;
+}
+
+map<unsigned long, int>* extractFeatures(char* seq, map<unsigned long, int> *res = NULL){
     int len = strlen(seq);
-    std::map<unsigned long, int>* res = new std::map<unsigned long, int>();
+
+    if( !res ){
+        res = new map<unsigned long, int>();
+    }
+
     unsigned long acc = 0;
     unsigned long nmask = 0;
     unsigned short nuc;
@@ -68,6 +82,19 @@ std::map<unsigned long, int>* loadSequence(char* seq){
     return res;
 }
 
+map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
+
+    list<char*>::iterator seq_itr;
+    map<unsigned long, int> *featureSet = new map<unsigned long, int>();
+
+    for( seq_itr = sequences.begin(); seq_itr != sequences.end(); seq_itr++ ){
+        extractFeatures(*seq_itr, featureSet);
+    }
+
+    return featureSet;
+}
+
+/*
 static PyObject *hashcore_seq2hash( PyObject *self, PyObject *args ) {
     // define data
     
@@ -90,65 +117,17 @@ void initalignmentcore() {
     Py_InitModule( "hashcore", hashcoremethods ) ;
     import_array();
 }
-
-/*
-std::list<std::set<unsigned long>* > makeSignatures( std::list<std::set<unsigned long>* > subunits ){
-
-  std::list<std::set<unsigned long>* > res;
-
-  std::list<std::set<unsigned long>* >::iterator prmItr = subunits.begin();
-  std::list<std::set<unsigned long>* >::iterator secItr = subunits.begin();
-
-  //TODO double check the number of copies I'm making. Are they all necessary?
-  while( prmItr != subunits.end() ) {
-        
-      set<unsigned long>* tset = new std::set<unsigned long>((*prmItr)->begin(), (*prmItr)->end());
-      set<unsigned long>* swap = new std::set<unsigned long>();
-      set<unsigned long>::iterator itr = tset->begin();
-      while( secItr != subunits.end() ){
-        if( (*secItr) != (*prmItr) ){
-          set_difference(
-                tset->begin(), tset->end(), 
-                (*secItr)->begin(), (*secItr)->end(), inserter(*swap, swap->begin()));
-        }
-        delete tset;
-        tset = swap;
-        swap = new std::set<unsigned long>();
-        
-        res.push_back(tset);
-      }
-  }
-
-  return res;
-}
-
-std::set<unsigned int>* matchAll( std::list<unsigned int>* input, std::list<std::set<unsigned long>* > signatures ){
-
-    std::set<unsigned int>* result = new std::set<unsigned int>();
-
-    if( input->empty() ) { return result; }
-    
-    unsigned int buffer = input->front();
-    input->pop_front();
-
-    do {
-
-
-    } while( !input->empty() );
-
-    return result;
-
-}
-
 */
 
 
 int main(int argc, char** argv){
     
     char* seq = "CGATATGCACGCTCTCGACGCGCGACGCACGACGACACACGAGAGNGNGNGACGACGACGGACGACGA";
-    std::map<unsigned long, int>* f = loadSequence(seq);
+    list<char*> sequences;
+    sequences.push_back(seq);
+    map<unsigned long, int>* f = extractFeatures(seq);
 
-    std::map<unsigned long, int>::iterator itr;
+    map<unsigned long, int>::iterator itr;
 
     for( itr = f->begin(); itr != f->end() ; itr++){
         printf("0x%X: %d\n", (unsigned int) (*itr).first, (*itr).second);
