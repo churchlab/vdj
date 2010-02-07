@@ -117,13 +117,15 @@ MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
     strcpy(this->name, nm);
     strcpy(this->refSequence, seq);
 
+    this->ref_length = strlen(this->refSequence);
+
     this->dpm = dp;
-    this->max_rows = strlen(seq);
-    this->max_cols = 0; // initialize this when we load it with a sequence
+    this->num_rows = NULL;
+    this->num_cols = NULL; // initialize this when we load it with a sequence
 
     this->uBound = MINVAL;
     this->lBound = MINVAL;
-    this->size = MINVAL;
+    this->matrix_size = MINVAL;
 
     this->gap      = -1;
     this->match    =  1;
@@ -166,8 +168,8 @@ int MAlignerEntry::setUpperBound(int x, int y, int score){
     
     if( !this->initialized ){ return MINVAL; }
     
-    int d = min(this->max_cols - x, this->max_rows - y); // get the maximum score along the diagonal
-    int h = max(this->max_cols - x - d, this->max_rows - y - d);
+    int d = min(this->num_cols - x, this->num_rows - y); // get the maximum score along the diagonal
+    int h = max(this->num_cols - x - d, this->num_rows - y - d);
 
     assert(h >= 0);
     this->uBound = score + d * this->match - h * this->gap;
@@ -178,10 +180,10 @@ int MAlignerEntry::setLowerBound(int x, int y, int score){
 
     if( !this->initialized ){ return MINVAL; }
 
-    int perimeter     = (this->max_cols - x) + (this->max_rows - y);
-    int mismatchPath  = min(this->max_cols - x, this->max_rows - y);
+    int perimeter     = (this->num_cols - x) + (this->num_rows - y);
+    int mismatchPath  = min(this->num_cols - x, this->num_rows - y);
     int mismatchPerimeter = 
-          max(this->max_cols - x - mismatchPath, this->max_rows - y - mismatchPath);
+          max(this->num_cols - x - mismatchPath, this->num_rows - y - mismatchPath);
 /*
     assert(perimeter >= 0);
     assert(mismatchPath >= 0);
@@ -196,45 +198,60 @@ int MAlignerEntry::setLowerBound(int x, int y, int score){
 
 int MAlignerEntry::grow(bool growLeft, bool growRight){
                 
+    
     if( growLeft ){
-        this->left = min(this->left * 2, this->max_cols / 2);
+        this->left = min(this->left * 2, this->num_cols / 2);
     }
 
     if( growRight ){
-        this->right = min(this->right * 2, this->max_cols / 2);
+        this->right = min(this->right * 2, this->num_cols / 2);
     }
             
     int l = this->left;
     int r = this->right;
-    int d = this->max_rows - this->max_cols;    
-    this->size = 
-        this->max_rows 
+    int d = this->num_rows - this->num_cols;    
+    this->matrix_size = 
+        this->num_rows 
         * (l + r + 1) 
         - (l * (l + 1) / 2) 
         - (r * (r + 1) / 2)
         - (r * d)
         - (d * (d+1) / 2); // account for left hand overflow and the diagonal
-   
+  
+    printf("diff: %d Left: %d Right: %d Rows: %d Cols: %d Size: %d\n", d, l, r, this->num_rows, this->num_cols, this->matrix_size);
     // Ask for a bigger scratch space if we need it
-    if(this->dpm->size < this->size ){ 
+    if(this->dpm->size < this->matrix_size ){ 
         free(this->dpm->matrix);
-        this->dpm->matrix = (int*) malloc(sizeof(int) * this->size);
-        this->dpm->size = this->size;
+        this->dpm->matrix = (int*) malloc(sizeof(int) * this->matrix_size);
+        this->dpm->size = this->matrix_size;
     }
     
-    return this->size;
+    return this->matrix_size;
 }
 
 bool MAlignerEntry::initialize(const char* testSeq, int len=0){
-    if( !len ){
-        len = strlen(testSeq);
-    }
-
+   
+    this->test_length = strlen(testSeq);
+    
     //printf("Initialized entry with '%s' and length %d...\n", testSeq, len);
-    this->testSequence = testSeq;
-    this->max_cols = len;
+    this->testSequence = (char*) malloc(this->test_length + 1);
+    strcpy(this->testSequence, testSeq);
+    
+    // test will be the row
+    if( this->test_length > this->ref_length ) {
+        this->row_seq  = this->testSequence;
+        this->num_rows = this->test_length;
+        this->col_seq  = this->refSequence;
+        this->num_cols = this->ref_length;
+    // reference will be the row
+    } else {
+        this->row_seq  = this->refSequence;
+        this->num_rows = this->ref_length;
+        this->col_seq  = this->testSequence;
+        this->num_cols = this->test_length;
+    }
     this->initialized = true;
-    this->left = 1;
+    this->left  = (this->num_cols < this->num_rows ? this->num_rows - this->num_cols : 1);
     this->right = 1;
     this->aligned = false;
     grow(false, false);
@@ -255,8 +272,8 @@ int MAlignerEntry::align(){
 
 bool MAlignerEntry::step(){
 
-    int max_rows = this->max_rows;
-    int max_cols = this->max_cols;
+    int num_rows = this->num_rows;
+    int num_cols = this->num_cols;
 
     int *prevRow = NULL;
     int *thisRow = this->dpm->matrix;
@@ -268,11 +285,10 @@ bool MAlignerEntry::step(){
 
     int ii = 0;
 
-    for(int y = 0; y < max_rows; ++y ){
-        
+    for(int y = 0; y < num_rows; ++y ){
 
         int start = (y >= left ? y - left : 0 );
-        int stop  = (max_cols < y + right + 1 ? max_cols : y + right + 1);
+        int stop  = (num_cols < y + right + 1 ? num_cols : y + right + 1);
         int lmax = MINVAL;
         int rmax = MINVAL;
         int line_max = MINVAL;
@@ -295,7 +311,7 @@ bool MAlignerEntry::step(){
 
             // we need to know if we've run into a boundary
             if( x == start && x > 0){ lmax = t; }
-            if( x == stop - 1 && x < max_cols - 1){ rmax = t; }
+            if( x == stop - 1 && x < num_cols - 1){ rmax = t; }
             if( t > line_max ){
                 line_max = t; 
                 max_x = x; 
@@ -311,18 +327,18 @@ bool MAlignerEntry::step(){
 
         // if we've hit a boundary, short circuit our way out of the loop
         // and increase the boundary sizes
-        if( max_cols > y + right + 1 ){
+        if( num_cols > y + right + 1 ){
             bool grow_left = false;
             bool grow_right = false;
 
             if( line_max == lmax
-                && this->left != this->max_cols / 2 ){
+                && this->left != this->num_cols / 2 ){
                 boundary = true;
                 grow_left = true;
             }
 
             if( line_max == rmax
-                && this->right != this->max_cols / 2){
+                && this->right != this->num_cols / 2){
                 boundary = true;
                 grow_right = true;
             }
@@ -358,8 +374,8 @@ int MAlignerEntry::scoreDP(
     int upVal = MINVAL;
     int upleftVal = this->gap * x + this->gap * y;
 
-    const char* row_seq = this->refSequence;
-    const char* col_seq = this->testSequence;
+    const char* row_seq = this->row_seq;
+    const char* col_seq = this->col_seq;
 
     if(rowOffset > 0 ){
         leftVal = thisRow[rowOffset - 1] + this->gap;
@@ -394,14 +410,15 @@ int main(int argc, char** argv){
 
     MAlignerEntry *aligner = new MAlignerEntry(string("Sample").c_str(), string("ABCDEFGHIJKL").c_str(), dpm);
 
-    aligner->initialize(string("ABCDEFGHIJKL").c_str());
+    aligner->initialize(string("ABCDEFGHIJKLMNOP").c_str());
     aligner->align();
-    aligner->initialize(string("XXXXXXXXXXXX").c_str());
-    aligner->align();
-    aligner->initialize(string("XXXXXXX").c_str());
-    aligner->align();
-    aligner->initialize(string("ABCDEFG").c_str());
-    aligner->align();
+    printf("%d\n", aligner->getScore());
+    //aligner->initialize(string("XXXXXXXXXXXX").c_str());
+    //aligner->align();
+    //aligner->initialize(string("XXXXXXX").c_str());
+    //aligner->align();
+    //aligner->initialize(string("ABCDEFG").c_str());
+    //aligner->align();
 
     delete aligner;
 
