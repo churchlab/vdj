@@ -7,10 +7,15 @@
 
 #include <stdlib.h>
 
-#include <Python.h>
+// #include <Python.h>
 
 enum nucleotide {A,T,C,G};
+
+
+
 unsigned short getNucleotide(char);
 void runCombs(std::map<unsigned long, int>*, unsigned long, unsigned long, int);
 void insertBump(std::map<unsigned long, int>*, unsigned long);
-std::map<unsigned long, int>* loadSequence(char*);
+std::map<unsigned long, int>* extractFeatures(char*, std::map<unsigned long, int>*);
+void pseudocount(std::map<unsigned long, int>*);
+
