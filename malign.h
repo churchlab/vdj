@@ -40,11 +40,22 @@ class MAlignerEntry {
             private:
 
                 int scoreDP(int, int, int, int*, int*);
-                
                 char *name;
                 char *refSequence;
-                const char *testSequence;
+                int ref_length;
+
+                char *testSequence;
+                int test_length;
+
+                // #rows >= #cols;
+                char *row_seq;
+                char *col_seq;
+                int num_rows;
+                int num_cols;
+
                 dp_matrix *dpm;
+                int matrix_size;
+                
                 int uBound;
                 int lBound;
                 int left;
@@ -53,11 +64,6 @@ class MAlignerEntry {
                 int grow(bool, bool);
                 int setLowerBound(int, int, int);
                 int setUpperBound(int, int, int);
-                
-                int size;
-
-                int max_rows;
-                int max_cols;
 
                 int score;
                 bool aligned;
