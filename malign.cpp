@@ -21,6 +21,12 @@ MAligner::MAligner(int nseq, char** seqs, char** names){
 }
 
 MAligner::~MAligner(){
+    list<MAlignerEntry*>::iterator entry_itr;
+
+    for( entry_itr = this->entries->begin() ; entry_itr != this->entries->end(); entry_itr++ ){
+        delete (*entry_itr);
+    }
+
     if( global_matrix->matrix != NULL ){
         free(global_matrix->matrix);
     }
@@ -110,7 +116,8 @@ bool  MAligner::initialize(char* input){
  * MAlignerEntry
  */
 MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
-    
+
+    // copy the reference into place
     this->name = (char*) malloc(strlen(nm) + 1);
     this->refSequence = (char*) malloc(strlen(seq) + 1);
     this->testSequence = NULL;
@@ -139,6 +146,7 @@ MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
 MAlignerEntry::~MAlignerEntry(){
     free(this->name);
     free(this->refSequence);
+    if( this->testSequence ){ free(this->testSequence); }
 }
 
 bool MAlignerEntry::isAligned() {
@@ -357,6 +365,8 @@ bool MAlignerEntry::step(){
     if( !boundary ){ 
         this->aligned = true; 
         this->score = s;
+        this->uBound = s;
+        this->lBound = s;
         return s; 
     }
 
@@ -410,9 +420,9 @@ int main(int argc, char** argv){
 
     MAlignerEntry *aligner = new MAlignerEntry(string("Sample").c_str(), string("ABCDEFGHIJKL").c_str(), dpm);
 
-    aligner->initialize(string("ABCDEFGHIJKLMNOP").c_str());
+    aligner->initialize(string("XXXXXXXXXXXXXXXXXXX").c_str());
     aligner->align();
-    printf("%d\n", aligner->getScore());
+    printf("%d (%d,%d)\n", aligner->getScore(), aligner->lowerBound(), aligner->upperBound());
     //aligner->initialize(string("XXXXXXXXXXXX").c_str());
     //aligner->align();
     //aligner->initialize(string("XXXXXXX").c_str());
