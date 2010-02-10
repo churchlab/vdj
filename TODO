@@ -1,9 +1,5 @@
 Turn the hasher into a naive bayes classifier.
 
-Make the K-Band Aligner use the same memory space for *everything*.
-
-Break up alignment function into pretty pieces.  Brendan may implement whole thing in C++?
-
 Clean up refseq and make it so vdj loads instantly by precomputing reference stuff and checking for changed versions of IMGT.
 
 Calibrate aligner
