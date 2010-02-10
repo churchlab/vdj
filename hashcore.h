@@ -35,7 +35,7 @@ class FeatureSet {
         std::string getName();
         std::set<unsigned long> *getFeatureSet();
     protected:
-        char *_name;
+        std::string _name;
 };
 
 class LikelihoodSet;
