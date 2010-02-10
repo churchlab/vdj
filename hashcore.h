@@ -33,8 +33,10 @@ class OddsTable {
 class FeatureSet {
     public:
         std::string getName();
+        std::string getSequence();
         std::set<unsigned long> *getFeatureSet();
     protected:
+        std::string _sequence;
         std::string _name;
 };
 
@@ -72,7 +74,6 @@ class ObservationSet: public FeatureSet {
     protected:
         std::map<unsigned long, int>* _obsset;
     private:
-        char *_sequence;
         friend class LikelihoodSet;
 };
 
@@ -92,5 +93,4 @@ unsigned short getNucleotide(char);
 void runCombs(std::map<unsigned long, int>*, unsigned long, unsigned long, int);
 void insertBump(std::map<unsigned long, int>*, unsigned long);
 std::map<unsigned long, int>* extractFeatures(char*, std::map<unsigned long, int>*);
-void pseudocount(std::map<unsigned long, int>*);
 
