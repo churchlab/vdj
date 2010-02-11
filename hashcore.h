@@ -33,8 +33,6 @@ class OddsTable {
 class FeatureSet {
     public:
         std::string getName();
-        std::string getSequence();
-        std::set<unsigned long> *getFeatureSet();
     protected:
         std::string _sequence;
         std::string _name;
@@ -67,10 +65,9 @@ class ReferenceSet: public FeatureSet {
 
 class ObservationSet: public FeatureSet {
     public:
-        ObservationSet(char *name, char *sequence);
-        ObservationSet(std::string name, std::string sequence);
+        ObservationSet(char *sequence, std::string name = std::string(""));
         ~ObservationSet();
-        std::set<unsigned long> *getFeatureSet();
+        std::set<unsigned long>* getFeatureSet();
     protected:
         std::map<unsigned long, int>* _obsset;
     private:
@@ -81,7 +78,7 @@ class LikelihoodSet: public FeatureSet {
     public:
         LikelihoodSet(ObservationSet* obs, ReferenceSet* corpus);
         ~LikelihoodSet();
-       double likelihood(ObservationSet*);
+        double likelihood(ObservationSet*);
     private:
         std::map<unsigned long, double>* _lset; 
         double _nullOdds;
