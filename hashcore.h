@@ -9,11 +9,12 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "hashutil.h"
+
 // #include <Python.h>
 
 // TODO Use templates so that I can abstract out the feature sets and inherit from the supertype
 
-enum nucleotide {A,T,C,G};
 
 class OddsTable {
     public:

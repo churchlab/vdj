@@ -2,21 +2,6 @@
 
 using namespace std;
 
-unsigned short getNucleotide(char ch){
-    
-    switch(ch) {
-        case 'a':
-        case 'A': return A;
-        case 't':
-        case 'T': return T;
-        case 'c':
-        case 'C': return C;
-        case 'g': 
-        case 'G': return G;
-        default:  return 5;
-    }
-}
-
 OddsTable::OddsTable(int n){
     _size = n;
     _contains = (double*) malloc(sizeof(double) * n);
@@ -241,7 +226,7 @@ map<unsigned long, int>* extractFeatures(char* seq, map<unsigned long, int> *res
     for( ii = 0; ii < len; ++ii) {
         nuc = getNucleotide(seq[ii]);
         acc <<= 2;
-        acc += nuc % 5;
+        acc += nuc % 4;
         
         nmask <<= 2;
         if( nuc > G ){
