@@ -10,6 +10,7 @@ to point to certain resources.
 refdatadir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
 imgtdat = 'imgt.dat'
 imgtfasta = 'imgt.fasta'
+imgtvseq = 'vdj_ref.fasta'
 imgtrefseqfasta = 'imgtrefseq.fasta'
 imgtspecfasta  = 'imgtspec.fasta'
 imgtspecvdjxml = 'imgtspec.vdjxml'

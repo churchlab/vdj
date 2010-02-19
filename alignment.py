@@ -66,7 +66,7 @@ class vdj_aligner(object):
         if verbose: print "Database init:", t1-t0
     
         # spawn the aligner
-        self.aligner = subprocess.Popen(["./malign","vdj_ref.fasta"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.aligner = subprocess.Popen(["./malign",imgtvseq], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
     def align_external(self, seq):
         self.aligner.stdin.write(seq + "\n")
