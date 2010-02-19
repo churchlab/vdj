@@ -3,6 +3,8 @@ import operator
 
 import numpy as np
 
+import subprocess
+
 import vdj
 import refseq
 import sequtils
@@ -63,6 +65,20 @@ class vdj_aligner(object):
         
         if verbose: print "Database init:", t1-t0
     
+        # spawn the aligner
+        self.aligner = subprocess.Popen(["./malign","vdj_ref.fasta"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    def align_external(self, seq):
+        self.aligner.stdin.write(seq + "\n")
+        ch = self.aligner.stdout.read(1)
+        # burn off newlines if they exist
+        while ch == "\n":
+            ch = self.aligner.stdout.read(1)
+        while ch != "\n":
+            acc += ch
+            ch = self.aligner.stdout.read(1)
+        return acc
+
     def align_seq(self,seq,verbose=False):
         chain = vdj.ImmuneChain(descr='sequence',seq=seq)
         self.align_chain(chain,verbose)
