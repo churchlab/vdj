@@ -7,26 +7,26 @@ using namespace std;
  * MAligner
  */
 
-MAligner::MAligner(int nseq, char** seqs, char** names){
+MAligner::MAligner(){
 
-   global_matrix = (dp_matrix*) malloc(sizeof(dp_matrix));
-   global_matrix->matrix = NULL;
-   global_matrix->size   = 0;
+    global_matrix = (dp_matrix*) malloc(sizeof(dp_matrix));
+    global_matrix->matrix = NULL;
+    global_matrix->size   = 0;
+}
 
-    for( int ii = 0; ii < nseq; ++ii ){
-        MAlignerEntry *en = new MAlignerEntry(names[ii], seqs[ii], global_matrix);
-        entries.insert(pair<string,MAlignerEntry*>(string(seqs[ii]),en));
-    }
+void MAligner::addEntry(const char* seq, const char* name){
 
+    MAlignerEntry *en = new MAlignerEntry(name, seq, global_matrix);
+    entries.insert(pair<string,MAlignerEntry*>(string(seq),en));
 }
 
 MAligner::~MAligner(){
     list<MAlignerEntry*>::iterator entry_itr;
-/*
-    for( entry_itr = this->entries->begin() ; entry_itr != this->entries->end(); entry_itr++ ){
-        delete (&entry_itr);
-    }
-*/
+    /*
+       for( entry_itr = this->entries->begin() ; entry_itr != this->entries->end(); entry_itr++ ){
+       delete (&entry_itr);
+       }
+     */
     if( global_matrix->matrix != NULL ){
         free(global_matrix->matrix);
     }
@@ -34,7 +34,7 @@ MAligner::~MAligner(){
     free(global_matrix);
 }
 
-priority_queue<MAlignerEntry*> MAligner::align(char* input){
+priority_queue<MAlignerEntry*> MAligner::align(const char* input){
     queue<MAlignerEntry*> robin; 
     map<string, MAlignerEntry*>::iterator entry_itr;
 
@@ -43,11 +43,22 @@ priority_queue<MAlignerEntry*> MAligner::align(char* input){
     for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
         MAlignerEntry *e = (*entry_itr).second;
         e->initialize(input, len);
+        //printf("Initialized %s!\n", e->getName());
         robin.push(e);
     }
 
     return this->roundRobin(robin);
 
+}
+
+const char* MAligner::bestAlign(const char* input){
+    //printf("Trying to align %s...\n", input);
+    priority_queue<MAlignerEntry*> pq = align(input);
+    if( !pq.empty() ){
+        return pq.top()->getName();
+    }
+
+    return NULL;
 }
 
 priority_queue<MAlignerEntry*> MAligner::alignWith(char* input, int nnames, char** names){
@@ -69,15 +80,15 @@ priority_queue<MAlignerEntry*> MAligner::alignWith(char* input, int nnames, char
 }
 
 priority_queue<MAlignerEntry*> MAligner::roundRobin(queue<MAlignerEntry*> robin){
-    
+
     priority_queue<MAlignerEntry*> results;
     int bestLowerBound = MINVAL;
-    
+
     while( !robin.empty() ){
         MAlignerEntry *mae = robin.front();
         robin.pop();
 
-        if( mae->upperBound() > bestLowerBound ){
+        if( mae->upperBound() >= bestLowerBound ){
             mae->step();
 
             if( mae->lowerBound() > bestLowerBound ){
@@ -85,7 +96,7 @@ priority_queue<MAlignerEntry*> MAligner::roundRobin(queue<MAlignerEntry*> robin)
             }
 
             if( mae->upperBound() >= bestLowerBound
-                && !mae->isAligned() ){
+                    && !mae->isAligned() ){
                 robin.push(mae);
             }
         }
@@ -98,7 +109,7 @@ priority_queue<MAlignerEntry*> MAligner::roundRobin(queue<MAlignerEntry*> robin)
     return results;
 }
 
-bool  MAligner::initialize(char* input){
+bool  MAligner::initialize(const char* input){
     map<string, MAlignerEntry*>::iterator entry_itr;
 
     int len = strlen(input);
@@ -118,10 +129,9 @@ bool  MAligner::initialize(char* input){
 MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
 
     // copy the reference into place
-    this->name = (char*) malloc(strlen(nm) + 1);
+    this->name = string(nm);
     this->refSequence = (char*) malloc(strlen(seq) + 1);
     this->testSequence = NULL;
-    strcpy(this->name, nm);
     strcpy(this->refSequence, seq);
 
     this->ref_length = strlen(this->refSequence);
@@ -130,7 +140,7 @@ MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
     this->num_rows = NULL;
     this->num_cols = NULL; // initialize this when we load it with a sequence
 
-    this->uBound = MINVAL;
+    this->uBound = MAXVAL;
     this->lBound = MINVAL;
     this->matrix_size = MINVAL;
 
@@ -146,9 +156,13 @@ MAlignerEntry::MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp){
 }
 
 MAlignerEntry::~MAlignerEntry(){
-    free(this->name);
     free(this->refSequence);
     if( this->testSequence ){ free(this->testSequence); }
+}
+
+const char* MAlignerEntry::getName(){
+    return this->name.c_str();
+
 }
 
 bool MAlignerEntry::isAligned() {
@@ -175,9 +189,9 @@ int MAlignerEntry::lowerBound(){
 }
 
 int MAlignerEntry::setUpperBound(int x, int y, int score){
-    
+
     if( !this->initialized ){ return MINVAL; }
-    
+
     int d = min(this->num_cols - x, this->num_rows - y); // get the maximum score along the diagonal
     int h = max(this->num_cols - x - d, this->num_rows - y - d);
 
@@ -193,12 +207,12 @@ int MAlignerEntry::setLowerBound(int x, int y, int score){
     int perimeter     = (this->num_cols - x) + (this->num_rows - y);
     int mismatchPath  = min(this->num_cols - x, this->num_rows - y);
     int mismatchPerimeter = 
-          max(this->num_cols - x - mismatchPath, this->num_rows - y - mismatchPath);
-/*
-    assert(perimeter >= 0);
-    assert(mismatchPath >= 0);
-    assert(mismatchPerimeter >= 0);
-*/
+        max(this->num_cols - x - mismatchPath, this->num_rows - y - mismatchPath);
+    /*
+       assert(perimeter >= 0);
+       assert(mismatchPath >= 0);
+       assert(mismatchPerimeter >= 0);
+     */
     int perimeterScore = perimeter * this->gap;
     int mismatchScore = mismatchPath * this->mismatch + mismatchPerimeter * this->gap;
 
@@ -207,8 +221,8 @@ int MAlignerEntry::setLowerBound(int x, int y, int score){
 }
 
 int MAlignerEntry::grow(bool growLeft, bool growRight){
-                
-    
+
+
     if( growLeft ){
         this->left = min(this->left * 2, this->num_cols / 2);
     }
@@ -216,7 +230,7 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
     if( growRight ){
         this->right = min(this->right * 2, this->num_cols / 2);
     }
-            
+
     int l = this->left;
     int r = this->right;
     int d = this->num_rows - this->num_cols;    
@@ -227,34 +241,34 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
         - (r * (r + 1) / 2)
         - (r * d)
         - (d * (d+1) / 2); // account for left hand overflow and the diagonal
-  
-    printf("diff: %d Left: %d Right: %d Rows: %d Cols: %d Size: %d\n", d, l, r, this->num_rows, this->num_cols, this->matrix_size);
+
+    //printf("diff: %d Left: %d Right: %d Rows: %d Cols: %d Size: %d\n", d, l, r, this->num_rows, this->num_cols, this->matrix_size);
     // Ask for a bigger scratch space if we need it
     if(this->doGrow && this->dpm->size < this->matrix_size ){ 
         free(this->dpm->matrix);
         this->dpm->matrix = (int*) malloc(sizeof(int) * this->matrix_size);
         this->dpm->size = this->matrix_size;
     }
-    
+
     return this->matrix_size;
 }
 
 bool MAlignerEntry::initialize(const char* testSeq, int len=0){
-  
+
 
     this->test_length = strlen(testSeq);
-    
+
     //printf("Initialized entry with '%s' and length %d...\n", testSeq, len);
     this->testSequence = (char*) malloc(this->test_length + 1);
     strcpy(this->testSequence, testSeq);
-    
+
     // test will be the row
     if( this->test_length > this->ref_length ) {
         this->row_seq  = this->testSequence;
         this->num_rows = this->test_length;
         this->col_seq  = this->refSequence;
         this->num_cols = this->ref_length;
-    // reference will be the row
+        // reference will be the row
     } else {
         this->row_seq  = this->refSequence;
         this->num_rows = this->ref_length;
@@ -312,7 +326,7 @@ bool MAlignerEntry::step(){
 
         int max_x, max_y;
         int rowOffset = 0;
-       
+
         // This offset is necessary for the cases where the lefthand side of 
         // the search window falls outside of the DP matrix.
         // By doing this we can avoid any sort of zany offset garbage.
@@ -322,7 +336,7 @@ bool MAlignerEntry::step(){
 
         for( int x = start ; x < stop; ++x){ 
             assert( (ii > 0 && !(x == 0 && y == 0)) || ii == 0 );
-            
+
             // add a matrix entry
             int t = this->scoreDP(x, y, rowOffset, prevRow, thisRow);
 
@@ -349,17 +363,17 @@ bool MAlignerEntry::step(){
             bool grow_right = false;
 
             if( line_max == lmax
-                && this->left != this->num_cols / 2 ){
+                    && this->left != this->num_cols / 2 ){
                 boundary = true;
                 grow_left = true;
             }
 
             if( line_max == rmax
-                && this->right != this->num_cols / 2){
+                    && this->right != this->num_cols / 2){
                 boundary = true;
                 grow_right = true;
             }
-            
+
             if( boundary ){ 
                 this->doGrow = false;
                 this->grow(grow_left, grow_right);
@@ -367,7 +381,7 @@ bool MAlignerEntry::step(){
 
                 this->setUpperBound(max_x, max_y, line_max);
                 this->setLowerBound(max_x, max_y, line_max);
-            
+
                 return MINVAL;
             }
         }
@@ -412,37 +426,82 @@ int MAlignerEntry::scoreDP(
     }
 
     if((y > 0)
-       && ( prevRow + rowOffset + 1 < thisRow )){
+            && ( prevRow + rowOffset + 1 < thisRow )){
         upVal = prevRow[rowOffset + 1] + this->gap;
     } else {
         upVal = MINVAL;
     }
 
     thisRow[rowOffset] = max(upleftVal, max(leftVal, upVal));
-    
+
     //printf("<%p, %p, %p> [x:%d y:%d] %d (%p)\n", upVal, leftVal, upleftVal, x, y, *(thisRow + rowOffset), (thisRow + rowOffset));
     return thisRow[rowOffset];
 }
 
+
 int main(int argc, char** argv){
 
-    dp_matrix *dpm = (dp_matrix*) malloc(sizeof(dp_matrix));
-    dpm->matrix = NULL;
-    dpm->size = 0;
+    if( argc > 1 ){
+        FILE* inFile = fopen(argv[1],"r");
 
-    MAlignerEntry *aligner = new MAlignerEntry(string("Sample").c_str(), string("ABCDEFGHIJKL").c_str(), dpm);
+        //printf("Loading sequences...\n");
+        bool initialized = false;
 
-    aligner->initialize(string("XXXXXXXXXXXXXXXXXXX").c_str());
-    aligner->align();
-    printf("%d (%d,%d)\n", aligner->getScore(), aligner->lowerBound(), aligner->upperBound());
-    //aligner->initialize(string("XXXXXXXXXXXX").c_str());
-    //aligner->align();
-    //aligner->initialize(string("XXXXXXX").c_str());
-    //aligner->align();
-    //aligner->initialize(string("ABCDEFG").c_str());
-    //aligner->align();
+        MAligner aligner;
 
-    delete aligner;
+        filebuf fb;
+        fb.open(argv[1], ios::in);
+        istream is(&fb);
+
+        string name;
+        string seq;
+        while(
+                getline(is, name) &&
+                getline(is, seq)){
+
+            if((seq == "DONE") || (name == "DONE")){
+                break;
+            }
+
+            //printf("Loaded: %s\n", name.c_str());
+            aligner.addEntry(seq.c_str(), name.c_str());
+        }
+
+        fb.close();
+        //printf("Done loading...\nWaiting for alignments...\n");
+
+            while( getline(cin, seq) ){
+
+                //aligner.initialize(seq);
+
+                const char* ref_name = aligner.bestAlign(seq.c_str());
+                fprintf(stdout, "%s\n", ref_name);
+                fflush(stdout);
+                //fwrite(&ref_names, sizeof(char), strlen(ref_names), stdout);
+            }
+        
+    }
 
     return 0;
 }
+
+/*
+
+   int main(int argc, char** argv){
+
+   dp_matrix *dpm = (dp_matrix*) malloc(sizeof(dp_matrix));
+   dpm->matrix = NULL;
+   dpm->size = 0;
+
+   MAligner aligner;
+   aligner.addEntry(string("ABCDEFGHIJKL").c_str(),string("test").c_str());
+   printf("%s\n", aligner.bestAlign(string("ABCDEFGHIJKL").c_str()));
+//aligner->initialize(string("XXXXXXXXXXXX").c_str());
+//aligner->align();
+//aligner->initialize(string("XXXXXXX").c_str());
+//aligner->align();
+//aligner->initialize(string("ABCDEFG").c_str());
+//aligner->align();
+
+return 0;
+} */
