@@ -74,6 +74,7 @@ class vdj_aligner(object):
         # burn off newlines if they exist
         while ch == "\n":
             ch = self.aligner.stdout.read(1)
+        # collect the output. There's a deadlock bug here preventing us from using readline()
         while ch != "\n":
             acc += ch
             ch = self.aligner.stdout.read(1)
@@ -118,28 +119,28 @@ class vdj_aligner(object):
         bestVtracemat = []
         
         # perform Needleman-Wunsch on top V seg candidates and remember which had the highest score
-        for goodVseg in goodVseglist:
-            # C implementation:
-            # carve out memory
-            # note that we are using zero initial conditions, so matrices are initialized too
-            # notation is like Durbin p.29
-            seq1 = refseq.IGHV_seqs[goodVseg]
-            seq2 = query
-            scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
-            alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
-            
-            currscore = vdj_aligner.scoreVJalign(scores)
-            if currscore > bestVscore:
-                bestVscore = currscore
-                bestVseg = goodVseg
-                bestVscoremat = scores
-                bestVtracemat = trace
+        #for goodVseg in goodVseglist:
+        #    # C implementation:
+        #    # carve out memory
+        #    # note that we are using zero initial conditions, so matrices are initialized too
+        #    # notation is like Durbin p.29
+        #    seq1 = refseq.IGHV_seqs[goodVseg]
+        #    seq2 = query
+        #    scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        #    Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        #    Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        #    trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
+        #    alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
+        #    
+        #    currscore = vdj_aligner.scoreVJalign(scores)
+        #    if currscore > bestVscore:
+        #        bestVscore = currscore
+        #        bestVseg = goodVseg
+        #        bestVscoremat = scores
+        #        bestVtracemat = trace
         
-        chain.v = bestVseg
-        
+        #chain.v = bestVseg
+        chain.v = align_external(seq)
         t3 = time.time()
         
         # reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
