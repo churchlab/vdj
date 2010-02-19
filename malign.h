@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <iostream>
+#include <fstream>
 #include <assert.h>
 
 #include <algorithm>
@@ -14,6 +16,10 @@
 
 #ifndef MINVAL
 #define MINVAL (-16384)
+#endif
+
+#ifndef MAXVAL
+#define MAXVAL (16384)
 #endif
 
 typedef struct{
@@ -34,13 +40,13 @@ class MAlignerEntry {
                 int lowerBound();
                 int getScore();
                 int gap, match, mismatch;
-
+                const char* getName();
                 const bool operator< (MAlignerEntry&);
                 const bool operator> (MAlignerEntry&);
             private:
 
                 int scoreDP(int, int, int, int*, int*);
-                char *name;
+                std::string name;
                 char *refSequence;
                 int ref_length;
 
@@ -73,10 +79,13 @@ class MAlignerEntry {
  
 class MAligner {
     public:
-        MAligner(int nseq, char** seqs, char** names);
+      
+        MAligner();
         ~MAligner();
-        bool initialize(char* input);
-        std::priority_queue<MAlignerEntry*> align(char* input);
+        void addEntry(const char* seq, const char* name);
+        bool initialize(const char* input);
+        const char* bestAlign(const char* input);
+        std::priority_queue<MAlignerEntry*> align(const char* input);
         std::priority_queue<MAlignerEntry*> alignWith(char* input, int nnames, char** names);
         std::priority_queue<MAlignerEntry*> roundRobin(std::queue<MAlignerEntry*>);
 
