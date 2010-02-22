@@ -29,9 +29,9 @@ typedef struct{
 
 class MAlignerEntry {
             public:
-                MAlignerEntry(const char *nm, const char *seq, dp_matrix *dp);
+                MAlignerEntry(std::string, std::string, dp_matrix *dp);
                 ~MAlignerEntry();
-                bool initialize(const char*, int);
+                bool initialize(std::string, int);
                 bool isAligned();
                 bool isInitialized();
                 int align();
@@ -40,13 +40,13 @@ class MAlignerEntry {
                 int lowerBound();
                 int getScore();
                 int gap, match, mismatch;
-                const char* getName();
+                std::string getName();
                 const bool operator< (MAlignerEntry&);
                 const bool operator> (MAlignerEntry&);
             private:
 
                 int scoreDP(int, int, int, int*, int*);
-                std::string name;
+                std::string _name;
                 char *refSequence;
                 int ref_length;
 
@@ -77,16 +77,15 @@ class MAlignerEntry {
                 bool initialized;
 };
  
-class MAligner {
+class MAlignerCore {
     public:
       
-        MAligner();
-        ~MAligner();
-        void addEntry(const char* seq, const char* name);
-        bool initialize(const char* input);
-        const char* bestAlign(const char* input);
-        std::priority_queue<MAlignerEntry*> align(const char* input);
-        std::priority_queue<MAlignerEntry*> alignWith(char* input, int nnames, char** names);
+        MAlignerCore();
+        ~MAlignerCore();
+        void addEntry(std::string name, std::string sequence);
+        std::string bestAlign(std::string input);
+        std::priority_queue<MAlignerEntry*> align(std::string input);
+        //std::priority_queue<MAlignerEntry*> alignWith(char* input, int nnames, char** names);
         std::priority_queue<MAlignerEntry*> roundRobin(std::queue<MAlignerEntry*>);
 
     private:

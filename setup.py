@@ -20,17 +20,19 @@ clusteringcoreext = Extension(
                         include_dirs = get_numpy_include_dirs()
                         )
 
+
 maligner = Extension(
-    "maligner",
-    ["malign.pyx", "malign.cpp"],
-    language="c++",
-    include_dirs= [r'.','/usr/lib/', '/opt/local/include/'],
-    library_dirs= [r'.'],
-    libraries=["stdc++","stl"]
+    'maligner',
+    sources = ['maligner.cxx'],
     )
 
 
 setup(  name = "vdj",
         version = "1.2",
-        ext_modules = [alignmentcoreext,clusteringcoreext, maligner]
+        packages = ['CXX'],
+        package_dir = {'CXX': '.'},
+        include_dirs= [r'.','/usr/include/python2.6','/usr/include/python2.6/CXX'],
+        library_dirs= [r'.'],
+        libraryes=['stdc++','m'],
+        ext_modules = [maligner]
     )
