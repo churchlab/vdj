@@ -63,6 +63,18 @@ class vdj_aligner(object):
         
         if verbose: print "Database init:", t1-t0
     
+    def alignNW(seq1,seq2):
+        # C implementation:
+        # carve out memory
+        # note that we are using zero initial conditions, so matrices are initialized too
+        # notation is like Durbin p.29
+        scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
+        trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
+        alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
+        return scores,trace
+    
     def align_seq(self,seq,verbose=False):
         chain = vdj.ImmuneChain(descr='sequence',seq=seq)
         self.align_chain(chain,verbose)
@@ -103,18 +115,7 @@ class vdj_aligner(object):
         
         # perform Needleman-Wunsch on top V seg candidates and remember which had the highest score
         for goodVseg in goodVseglist:
-            # C implementation:
-            # carve out memory
-            # note that we are using zero initial conditions, so matrices are initialized too
-            # notation is like Durbin p.29
-            seq1 = refseq.IGHV_seqs[goodVseg]
-            seq2 = query
-            scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
-            alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
-            
+            scores,trace = vdj_aligner.alignNW( refseq.IGHV_seqs[goodVseg], query )
             currscore = vdj_aligner.scoreVJalign(scores)
             if currscore > bestVscore:
                 bestVscore = currscore
@@ -164,18 +165,7 @@ class vdj_aligner(object):
         
         # perform Needleman-Wunsch on top J seg candidates and remember which had the highest score
         for goodJseg in goodJseglist:
-            # C implementation:
-            # carve out memory
-            # note that we are using zero initial conditions, so matrices are initialize too
-            # notation is like Durbin p.29
-            seq1 = refseq.IGHJ_seqs[goodJseg]
-            seq2 = query
-            scores  = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Ix = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            Iy = np.zeros( [len(seq1)+1, len(seq2)+1] )
-            trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
-            alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
-            
+            scores,trace = vdj_aligner.alignNW( refseq.IGHJ_seqs[goodJseg], query )            
             # pure python:
             #scores,trace = vdj_aligner.alignNW( refseq.IGHJ_seqs[goodJseg], query )
             
