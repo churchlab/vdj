@@ -75,6 +75,24 @@ class vdj_aligner(object):
         alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
         return scores,trace
     
+    def best_V_aln(chain,Vseglist):
+        bestVseg = ''
+        bestVscore = 100    # derived from calibration data 20090710
+        bestVscoremat = []
+        bestVtracemat = []
+        
+        # perform Needleman-Wunsch on top V seg candidates and remember which had the highest score
+        for Vseg in goodVseglist:
+            scores,trace = vdj_aligner.alignNW( refseq.IGHV_seqs[Vseg], query )
+            currscore = vdj_aligner.scoreVJalign(scores)
+            if currscore > bestVscore:
+                bestVscore = currscore
+                bestVseg = Vseg
+                bestVscoremat = scores
+                bestVtracemat = trace
+        
+        chain.v = bestVseg
+    
     def align_seq(self,seq,verbose=False):
         chain = vdj.ImmuneChain(descr='sequence',seq=seq)
         self.align_chain(chain,verbose)
