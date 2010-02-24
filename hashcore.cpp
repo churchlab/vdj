@@ -2,32 +2,45 @@
 
 using namespace std;
 
+unsigned short getNucleotide(char ch){
+       switch(ch) {
+        case 'a':
+        case 'A': return A;
+        case 't':
+        case 'T': return T;
+        case 'c':
+        case 'C': return C;
+        case 'g': 
+        case 'G': return G;
+        default:  return 5;
+    }
+}
+
 OddsTable::OddsTable(int n){
     _size = n;
-    _contains = (double*) malloc(sizeof(double) * n);
-    _doesnot  = (double*) malloc(sizeof(double) * n);
-    _featurelessOdds = 0;
-    for( int c = 1; c <= n ; c++ ){
+    _contains = (double*) malloc(sizeof(double) * (n - 1));
+    _doesnot  = (double*) malloc(sizeof(double) * (n - 1));
+    for( int c = 1; c < n ; c++ ){
         double cGivenF   = -1 * log(c + 1);
         double cGivenNF  = -1 * log(c * (n - c + 1));
 
-        _contains[n-1] = cGivenF;
-        _doesnot[n-1]  = cGivenNF;
-        _featurelessOdds += cGivenNF;
-        printf("p(c|~f) = %f\n", cGivenNF);
+        _contains[c-1] = cGivenF;
+        _doesnot[c-1]  = cGivenNF;
+        //TODO This is wrong, but it doesn't matter unless we actually want to
+        // extract probabilities. This ought to be fixed.
+        //printf("p(c|~f) = %f\n", cGivenNF);
         //printf("p(c|f) = %f\tp(c|~f)= %f (%d, %d)\n", cGivenF, cGivenNF, c, n);       
         //ncGivenF  = -1 * log((c + 1) * (n - c));
         //ncGivenNF = -1 * log(n - c + 1);
     }
-    printf("null score: %f\n", _featurelessOdds);
+
+    //printf("null score: %f\n", _featurelessOdds);
 }
 
 OddsTable::~OddsTable(){
     free(_contains);
     free(_doesnot);
 }
-
-double OddsTable::getFeaturelessOdds(){ return _featurelessOdds; }
 
 double OddsTable::oddsGivenFeature(int c){
 
@@ -62,7 +75,7 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
 
     _refs = new map<unsigned long, int>();
     _withOdds = new map<unsigned long, double>();
-    _withoutOdds = new map<unsigned long, double>();
+    //_withoutOdds = new map<unsigned long, double>();
 
     list<ObservationSet*>::iterator obs_itr;
     set<unsigned long>::iterator feat_itr;
@@ -81,19 +94,33 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
 
     _odds = new OddsTable(_size);
     
-    map<unsigned long, int>::iterator ref_itr;
-   
+    map<unsigned long, int>::iterator ref_itr, tmp_itr;
+  
+    /*
+    // Throw out all universal features
+    for( ref_itr = _refs->begin(); ref_itr != _refs->end() ; ){
+        if( (*ref_itr).second == _size ){
+            tmp_itr = ref_itr;
+            ref_itr++;
+            _refs->erase(tmp_itr);
+        } else {
+            ref_itr++;
+        }
+    }
+*/
+    _nullOdds = 0.0;
+
     for( ref_itr = _refs->begin(); ref_itr != _refs->end() ; ref_itr++ ){
         double with    = _odds->oddsGivenFeature((*ref_itr).second); 
         double without = _odds->oddsWithoutFeature((*ref_itr).second); 
         
-        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with));
-        _withoutOdds->insert(pair<unsigned long, double>((*ref_itr).first, without));
-    
+        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with + without));
+        //_withoutOdds->insert(pair<unsigned long, double>((*ref_itr).first, without));
+        _nullOdds += without;    
     }
 }
 
-double ReferenceSet::getNull(){ return _odds->getFeaturelessOdds(); }
+double ReferenceSet::getNull(){ return _nullOdds; }
 
 LikelihoodSet* ReferenceSet::makeLikelihood(ObservationSet* obs){
     //TODO This is a stopgap. This code needs to be cleaned up.
@@ -105,10 +132,10 @@ LikelihoodSet* ReferenceSet::makeLikelihood(ObservationSet* obs){
  */
 
 //TODO I really don't like this type. Improve it.
-ObservationSet::ObservationSet(char *sequence, string name){
+ObservationSet::ObservationSet(string sequence, string name){
 
     _name = name;
-    _sequence = string(sequence);
+    _sequence = sequence;
     
     _obsset = extractFeatures(sequence, new map<unsigned long, int>());
    // printf("Observation Set size: %d\n", _obsset->size());
@@ -145,7 +172,7 @@ LikelihoodSet::LikelihoodSet(ObservationSet* obs, ReferenceSet* ref){
     //TODO First get it working, then get it right.
     //TODO Make this robust -- handle keys not found
     for(obs_itr = obs_features->begin() ; obs_itr != obs_features->end(); obs_itr++){
-       double val = (*ref->_withOdds->find(*obs_itr)).second - (*ref->_withoutOdds->find(*obs_itr)).second;
+       double val = (*ref->_withOdds->find(*obs_itr)).second;
 
        printf("%f\n", val);
        _lset->insert(pair<unsigned long, double>(*obs_itr, val));
@@ -200,19 +227,8 @@ inline void insertBump(map<unsigned long, int>* mp, unsigned long key){
     return;
 }
 
-// add one to the observations
-void pseudocount(map<unsigned long, int>* mp){
-    map<unsigned long, int>::iterator mp_itr;
-
-    for( mp_itr = mp->begin(); mp_itr != mp->end(); mp_itr++ ){
-        (*mp_itr).second += 1;
-    }
-
-    return;
-}
-
-map<unsigned long, int>* extractFeatures(char* seq, map<unsigned long, int> *res = NULL){
-    int len = strlen(seq);
+map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *res = NULL){
+    int len = seq.length();
 
     if( !res ){
         res = new map<unsigned long, int>();
@@ -236,12 +252,6 @@ map<unsigned long, int>* extractFeatures(char* seq, map<unsigned long, int> *res
         runCombs(res, acc, nmask, ii);    
     }
    
-    map<unsigned long, int>::iterator res_itr;
-    for( res_itr = res->begin() ; res_itr != res->end() ; res_itr++){
-        printf("%ld -> %d\n", (*res_itr).first, (*res_itr).second);
-    }
-    
-    printf("Map size: %d\n", (int) res->size());
     return res;
 }
 
@@ -257,35 +267,9 @@ map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
     return featureSet;
 }
 
-/*
-static PyObject *hashcore_seq2hash( PyObject *self, PyObject *args ) {
-    // define data
-    
-    // parse python objects
-    if ( !PyArg_ParseTuple(args,"", ) ) {
-        return NULL ;
-    }
-    
-    // perform computation
-    
-    // build python value
-    return Py_BuildValue( ) ;   // we possibly want to return a dictionary here
-}
-
-static PyMethodDef hashcoremethods[] = {
-    {"seq2hash", hashcore_seq2hash, METH_VARARGS},
-} ;
-
-void initalignmentcore() {
-    Py_InitModule( "hashcore", hashcoremethods ) ;
-    import_array();
-}
-*/
-
-/*
 int main(int argc, char** argv){
     
-    char* seq = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    char* seq = "AAAAATAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAA";
 
     list<ObservationSet*> obsList;
     for(int ii = 0; ii < 10 ; ++ii ){
@@ -318,4 +302,4 @@ int main(int argc, char** argv){
     delete observations;
     return 0;
 
-}*/
+}

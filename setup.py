@@ -37,6 +37,17 @@ maligner = Extension('maligner',
                 ],
             )
 
+seqHash = Extension('sequenceHasher',
+                sources = ['hashcore.cpp', 'hasher.cxx',
+                    os.path.join(support_dir,'cxxsupport.cxx'),
+                    os.path.join(support_dir,'cxx_extensions.cxx'),
+                    os.path.join(support_dir,'IndirectPythonInterface.cxx'),
+                    os.path.join(support_dir,'cxxextensions.c')
+                ],
+            )
+
+
+
 setup(  name = "vdj",
         version = "2.0",
         packages = ['CXX'],
@@ -44,5 +55,5 @@ setup(  name = "vdj",
         include_dirs= [r'.','/usr/include/python2.6','/usr/include/python2.6/CXX'],
         library_dirs= [r'.'],
         libraryes=['stdc++','m'],
-        ext_modules = [maligner, alignmentcoreext,clusteringcoreext]
+        ext_modules = [maligner, seqHash, alignmentcoreext,clusteringcoreext]
     )

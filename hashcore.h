@@ -8,10 +8,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
-
-#include "hashutil.h"
-
-// #include <Python.h>
+#include <stdio.h>
 
 // TODO Use templates so that I can abstract out the feature sets and inherit from the supertype
 
@@ -20,13 +17,10 @@ class OddsTable {
     public:
         OddsTable(int);
         ~OddsTable();
-
-        double getFeaturelessOdds();
         double oddsGivenFeature(int);
         double oddsWithoutFeature(int);
     private:
         int     _size;
-        double _featurelessOdds;
         double *_contains;
         double *_doesnot;
 };
@@ -54,19 +48,17 @@ class ReferenceSet: public FeatureSet {
     protected:
         std::map<unsigned long, int> *_refs;
         std::map<unsigned long, double> *_withOdds;
-        std::map<unsigned long, double> *_withoutOdds;
+        //std::map<unsigned long, double> *_withoutOdds;
  
     private:
         int _size;
         OddsTable *_odds;
         double _nullOdds;
-        bool addPseudocounts();
-        bool _pseudocounts;
 };
 
 class ObservationSet: public FeatureSet {
     public:
-        ObservationSet(char *sequence, std::string name = std::string(""));
+        ObservationSet(std::string sequence, std::string name = std::string(""));
         ~ObservationSet();
         std::set<unsigned long>* getFeatureSet();
     protected:
@@ -86,9 +78,9 @@ class LikelihoodSet: public FeatureSet {
 };
 
 
-
+enum nucleotide {A,T,C,G};
 unsigned short getNucleotide(char);
 void runCombs(std::map<unsigned long, int>*, unsigned long, unsigned long, int);
 void insertBump(std::map<unsigned long, int>*, unsigned long);
-std::map<unsigned long, int>* extractFeatures(char*, std::map<unsigned long, int>*);
+std::map<unsigned long, int>* extractFeatures(std::string, std::map<unsigned long, int>*);
 
