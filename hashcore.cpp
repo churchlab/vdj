@@ -114,7 +114,7 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
         double with    = _odds->oddsGivenFeature((*ref_itr).second); 
         double without = _odds->oddsWithoutFeature((*ref_itr).second); 
         
-        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with + without));
+        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with - without));
         //_withoutOdds->insert(pair<unsigned long, double>((*ref_itr).first, without));
         _nullOdds += without;    
     }
@@ -174,7 +174,7 @@ LikelihoodSet::LikelihoodSet(ObservationSet* obs, ReferenceSet* ref){
     for(obs_itr = obs_features->begin() ; obs_itr != obs_features->end(); obs_itr++){
        double val = (*ref->_withOdds->find(*obs_itr)).second;
 
-       printf("%f\n", val);
+       //printf("%f\n", val);
        _lset->insert(pair<unsigned long, double>(*obs_itr, val));
     }
     _name = obs->getName();
@@ -265,41 +265,4 @@ map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
     }
 
     return featureSet;
-}
-
-int main(int argc, char** argv){
-    
-    char* seq = "AAAAATAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAA";
-
-    list<ObservationSet*> obsList;
-    for(int ii = 0; ii < 10 ; ++ii ){
-        obsList.push_back(new ObservationSet("Test", seq));    
-    }
-
-    ObservationSet *observations = new ObservationSet("Obs", seq);
-    ReferenceSet *ref = new ReferenceSet(obsList);
-    LikelihoodSet *ls = new LikelihoodSet(observations, ref);
-
-
-
-    printf("Null: %f\n", ref->getNull());
-    printf("Likelihood: %f\n", ls->likelihood(observations));
-    
-    list<char*> sequences;
-    sequences.push_back(seq);
-
-    map<unsigned long, int>* f = extractFeatures(seq);
-
-    map<unsigned long, int>::iterator itr;
-
-    for( itr = f->begin(); itr != f->end() ; itr++){
-        printf("0x%X: %d\n", (unsigned int) (*itr).first, (*itr).second);
-    }
-
-    delete f;
-    
-
-    delete observations;
-    return 0;
-
 }
