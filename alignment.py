@@ -20,13 +20,13 @@ class vdj_full_aligner(object):
         self.Jma = maligner.MAligner()
         
         # load reference sequences
-        vdj_full_aligner.load_references(Vma,refseq.IGHV_seqs)
-        vdj_full_aligner.load_references(Dma,refseq.IGHD_seqs)
-        vdj_full_aligner.load_references(Jma,refseq.IGHJ_seqs)
+        vdj_full_aligner.load_references(self.Vma,refseq.IGHV_seqs)
+        vdj_full_aligner.load_references(self.Dma,refseq.IGHD_seqs)
+        vdj_full_aligner.load_references(self.Jma,refseq.IGHJ_seqs)
     
     @staticmethod
     def load_references(aligner,seqdict):
-        for (name,seq) in seqdict:
+        for (name,seq) in seqdict.iteritems():
             aligner.addEntry(name,seq)
         return
     
