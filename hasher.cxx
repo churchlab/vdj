@@ -20,14 +20,11 @@ SequenceHasher::~SequenceHasher(){
 
 }
 
-Object SequenceHasher::py_hash( const Tuple &args ){
+priority_queue<pair<double, string> > SequenceHasher::hash(string sequence){
 
     if( !_initialized ){
-        py_initialize(args);
+        initialize();
     }
-
-    args.verify_length(1);
-    String sequence = args[0];
 
     ObservationSet os(sequence);
     list<LikelihoodSet*>::iterator l_itr;
@@ -41,29 +38,20 @@ Object SequenceHasher::py_hash( const Tuple &args ){
         rpq.push(pair<double, string>(likelihood, nm));
     }
 
-    Dict result;
-    for(int ii = 0; ii < 5 && ii < (int) rpq.size(); ++ii){
-        pair<double, string> entry = rpq.top();
-        result[String(entry.second)] = Float(entry.first);
-    }
-
-    return result;
+    return rpq;
 }
 
-Object SequenceHasher::py_addReference( const Tuple &args ){
-    args.verify_length(2);
-    String name = args[0];
-    String sequence = args[1];
+void SequenceHasher::addReference(string name, string sequence){
     
     //TODO Ensure that arguments are in a consistent order
     ObservationSet* ob = new ObservationSet(sequence, name);
     _obs.push_back(ob);
 
     _initialized = false;
-    return args[0];
+    return;
 }
 
-Object SequenceHasher::py_initialize( const Tuple &args ){
+void SequenceHasher::initialize(){
     _initialized = true;
     _likelihoods.clear();
     
@@ -75,8 +63,39 @@ Object SequenceHasher::py_initialize( const Tuple &args ){
         LikelihoodSet *ls = new LikelihoodSet(*obs_itr, _ref);
         _likelihoods.push_back(ls);
     }
+    return;
+}
+
+Object SequenceHasher::py_hash( const Tuple &args ){
 
 
+    args.verify_length(1);
+    String sequence = args[0];
+
+    priority_queue<pair<double, string> > rpq = hash(sequence);
+
+    Dict result;
+    for(int ii = 0; ii < 5 && ii < (int) rpq.size(); ++ii){
+        pair<double, string> entry = rpq.top();
+        result[String(entry.second)] = Float(entry.first);
+        rpq.pop();
+    }
+
+    return result;
+}
+
+Object SequenceHasher::py_addReference( const Tuple &args ){
+    args.verify_length(2);
+    String name = args[0];
+    String sequence = args[1];
+    
+    addReference(name, sequence);
+    return args[0];
+}
+
+Object SequenceHasher::py_initialize( const Tuple &args ){
+
+    initialize();
     return Int((int) _obs.size());
 }
 
