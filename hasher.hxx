@@ -14,6 +14,10 @@ class SequenceHasher : public Py::PythonExtension<SequenceHasher> {
         SequenceHasher();
         ~SequenceHasher();
 
+        void addReference(std::string, std::string);
+        void initialize();
+        std::priority_queue<std::pair<double, std::string> > hash(std::string);
+
         //python methods
         Py::Object py_addReference(const Py::Tuple &args);
         Py::Object py_initialize(const Py::Tuple &args);
