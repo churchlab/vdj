@@ -76,19 +76,11 @@ class MAlignerEntry {
                 bool initialized;
 };
 
-bool operator> (MAlignerEntry& lhs, MAlignerEntry& rhs){
-    return lhs.getScore() < rhs.getScore(); 
-}
-bool operator< (MAlignerEntry& lhs, MAlignerEntry& rhs){
-    return lhs.getScore() < rhs.getScore();
-}
+bool operator>(MAlignerEntry&, MAlignerEntry&);
+bool operator<(MAlignerEntry&, MAlignerEntry&);
 
-struct CompareMEntry : public std::binary_function<MAlignerEntry*, MAlignerEntry*, bool>
-{
-    bool operator()(MAlignerEntry* x, MAlignerEntry* y) const
-    {
-        return *x < *y;
-    }
+struct CompareMEntry : public std::binary_function<MAlignerEntry*, MAlignerEntry*, bool>{
+    bool operator()(MAlignerEntry*, MAlignerEntry*) const;
 };
 
 typedef std::priority_queue<MAlignerEntry*, std::vector<MAlignerEntry*>, CompareMEntry> MAE_queue;
