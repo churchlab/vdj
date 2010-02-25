@@ -152,6 +152,19 @@ MAlignerEntry::~MAlignerEntry(){
     printf("Freed %s\n", _name.c_str()); 
 }
 
+bool operator> (MAlignerEntry& lhs, MAlignerEntry& rhs){
+    return lhs.getScore() < rhs.getScore(); 
+}
+bool operator< (MAlignerEntry& lhs, MAlignerEntry& rhs){
+    return lhs.getScore() < rhs.getScore();
+}
+
+bool CompareMEntry::operator()(MAlignerEntry* x, MAlignerEntry* y) const
+{
+    return *x < *y;
+}
+
+
 string MAlignerEntry::getName(){
     return this->_name;
 
