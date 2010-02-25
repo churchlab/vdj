@@ -1,0 +1,9 @@
+For alignment tools:
+PyCXX.  The install script supplied is funky (2010-02-24), so there is a ghetto install script that manually copies files supplied.  This is for a python2.x.  Simply download the PyCXX tarball and unpack it.  Copy our pycxx_ghetto_setup.sh script to the main tarball directory, and run it from that directory using:
+
+sudo ./pycxx_ghetto_setup.sh
+
+For analysis tools:
+SciPy, NumPy, and matplotlib are all used in the analysis tools and for figure generation.
+
+For alignment, the package needs to be made aware of some type of reference database, most likely the IMGT databases.  Currently, this is the only reference supported, unless you'd like to really immerse yourself in the details of implementation.
