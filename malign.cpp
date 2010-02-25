@@ -149,7 +149,6 @@ MAlignerEntry::MAlignerEntry(string name, string seq, dp_matrix *dp, int id){
 MAlignerEntry::~MAlignerEntry(){
     free(this->refSequence);
     if( this->testSequence ){ free(this->testSequence); } 
-    printf("Freed %s\n", _name.c_str()); 
 }
 
 bool operator> (MAlignerEntry& lhs, MAlignerEntry& rhs){
