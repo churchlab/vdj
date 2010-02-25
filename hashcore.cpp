@@ -21,10 +21,18 @@ OddsTable::OddsTable(int n){
     _contains = (double*) malloc(sizeof(double) * (n - 1));
     _doesnot  = (double*) malloc(sizeof(double) * (n - 1));
     for( int c = 1; c < n ; c++ ){
-        double cGivenF   = -1 * log(c + 1);
-        double cGivenNF  = -1 * log(c * (n - c + 1));
+        double cd = c;
+        double nd = n;
+
+        double p = 1 / (cd+1);
+        double np = 1 / (cd * (nd - cd + 1));
+
+        double cGivenF   = log(p  / (1 - p));
+        double cGivenNF  = log(np / (1 - np));
 
         _contains[c-1] = cGivenF;
+
+        printf("%d in %d: %f (%f)\n", c, n, cGivenF, p);
         _doesnot[c-1]  = cGivenNF;
         //TODO This is wrong, but it doesn't matter unless we actually want to
         // extract probabilities. This ought to be fixed.
@@ -137,7 +145,7 @@ ObservationSet::ObservationSet(string sequence, string name){
     _name = name;
     _sequence = sequence;
     
-    _obsset = extractFeatures(sequence, new map<unsigned long, int>());
+    _obsset = extractFeatures(sequence);
    // printf("Observation Set size: %d\n", _obsset->size());
 }
 
@@ -227,7 +235,7 @@ inline void insertBump(map<unsigned long, int>* mp, unsigned long key){
     return;
 }
 
-map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *res = NULL){
+map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *res){
     int len = seq.length();
 
     if( !res ){
@@ -255,6 +263,7 @@ map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *re
     return res;
 }
 
+/*
 map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
 
     list<char*>::iterator seq_itr;
@@ -266,3 +275,4 @@ map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
 
     return featureSet;
 }
+*/
