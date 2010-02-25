@@ -12,11 +12,12 @@ MAlignerCore::MAlignerCore(){
     global_matrix = (dp_matrix*) malloc(sizeof(dp_matrix));
     global_matrix->matrix = NULL;
     global_matrix->size   = 0;
+    _id = 0;
 }
 
 void MAlignerCore::addEntry(string name, string sequence){
 
-    MAlignerEntry *en = new MAlignerEntry(name, sequence, global_matrix);
+    MAlignerEntry *en = new MAlignerEntry(name, sequence, global_matrix, _id++);
     entries.insert(pair<string,MAlignerEntry*>(name,en));
 }
 
@@ -34,7 +35,7 @@ MAlignerCore::~MAlignerCore(){
     free(global_matrix);
 }
 
-priority_queue<MAlignerEntry*> MAlignerCore::align(string input){
+MAE_queue MAlignerCore::align(string input){
     queue<MAlignerEntry*> robin; 
     map<string, MAlignerEntry*>::iterator entry_itr;
 
@@ -43,7 +44,6 @@ priority_queue<MAlignerEntry*> MAlignerCore::align(string input){
     for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
         MAlignerEntry *e = (*entry_itr).second;
         e->initialize(input, len);
-        //printf("Initialized %s!\n", e->getName());
         robin.push(e);
     }
 
@@ -52,7 +52,7 @@ priority_queue<MAlignerEntry*> MAlignerCore::align(string input){
 }
 
 string MAlignerCore::bestAlign(string input){
-    priority_queue<MAlignerEntry*> pq = align(input);
+    MAE_queue pq = align(input);
     if( !pq.empty() ){
         return pq.top()->getName();
     }
@@ -80,9 +80,9 @@ priority_queue<MAlignerEntry*> MAlignerCore::alignWith(char* input, int nnames, 
 }
 */
 
-priority_queue<MAlignerEntry*> MAlignerCore::roundRobin(queue<MAlignerEntry*> robin){
+MAE_queue MAlignerCore::roundRobin(queue<MAlignerEntry*> robin){
 
-    priority_queue<MAlignerEntry*> results;
+    MAE_queue results;
     int bestLowerBound = MINVAL;
 
     while( !robin.empty() ){
@@ -99,23 +99,24 @@ priority_queue<MAlignerEntry*> MAlignerCore::roundRobin(queue<MAlignerEntry*> ro
             if( mae->upperBound() >= bestLowerBound
                     && !mae->isAligned() ){
                 robin.push(mae);
-            }
+            } 
         }
 
         if( mae->isAligned() ){
             results.push(mae); 
         }
     }
-
+    
     return results;
 }
 
 /*
  * MAlignerEntry
  */
-MAlignerEntry::MAlignerEntry(string name, string seq, dp_matrix *dp){
+MAlignerEntry::MAlignerEntry(string name, string seq, dp_matrix *dp, int id){
 
     // copy the reference into place
+    this->_id = id;
     this->_name = name;
     this->refSequence = (char*) malloc(seq.length());
     this->testSequence = NULL;
@@ -156,12 +157,6 @@ bool MAlignerEntry::isAligned() {
     return aligned;
 }
 
-const bool MAlignerEntry::operator< (MAlignerEntry& entry){
-    return this->getScore() > entry.getScore(); 
-}
-const bool MAlignerEntry::operator> (MAlignerEntry& entry){
-    return this->getScore() < entry.getScore();
-}
 
 int MAlignerEntry::getScore(){
     return score; 
@@ -229,7 +224,6 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
         - (r * d)
         - (d * (d+1) / 2); // account for left hand overflow and the diagonal
 
-    //printf("diff: %d Left: %d Right: %d Rows: %d Cols: %d Size: %d\n", d, l, r, this->num_rows, this->num_cols, this->matrix_size);
     // Ask for a bigger scratch space if we need it
     if(this->doGrow && this->dpm->size < this->matrix_size ){ 
         free(this->dpm->matrix);
@@ -243,7 +237,6 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
 bool MAlignerEntry::initialize(string testSeq, int len=0){
     this->test_length = (int) testSeq.length();
 
-    //printf("Initialized entry with '%s' and length %d...\n", testSeq, len);
     this->testSequence = (char*) malloc(this->test_length + 1);
     strcpy(this->testSequence, testSeq.c_str());
 
@@ -265,6 +258,10 @@ bool MAlignerEntry::initialize(string testSeq, int len=0){
     this->right = 1;
     this->aligned = false;
     this->doGrow = true;
+    
+    this->uBound = MAXVAL;
+    this->lBound = MINVAL;
+
     grow(false, false);
     return true;
 }
@@ -419,6 +416,5 @@ int MAlignerEntry::scoreDP(
 
     thisRow[rowOffset] = max(upleftVal, max(leftVal, upVal));
 
-    //printf("<%p, %p, %p> [x:%d y:%d] %d (%p)\n", upVal, leftVal, upleftVal, x, y, *(thisRow + rowOffset), (thisRow + rowOffset));
     return thisRow[rowOffset];
 }

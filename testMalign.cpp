@@ -1,4 +1,5 @@
 #include "malign.cpp"
+#include <stdlib.h>
 #include <string>
 
 using namespace std;
@@ -71,11 +72,11 @@ int main(int argc, char** argv){
         string("CAGGTGCAGCTGGTGCAGTCTGG") };
 
     for(int ii = 0; ii < 61; ++ii){
-        mcore->addEntry(string("Ref" + ii), v[ii]);
+        mcore->addEntry(v[ii], v[ii]);
     }
 
     for(int ii = 0; ii < 61; ++ii){
-        printf("%s\n",mcore->bestAlign(v[ii]).c_str());
+        printf("Sequence %d: %s\n", ii, (mcore->bestAlign(v[ii]) == v[ii] ? "MATCH" : "MISMATCH"));
     }
 
     return 0;
