@@ -22,12 +22,15 @@ void MAlignerCore::addEntry(string name, string sequence){
 }
 
 MAlignerCore::~MAlignerCore(){
-    list<MAlignerEntry*>::iterator entry_itr;
-    /*
-       for( entry_itr = this->entries->begin() ; entry_itr != this->entries->end(); entry_itr++ ){
-       delete (&entry_itr);
-       }
-     */
+  
+    map<string, MAlignerEntry*>::iterator m_itr;
+
+    for( m_itr = entries.begin(); m_itr != entries.end() ; m_itr++){
+        delete (*m_itr).second;
+    }
+   
+    entries.clear();
+
     if( global_matrix->matrix != NULL ){
         free(global_matrix->matrix);
     }
@@ -118,7 +121,7 @@ MAlignerEntry::MAlignerEntry(string name, string seq, dp_matrix *dp, int id){
     // copy the reference into place
     this->_id = id;
     this->_name = name;
-    this->refSequence = (char*) malloc(seq.length());
+    this->refSequence = (char*) malloc(seq.length() + 1);
     this->testSequence = NULL;
     strcpy(this->refSequence, seq.c_str());
 
@@ -145,7 +148,8 @@ MAlignerEntry::MAlignerEntry(string name, string seq, dp_matrix *dp, int id){
 
 MAlignerEntry::~MAlignerEntry(){
     free(this->refSequence);
-    if( this->testSequence ){ free(this->testSequence); }
+    if( this->testSequence ){ free(this->testSequence); } 
+    printf("Freed %s\n", _name.c_str()); 
 }
 
 string MAlignerEntry::getName(){
@@ -237,6 +241,8 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
 bool MAlignerEntry::initialize(string testSeq, int len=0){
     this->test_length = (int) testSeq.length();
 
+    if( this->testSequence ){ free(this->testSequence); }
+    //printf("Initialized entry with '%s' and length %d...\n", testSeq, len);
     this->testSequence = (char*) malloc(this->test_length + 1);
     strcpy(this->testSequence, testSeq.c_str());
 
@@ -253,6 +259,7 @@ bool MAlignerEntry::initialize(string testSeq, int len=0){
         this->col_seq  = this->testSequence;
         this->num_cols = this->test_length;
     }
+
     this->initialized = true;
     this->left  = (this->num_cols < this->num_rows ? this->num_rows - this->num_cols : 1);
     this->right = 1;

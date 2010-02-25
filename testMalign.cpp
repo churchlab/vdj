@@ -79,5 +79,6 @@ int main(int argc, char** argv){
         printf("Sequence %d: %s\n", ii, (mcore->bestAlign(v[ii]) == v[ii] ? "MATCH" : "MISMATCH"));
     }
 
+    delete mcore;
     return 0;
 }

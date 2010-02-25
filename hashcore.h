@@ -82,5 +82,5 @@ enum nucleotide {A,T,C,G};
 unsigned short getNucleotide(char);
 void runCombs(std::map<unsigned long, int>*, unsigned long, unsigned long, int);
 void insertBump(std::map<unsigned long, int>*, unsigned long);
-std::map<unsigned long, int>* extractFeatures(std::string, std::map<unsigned long, int>*);
+std::map<unsigned long, int>* extractFeatures(std::string, std::map<unsigned long, int>* = NULL);
 
