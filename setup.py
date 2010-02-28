@@ -37,7 +37,7 @@ maligner = Extension('maligner',
                 ],
             )
 
-seqHash = Extension('sequenceHasher',
+seqHash = Extension('hasher',
                 sources = ['hashcore.cpp', 'hasher.cxx',
                     os.path.join(support_dir,'cxxsupport.cxx'),
                     os.path.join(support_dir,'cxx_extensions.cxx'),

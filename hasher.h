@@ -2,6 +2,7 @@
 
 #include <string>
 #include <queue>
+#include <utility>
 
 #include "hashcore.h"
 
@@ -13,10 +14,9 @@ class SequenceHasher {
         //python methods
         void addReference(std::string, std::string);
         void initialize();
-        void hash(std::string);
+        std::priority_queue<std::pair<double, std::string> > hash(std::string);
     private:
         bool _initialized;
         std::list<ObservationSet*> _obs;
         ReferenceSet *_ref;
-        std::list<LikelihoodSet*> _likelihoods;
 }; 

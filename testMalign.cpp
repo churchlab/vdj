@@ -80,5 +80,51 @@ int main(int argc, char** argv){
     }
 
     delete mcore;
+
+    MAlignerCore *mcore2 = new MAlignerCore();
+
+    string refCorpus[] = {
+        string("AAAAAAAAAAAAAA"),
+        string("TTTTTTTTTTTTTT"),
+        string("CCCCCCCCCCCCCC"),
+        string("GGGGGGGGGGGGGG"),
+        string("XYXYXYXYXYXYXY"),
+        string("YXYXYXYXYXYXYX")
+    };
+
+    for(int ii = 0; ii < 5; ii++ ){
+        mcore2->addEntry(refCorpus[ii], refCorpus[ii]);
+    }
+
+    string testCorpus[] = {
+        string("AAAAAAAAAAAAAA"),
+        string("AAAAAATTAAAAAA"),
+        string("TTTTAAAAAAAAAA"),
+        string("GTACAAAAATTCCG"),
+        string("GGGGGGGGGGGGGA"),
+        string("AGGGGGGGGGGGGG"),
+        string("A"),
+        string("XYXYXYYYXYXYXY"),
+        string("GGGGGAAAAAAAAA"),
+        string("GAGAGAGAGAGAGA")
+    };
+    
+    int groundTruth[] = {
+        0,
+        0,
+        0,
+        0,
+        3,
+        3,
+        0,
+        4,
+        0,
+        0
+    };   
+
+    for(int ii = 0; ii < 10; ++ii ){
+        printf("Test Sequence %d: %s\n", ii, (mcore->bestAlign(testCorpus[ii]) == refCorpus[groundTruth[ii]] ? "MATCH" : "MISMATCH"));
+    }
+
     return 0;
 }
