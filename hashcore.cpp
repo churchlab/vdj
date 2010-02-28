@@ -32,7 +32,6 @@ OddsTable::OddsTable(int n){
 
         _contains[c-1] = cGivenF;
 
-        printf("%d in %d: %f (%f)\n", c, n, cGivenF, p);
         _doesnot[c-1]  = cGivenNF;
         //TODO This is wrong, but it doesn't matter unless we actually want to
         // extract probabilities. This ought to be fixed.
@@ -51,9 +50,7 @@ OddsTable::~OddsTable(){
 }
 
 double OddsTable::oddsGivenFeature(int c){
-
     assert( c > 0 && c <= _size );
-    //printf("%d: %f\n", (c - 1), _contains[c-1]);
     return _contains[c-1];
 }
 
@@ -63,19 +60,6 @@ double OddsTable::oddsWithoutFeature(int c){
 }
 
 /*
- * FeatureSet
- */
-
-string FeatureSet::getName() {
-    return _name;
-}
-
-/*
-string FeatureSet::getSequence() {
-    return string(_sequence);
-}
-*/
-/*
  * ReferenceSet
  */
 
@@ -83,7 +67,7 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
 
     _refs = new map<unsigned long, int>();
     _withOdds = new map<unsigned long, double>();
-    //_withoutOdds = new map<unsigned long, double>();
+    _withoutOdds = new map<unsigned long, double>();
 
     list<ObservationSet*>::iterator obs_itr;
     set<unsigned long>::iterator feat_itr;
@@ -104,7 +88,7 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
     
     map<unsigned long, int>::iterator ref_itr, tmp_itr;
   
-    /*
+    
     // Throw out all universal features
     for( ref_itr = _refs->begin(); ref_itr != _refs->end() ; ){
         if( (*ref_itr).second == _size ){
@@ -115,106 +99,105 @@ ReferenceSet::ReferenceSet(list<ObservationSet*> observations ){
             ref_itr++;
         }
     }
-*/
-    _nullOdds = 0.0;
 
     for( ref_itr = _refs->begin(); ref_itr != _refs->end() ; ref_itr++ ){
         double with    = _odds->oddsGivenFeature((*ref_itr).second); 
         double without = _odds->oddsWithoutFeature((*ref_itr).second); 
         
-        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with - without));
-        //_withoutOdds->insert(pair<unsigned long, double>((*ref_itr).first, without));
-        _nullOdds += without;    
+        _withOdds->insert(pair<unsigned long, double>((*ref_itr).first, with));
+        _withoutOdds->insert(pair<unsigned long, double>((*ref_itr).first, without));
     }
 }
 
-double ReferenceSet::getNull(){ return _nullOdds; }
+double ReferenceSet::getScore(unsigned long key, bool present){
+    
+    map<unsigned long, double>::iterator odds_itr;
+    double score = 0.0;
 
-LikelihoodSet* ReferenceSet::makeLikelihood(ObservationSet* obs){
-    //TODO This is a stopgap. This code needs to be cleaned up.
-    return new LikelihoodSet(obs, this);
+    
+
+    if( present ){
+        odds_itr = _withOdds->find(key);
+        if( odds_itr != _withOdds->end() ){
+            score = (*odds_itr).second;
+        }
+    } else {
+         odds_itr = _withoutOdds->find(key);
+        if( odds_itr != _withoutOdds->end() ){
+            score = (*odds_itr).second;
+        }
+    }
+
+    return score;
 }
 
 /*
  * ObservationSet: Raw observation
  */
-
-//TODO I really don't like this type. Improve it.
 ObservationSet::ObservationSet(string sequence, string name){
 
     _name = name;
     _sequence = sequence;
-    
     _obsset = extractFeatures(sequence);
    // printf("Observation Set size: %d\n", _obsset->size());
 }
 
-//TODO call the supertype deconstructor
 ObservationSet::~ObservationSet(){
     delete _obsset;
 }
 
+string ObservationSet::getName() {
+    return _name;
+}
+
 set<unsigned long>* ObservationSet::getFeatureSet() {
-    map<unsigned long, int>::iterator f_itr;
-    set<unsigned long> *features = new set<unsigned long>();
-
-    for( f_itr = _obsset->begin(); f_itr != _obsset->end(); f_itr++ ){
-        features->insert((*f_itr).first);    
-    }
-
-    return features;
+    return new set<unsigned long>(*_obsset);
 }
 
-/*
- * LikelihoodSet: Observations in log-likelihood space
- */
-LikelihoodSet::LikelihoodSet(ObservationSet* obs, ReferenceSet* ref){
-   
-    map<unsigned long, double>::iterator ref_itr;
-    set<unsigned long>::iterator obs_itr; 
-    set<unsigned long> *obs_features = obs->getFeatureSet();
+double ObservationSet::likelihood(ObservationSet* os, ReferenceSet* ref){
 
-    _lset = new map<unsigned long, double>();
+    set<unsigned long>::iterator t_itr = os->_obsset->begin();
+    set<unsigned long>::iterator t_itr_end = os->_obsset->end();
 
-    //printf("obs length: %d\n", obs->_obsset->size());
-    //TODO First get it working, then get it right.
-    //TODO Make this robust -- handle keys not found
-    for(obs_itr = obs_features->begin() ; obs_itr != obs_features->end(); obs_itr++){
-       double val = (*ref->_withOdds->find(*obs_itr)).second;
+    set<unsigned long>::iterator r_itr     = this->_obsset->begin();
+    set<unsigned long>::iterator r_itr_end = this->_obsset->end();
 
-       //printf("%f\n", val);
-       _lset->insert(pair<unsigned long, double>(*obs_itr, val));
-    }
-    _name = obs->getName();
-    _nullOdds = ref->getNull();
-    delete obs_features;
-}
+    set<unsigned long> intersection;
+    set<unsigned long> difference;
 
-double LikelihoodSet::likelihood(ObservationSet* os){
-
-    map<unsigned long, int>::iterator os_itr;
-    map<unsigned long, double>::iterator lset_itr;
-    double like = _nullOdds;
-    for( os_itr = os->_obsset->begin() ; os_itr != os->_obsset->end(); os_itr++ ){
-        lset_itr = _lset->find(os_itr->first);
-
-        if( lset_itr != _lset->end() ){
-            like += lset_itr->second;
-        }
-    }
-
-    return like;
+    set_intersection(
+            t_itr, t_itr_end,
+            r_itr, r_itr_end,
+            inserter(intersection, intersection.begin()));
     
+    set_symmetric_difference(
+            t_itr, t_itr_end,
+            r_itr, r_itr_end,
+            inserter(difference, difference.begin()));
+   
+    double score = 0.0;
+    
+    set<unsigned long>::iterator v_itr;
+
+        for( v_itr = intersection.begin(); v_itr != intersection.end() ; v_itr++ ){
+            score += ref->getScore( *v_itr, true);
+        }
+
+        for( v_itr = difference.begin(); v_itr != difference.end() ; v_itr++ ){
+            score += ref->getScore( *v_itr, false);
+        }
+    
+    return score;
 }
 
 // This code was not generated by hand. Modifying it is ill-advised.
-inline void runCombs( map<unsigned long, int>* hm, unsigned long xx, unsigned long mask, int ii ){
+inline void runCombs( set<unsigned long>* hm, unsigned long xx, unsigned long mask, int ii ){
 
-if(!((0x3B2D7 & mask)) && (ii >  18)) { insertBump(hm, ((0x38000 & xx) >> 6) | ((0x3000 & xx) >> 5) | ((0x200 & xx) >> 3) | ((0xc0 & xx) >> 2) | ((0x10 & xx) >> 1) | ((0x7 & xx) >> 0)); }
-if(!((0x3C44D7 & mask)) && (ii >  22)) { insertBump(hm, ((0x3c0000 & xx) >> 10) | ((0x4000 & xx) >> 7) | ((0x400 & xx) >> 4) | ((0xc0 & xx) >> 2) | ((0x10 & xx) >> 1) | ((0x7 & xx) >> 0)); }
-if(!((0xFFF & mask)) && (ii >  12)) { insertBump(hm, ((0xfff & xx) >> 0)); }
-if(!((0x1A18AF & mask)) && (ii >  21)) { insertBump(hm, ((0x180000 & xx) >> 10) | ((0x20000 & xx) >> 9) | ((0x1800 & xx) >> 5) | ((0x80 & xx) >> 2) | ((0x20 & xx) >> 1) | ((0xf & xx) >> 0)); }
-if(!((0x7747 & mask)) && (ii >  15)) { insertBump(hm, ((0x7000 & xx) >> 5) | ((0x700 & xx) >> 4) | ((0x40 & xx) >> 3) | ((0x7 & xx) >> 0)); }
+if(!((0x3B2D7 & mask)) && (ii >  18)) { hm->insert(((0x38000 & xx) >> 6) | ((0x3000 & xx) >> 5) | ((0x200 & xx) >> 3) | ((0xc0 & xx) >> 2) | ((0x10 & xx) >> 1) | ((0x7 & xx) >> 0)); }
+if(!((0x3C44D7 & mask)) && (ii >  22)) { hm->insert(((0x3c0000 & xx) >> 10) | ((0x4000 & xx) >> 7) | ((0x400 & xx) >> 4) | ((0xc0 & xx) >> 2) | ((0x10 & xx) >> 1) | ((0x7 & xx) >> 0)); }
+if(!((0xFFF & mask)) && (ii >  12)) { hm->insert(((0xfff & xx) >> 0)); }
+if(!((0x1A18AF & mask)) && (ii >  21)) { hm->insert(((0x180000 & xx) >> 10) | ((0x20000 & xx) >> 9) | ((0x1800 & xx) >> 5) | ((0x80 & xx) >> 2) | ((0x20 & xx) >> 1) | ((0xf & xx) >> 0)); }
+if(!((0x7747 & mask)) && (ii >  15)) { hm->insert(((0x7000 & xx) >> 5) | ((0x700 & xx) >> 4) | ((0x40 & xx) >> 3) | ((0x7 & xx) >> 0)); }
 
     return;
 }
@@ -235,11 +218,12 @@ inline void insertBump(map<unsigned long, int>* mp, unsigned long key){
     return;
 }
 
-map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *res){
+set<unsigned long>* extractFeatures(string seq, set<unsigned long> *res){
+    
     int len = seq.length();
 
     if( !res ){
-        res = new map<unsigned long, int>();
+        res = new set<unsigned long>();
     }
 
     unsigned long acc = 0;
@@ -259,20 +243,6 @@ map<unsigned long, int>* extractFeatures(string seq, map<unsigned long, int> *re
 
         runCombs(res, acc, nmask, ii);    
     }
-   
+  
     return res;
 }
-
-/*
-map<unsigned long, int>* makeFeatureSet(list<char*> sequences){
-
-    list<char*>::iterator seq_itr;
-    map<unsigned long, int> *featureSet = new map<unsigned long, int>();
-
-    for( seq_itr = sequences.begin(); seq_itr != sequences.end(); seq_itr++ ){
-        extractFeatures(*seq_itr, featureSet);
-    }
-
-    return featureSet;
-}
-*/

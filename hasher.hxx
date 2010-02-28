@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include <CXX/Extensions.hxx>
 #include <CXX/Objects.hxx>
 #include <Python.h>
@@ -20,7 +22,6 @@ class SequenceHasher : public Py::PythonExtension<SequenceHasher> {
 
         //python methods
         Py::Object py_addReference(const Py::Tuple &args);
-        Py::Object py_initialize(const Py::Tuple &args);
         Py::Object py_hash(const Py::Tuple &args);
 
         //pycxx methods
@@ -34,5 +35,5 @@ class SequenceHasher : public Py::PythonExtension<SequenceHasher> {
         bool _initialized;
         std::list<ObservationSet*> _obs;
         ReferenceSet *_ref;
-        std::list<LikelihoodSet*> _likelihoods;
+        std::list<ObservationSet*> _likelihoods;
 }; 
