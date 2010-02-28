@@ -78,12 +78,11 @@ Object SequenceHasher::py_hash( const Tuple &args ){
     String sequence = args[0];
     priority_queue<pair<double, string> > results = hash(sequence);
 
-    Dict d;
+    List d;
     
     while( !results.empty() ){
-        double likelihood = results.top().first;
         string name = results.top().second;
-        d[String(name)] = Float(floor(likelihood * 10000));
+        d.append(String(name));
         results.pop();
     }
 
