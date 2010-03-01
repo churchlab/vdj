@@ -97,7 +97,7 @@ class vdj_aligner(object):
         t2 = time.time()
         
         bestVseg = ''
-        bestVscore = 100    # derived from calibration data 20090710
+        bestVscore = 0  #100    # ignore calib.  forces reporting of best aln
         bestVscoremat = []
         bestVtracemat = []
         
@@ -158,7 +158,7 @@ class vdj_aligner(object):
         t6 = time.time()
         
         bestJseg = ''
-        bestJscore = 13     # derived from calibration data 20090710
+        bestJscore = 0  #13     # ignore calib.  forces reporting of best aln
         bestJscoremat = []
         bestJtracemat = []
         
@@ -226,7 +226,7 @@ class vdj_aligner(object):
             t10 = time.time()
             
             bestDseg = ''
-            bestDscore = 4      # derived from calibration data 20090710
+            bestDscore = 0  #4      # ignore calib.  forces reporting of best aln
             bestDscoremat = []
             bestDtracemat = []
             
