@@ -92,8 +92,8 @@ class MAlignerCore {
         ~MAlignerCore();
         void addEntry(std::string name, std::string sequence);
         std::string bestAlign(std::string input);
+        std::string alignWith(std::string input, std::list<std::string> refs);
         MAE_queue align(std::string input);
-        //std::priority_queue<MAlignerEntry*> alignWith(char* input, int nnames, char** names);
         MAE_queue roundRobin(std::queue<MAlignerEntry*>);
 
     private:
