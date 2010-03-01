@@ -54,6 +54,27 @@ MAE_queue MAlignerCore::align(string input){
 
 }
 
+MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
+
+    queue<MAlignerEntry*> robin; 
+    int len = (int) input.length();
+    list<string>::iterator ref_itr;
+    map<string,MAlignerEntry*>::iterator entry_itr;
+    for( ref_itr = refs.begin() ; ref_itr != refs.end(); ref_itr++ ){
+        entry_itr = entries.find(*ref_itr);
+        if( entry_itr != entries.end() ){
+            MAlignerEntry* mae = (*entry_itr).second;
+            mae->initialize(input, len);
+            robin.push(mae);
+        }
+    }
+
+    MAE_queue res = this->roundRobin(robin);
+    if( (int) res.size() > 0 ){
+        return res.top().getName()
+    }
+}
+
 string MAlignerCore::bestAlign(string input){
     MAE_queue pq = align(input);
     if( !pq.empty() ){
@@ -62,26 +83,6 @@ string MAlignerCore::bestAlign(string input){
 
     return NULL;
 }
-
-/*
-priority_queue<MAlignerEntry*> MAlignerCore::alignWith(char* input, int nnames, char** names){
-
-    queue<MAlignerEntry*> robin;
-    int len = strlen(input);
-
-    map<string,MAlignerEntry*>::iterator search_itr;
-    for( int ii = 0; ii < nnames ; ++ii ){
-        search_itr = entries.find(string(names[ii]));
-        if( search_itr != entries.end() ){
-            (*search_itr).second->initialize(input, len);
-            robin.push( (*search_itr).second );
-        }
-    }
-
-    return this->roundRobin(robin);
-
-}
-*/
 
 MAE_queue MAlignerCore::roundRobin(queue<MAlignerEntry*> robin){
 
