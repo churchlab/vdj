@@ -13,6 +13,7 @@
 #include <string>
 #include <queue>
 #include <utility>
+#include <vector>
 
 #ifndef MINVAL
 #define MINVAL (-16384)
@@ -22,9 +23,12 @@
 #define MAXVAL (16384)
 #endif
 
+class MAlignerEntry;
+
 typedef struct{
     int *matrix;
     int size;
+    MAlignerEntry* _owner;
 } dp_matrix;
 
 class MAlignerEntry {
@@ -42,8 +46,10 @@ class MAlignerEntry {
                 int getId(){ return _id; }
                 int gap, match, mismatch;
                 std::string getName();
+                std::pair<std::string,std::string> getAlignment();
             private:
                 int _id;
+                bool myMemory();
                 int scoreDP(int, int, int, int*, int*);
                 std::string _name;
                 char *refSequence;
@@ -52,6 +58,7 @@ class MAlignerEntry {
                 char *testSequence;
                 int test_length;
 
+                bool ref_is_row;
                 // #rows >= #cols;
                 char *row_seq;
                 char *col_seq;

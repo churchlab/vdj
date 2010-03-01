@@ -26,12 +26,16 @@ Object MAligner::align( const Tuple &args ){
     return String(_mcore->bestAlign(sequence));
 }
 
+/*
 Object MAligner::alignWith( const Tuple &args ){
     args.verify_length(2);
     String sequence = args[0];
     List   refs = args[1];
 
+    // dummy return
+    return String("");
 }
+*/
 
 Object MAligner::getattr( const char *name ){
     return getattr_methods(name);    

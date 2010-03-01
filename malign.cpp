@@ -12,6 +12,7 @@ MAlignerCore::MAlignerCore(){
     global_matrix = (dp_matrix*) malloc(sizeof(dp_matrix));
     global_matrix->matrix = NULL;
     global_matrix->size   = 0;
+    global_matrix->_owner  = NULL;
     _id = 0;
 }
 
@@ -53,7 +54,7 @@ MAE_queue MAlignerCore::align(string input){
     return this->roundRobin(robin);
 
 }
-
+/*
 MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
 
     queue<MAlignerEntry*> robin; 
@@ -74,6 +75,7 @@ MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
         return res.top().getName()
     }
 }
+*/
 
 string MAlignerCore::bestAlign(string input){
     MAE_queue pq = align(input);
@@ -103,6 +105,7 @@ MAE_queue MAlignerCore::roundRobin(queue<MAlignerEntry*> robin){
             if( mae->upperBound() >= bestLowerBound
                     && !mae->isAligned() ){
                 robin.push(mae);
+                mae->getAlignment();
             } 
         }
 
@@ -261,12 +264,14 @@ bool MAlignerEntry::initialize(string testSeq, int len=0){
 
     // test will be the row
     if( this->test_length > this->ref_length ) {
+        this->ref_is_row  = false;
         this->row_seq  = this->testSequence;
         this->num_rows = this->test_length;
         this->col_seq  = this->refSequence;
         this->num_cols = this->ref_length;
         // reference will be the row
     } else {
+        this->ref_is_row  = true;
         this->row_seq  = this->refSequence;
         this->num_rows = this->ref_length;
         this->col_seq  = this->testSequence;
@@ -290,11 +295,108 @@ int MAlignerEntry::align(){
 
     if( !this->initialized ) { return MINVAL; }
 
-    while( !this->isAligned() ){
+    do{
         this->step();
-    }
+    }while( !this->isAligned() );
 
     return getScore();
+
+}
+
+pair<string, string> MAlignerEntry::getAlignment(){
+
+    if( !this->isAligned() || !this->myMemory() ){
+        this->align();
+    }
+
+    int num_rows = this->num_rows;
+    int num_cols = this->num_cols;
+    int *currRow = this->dpm->matrix;
+    const int left  = this->left;
+    const int right = this->right;
+
+    vector<int*> rowVector;
+    vector<int>  offsets;
+    int rowOffset = 0;
+
+    for(int y = 0; y < num_rows; ++y ){
+
+        offsets.push_back(rowOffset);
+        rowVector.push_back(currRow);
+
+        int start = (y >= left ? y - left : 0 );
+        int stop  = (num_cols < y + right + 1 ? num_cols : y + right + 1);
+
+        rowOffset = stop - start;
+
+        currRow = currRow + rowOffset;
+    }
+
+    assert( currRow == this->dpm->matrix + this->dpm->size );
+    assert( offsets.size() == rowVector.size() );
+    int y = (int) offsets.size();
+    int x = num_cols;
+
+    string rowString = "";
+    string colString = "";
+
+    while( x > 0 && y > 0 ){
+        int* up   = (currRow - offsets[y]);
+        int* upD  = (currRow - offsets[y] - 1);
+        int* left = (currRow - 1);
+
+        int upScore   = MINVAL;
+        int upDScore  = *upD;
+        int leftScore = MINVAL;
+        
+        if( up < rowVector[y] ){
+            upScore = *up;
+        }
+
+        if( left >= rowVector[y] ){
+            leftScore = *left;
+        }
+
+        if( upDScore >= upScore &&
+            upDScore >= leftScore ){
+            
+            rowString += row_seq[y];
+            colString += col_seq[x];
+
+            x--;
+            y--;
+        } else if( leftScore > upScore ){
+            
+            rowString += "-";
+            colString += col_seq[x];
+            
+            // row gap
+            x--;
+        } else {
+
+            rowString += row_seq[y];
+            colString += "-";
+
+            // row gap
+            y--;
+        }
+
+        currRow = rowVector[y];
+
+    }
+    
+    if( ref_is_row ){
+        return pair<string,string>(rowString, colString);
+    } else {
+        return pair<string,string>(colString, rowString);
+    }
+}
+
+
+
+bool MAlignerEntry::myMemory(){
+
+    return ( this->dpm->_owner == this );
 
 }
 
@@ -311,6 +413,9 @@ bool MAlignerEntry::step(){
     int *prevRow = NULL;
     int *thisRow = this->dpm->matrix;
 
+    // Take control of the memory so that we can output the backtrace.
+    this->dpm->_owner = this;
+
     bool boundary = false;
 
     const int left  = this->left;
@@ -326,15 +431,20 @@ bool MAlignerEntry::step(){
         int rmax = MINVAL;
         int line_max = MINVAL;
 
-        int max_x, max_y;
+        int max_x = MINVAL;
+        int max_y = MINVAL;
         int rowOffset = 0;
 
         // This offset is necessary for the cases where the lefthand side of 
         // the search window falls outside of the DP matrix.
         // By doing this we can avoid any sort of zany offset garbage.
+        // This offset shift the previous row over by one, putting the up and
+        // diagonal indices in the right place.
         if( start == 0 ){
             prevRow = prevRow - 1;
         }
+
+
 
         for( int x = start ; x < stop; ++x){ 
             assert( (ii > 0 && !(x == 0 && y == 0)) || ii == 0 );
