@@ -56,11 +56,13 @@ class BandedMatrix
 {
 
     public:
+        BandedMatrix();
         BandedMatrix(int, int);
         MatrixCol<T> operator[](const int);
         const BandedMatrixIterator<T> begin();
         const BandedMatrixIterator<T> end();
         bool inbounds(int, int);
+        int size();
         int resize(bool, bool);
     private:
         T* _dat; //TODO use shared swap space later;
