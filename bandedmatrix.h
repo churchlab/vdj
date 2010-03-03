@@ -1,11 +1,15 @@
 #include <assert.h>
 #include <signal.h>
 
+#include <string>
 #include <utility>
 #include <vector>
 
 template <class T>
 class MatrixCol;
+
+template <class T>
+class BandedMatrix;
 
 template <class T>
 class BandedMatrixIterator
@@ -45,6 +49,7 @@ class MatrixCol
         MatrixCol(int, int, S*);
         S& operator[](const int);
     protected:
+        friend class BandedMatrix<S>;
         friend class BandedMatrixIterator<S>;
         S* _dat;
         int _offset;
@@ -83,3 +88,14 @@ class BandedMatrix
         BandedMatrixIterator<T> _end;
 };
 
+class BandedAligner {
+    public:
+        BandedAligner(std::string);
+        void initialize(std::string);
+        int align();
+    private:
+        std::string _ref;
+        std::string _test;
+        bool _initialized;
+        BandedMatrix<int> _matrix;
+};
