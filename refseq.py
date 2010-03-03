@@ -24,6 +24,8 @@ IGHJ_J_TRP_start_coord -- dict where the keys are refseq IDs and the values are 
 import os
 import cPickle
 
+from Bio import SeqIO
+
 import vdj
 import params
 import sequtils
