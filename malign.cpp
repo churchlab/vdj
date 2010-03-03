@@ -77,13 +77,14 @@ MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
 }
 */
 
-string MAlignerCore::bestAlign(string input){
+pair<string, string> MAlignerCore::bestAlign(string input){
     MAE_queue pq = align(input);
     if( !pq.empty() ){
-        return pq.top()->getName();
+        printf("Score from alignment: %d\n", pq.top()->getScore());
+        return pq.top()->getAlignment();
     }
 
-    return NULL;
+    return pair<string,string>(string(""), string(""));
 }
 
 MAE_queue MAlignerCore::roundRobin(queue<MAlignerEntry*> robin){
@@ -226,15 +227,15 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
 
 
     if( growLeft ){
-        this->left = min(this->left * 2, this->num_cols / 2);
+        this->_left = min(this->_left * 2, this->num_cols / 2);
     }
 
     if( growRight ){
-        this->right = min(this->right * 2, this->num_cols / 2);
+        this->_right = min(this->_right * 2, this->num_cols / 2);
     }
 
-    int l = this->left;
-    int r = this->right;
+    int l = this->_left;
+    int r = this->_right;
     int d = this->num_rows - this->num_cols;    
     this->matrix_size = 
         this->num_rows 
@@ -242,7 +243,7 @@ int MAlignerEntry::grow(bool growLeft, bool growRight){
         - (l * (l + 1) / 2) 
         - (r * (r + 1) / 2)
         - (r * d)
-        - (d * (d+1) / 2); // account for left hand overflow and the diagonal
+        - (d * (d+1) / 2); // account for _left hand overflow and the diagonal
 
     // Ask for a bigger scratch space if we need it
     if(this->doGrow && this->dpm->size < this->matrix_size ){ 
@@ -279,8 +280,8 @@ bool MAlignerEntry::initialize(string testSeq, int len=0){
     }
 
     this->initialized = true;
-    this->left  = (this->num_cols < this->num_rows ? this->num_rows - this->num_cols : 1);
-    this->right = 1;
+    this->_left  = (this->num_cols < this->num_rows ? this->num_rows - this->num_cols : 1);
+    this->_right = 1;
     this->aligned = false;
     this->doGrow = true;
     
@@ -309,82 +310,90 @@ pair<string, string> MAlignerEntry::getAlignment(){
         this->align();
     }
 
-    int num_rows = this->num_rows;
-    int num_cols = this->num_cols;
-    int *currRow = this->dpm->matrix;
-    const int left  = this->left;
-    const int right = this->right;
-
-    vector<int*> rowVector;
-    vector<int>  offsets;
-    int rowOffset = 0;
-
-    for(int y = 0; y < num_rows; ++y ){
-
-        offsets.push_back(rowOffset);
-        rowVector.push_back(currRow);
-
-        int start = (y >= left ? y - left : 0 );
-        int stop  = (num_cols < y + right + 1 ? num_cols : y + right + 1);
-
-        rowOffset = stop - start;
-
-        currRow = currRow + rowOffset;
-    }
-
-    assert( currRow == this->dpm->matrix + this->dpm->size );
-    assert( offsets.size() == rowVector.size() );
-    int y = (int) offsets.size();
-    int x = num_cols;
-
+    int y = this->num_rows - 1;
+    int x = this->num_cols - 1;
+    const int _left  = this->_left;
+    const int _right = this->_right;
+    
     string rowString = "";
     string colString = "";
 
+    assert((int) this->offsetData.size() == this->num_rows);
+    int *prevRow = this->offsetData.front().first;
+    int *currRow = this->offsetData.front().second;
+    
+    int *index = currRow + _left - ( this->num_rows - this->num_cols);
+    int offset = index - currRow + 1;
+    printf("Offset: %d Score: %d\n", offset, *index);
     while( x > 0 && y > 0 ){
-        int* up   = (currRow - offsets[y]);
-        int* upD  = (currRow - offsets[y] - 1);
-        int* left = (currRow - 1);
+        int* up   = prevRow + offset;
+        int* upD  = prevRow + offset - 1;
+        int* left = index - 1;
+
+        assert(upD < currRow);
 
         int upScore   = MINVAL;
-        int upDScore  = *upD;
+        int upDScore  = MINVAL;
         int leftScore = MINVAL;
         
-        if( up < rowVector[y] ){
+        if( y > 0 && up < currRow ){
             upScore = *up;
         }
 
-        if( left >= rowVector[y] ){
+        if( x > 0 && left >= currRow ){
             leftScore = *left;
         }
 
+        if( x > 0 && y > 0 ){
+            upDScore = *upD;
+        }
+        //printf("left: %d diag: %d up: %d\n", left - currRow, upD - currRow, up - currRow);
+        //printf("(%d,%d)[%ld]: left: %d diag: %d up: %d offset: %d here: %d\n", x, y,(index - this->dpm->matrix),leftScore, upDScore, upScore, offset, *index);
+
         if( upDScore >= upScore &&
             upDScore >= leftScore ){
-            
+            // either a match or mismatch
             rowString += row_seq[y];
             colString += col_seq[x];
-
             x--;
             y--;
+            index = upD;
+            offsetData.pop_front();
         } else if( leftScore > upScore ){
-            
+            // insert a row gap
             rowString += "-";
             colString += col_seq[x];
-            
-            // row gap
             x--;
+            offset--;
+            index = left;
         } else {
-
+            // insert a column gap
             rowString += row_seq[y];
             colString += "-";
-
-            // row gap
             y--;
+            index = up;
+            offset++;
+            offsetData.pop_front();
         }
 
-        currRow = rowVector[y];
+        prevRow = this->offsetData.front().first;
+        currRow = this->offsetData.front().second;
+    }
+   
+    if( x > 0 ){
+
+        rowString += "-";
+        colString += col_seq[x--];
 
     }
-    
+
+    if( y > 0 ){
+        colString += "-";
+        rowString += row_seq[y--];
+    }
+
+    printf("Score: %d\n", this->getScore());
+
     if( ref_is_row ){
         return pair<string,string>(rowString, colString);
     } else {
@@ -418,15 +427,17 @@ bool MAlignerEntry::step(){
 
     bool boundary = false;
 
-    const int left  = this->left;
-    const int right = this->right;
+    const int _left  = this->_left;
+    const int _right = this->_right;
 
     int ii = 0;
 
+    offsetData.clear();
+
     for(int y = 0; y < num_rows; ++y ){
 
-        int start = (y >= left ? y - left : 0 );
-        int stop  = (num_cols < y + right + 1 ? num_cols : y + right + 1);
+        int start = (y >= _left ? y - _left : 0 );
+        int stop  = (num_cols < y + _right + 1 ? num_cols : y + _right + 1);
         int lmax = MINVAL;
         int rmax = MINVAL;
         int line_max = MINVAL;
@@ -439,12 +450,12 @@ bool MAlignerEntry::step(){
         // the search window falls outside of the DP matrix.
         // By doing this we can avoid any sort of zany offset garbage.
         // This offset shift the previous row over by one, putting the up and
-        // diagonal indices in the right place.
-        if( start == 0 ){
+        // diagonal indices in the _right place.
+        if( prevRow && start == 0 ){
             prevRow = prevRow - 1;
         }
 
-
+        offsetData.push_front(pair<int*, int*>(prevRow, thisRow));
 
         for( int x = start ; x < stop; ++x){ 
             assert( (ii > 0 && !(x == 0 && y == 0)) || ii == 0 );
@@ -470,18 +481,18 @@ bool MAlignerEntry::step(){
 
         // if we've hit a boundary, short circuit our way out of the loop
         // and increase the boundary sizes
-        if( num_cols > y + right + 1 ){
+        if( num_cols > y + _right + 1 ){
             bool grow_left = false;
             bool grow_right = false;
 
             if( line_max == lmax
-                    && this->left != this->num_cols / 2 ){
+                    && this->_left != this->num_cols / 2 ){
                 boundary = true;
                 grow_left = true;
             }
 
             if( line_max == rmax
-                    && this->right != this->num_cols / 2){
+                    && this->_right != this->num_cols / 2){
                 boundary = true;
                 grow_right = true;
             }
@@ -500,6 +511,7 @@ bool MAlignerEntry::step(){
     }
 
     int s = this->dpm->matrix[ii - 1];
+    _index = this->dpm->matrix + ii - 1;
     if( !boundary ){ 
         this->aligned = true; 
         this->score = s;
