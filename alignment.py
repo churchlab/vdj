@@ -97,7 +97,7 @@ class vdj_aligner(object):
         t2 = time.time()
         
         bestVseg = ''
-        bestVscore = 0  #100    # ignore calib.  forces reporting of best aln
+        bestVscore = -1  #100    # ignore calib.  forces reporting of best aln
         bestVscoremat = []
         bestVtracemat = []
         
@@ -115,7 +115,7 @@ class vdj_aligner(object):
             trace = np.zeros( [len(seq1)+1, len(seq2)+1], dtype=np.int)
             alignmentcore.alignNW( scores, Ix, Iy, trace, seq1, seq2 )
             
-            currscore = vdj_aligner.scoreVJalign(scores)
+            currscore = vdj_aligner.scoreVJalign(scores,stringent=False)
             if currscore > bestVscore:
                 bestVscore = currscore
                 bestVseg = goodVseg
@@ -129,7 +129,7 @@ class vdj_aligner(object):
         # reconstruct the alignment and chop off V region through beginning of CDR3 (IMGT)
         v_end_idx = 0   # to ensure it gets defined (for processing j_start_idx below)
         if bestVseg != '':
-            Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
+            Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( refseq.IGHV_seqs[bestVseg], query, bestVscoremat, bestVtracemat, stringent=False )
             query,v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg, query )
             chain.add_tags('v_end_idx|%d'%v_end_idx)
         
@@ -179,7 +179,7 @@ class vdj_aligner(object):
             # pure python:
             #scores,trace = vdj_aligner.alignNW( refseq.IGHJ_seqs[goodJseg], query )
             
-            currscore = vdj_aligner.scoreVJalign(scores)
+            currscore = vdj_aligner.scoreVJalign(scores,stringent=False)
             if currscore > bestJscore:
                 bestJscore = currscore
                 bestJseg = goodJseg
@@ -192,7 +192,7 @@ class vdj_aligner(object):
         
         # reconstruct the alignment and chop off J region after the TRP (IMGT)
         if bestJseg != '':
-            Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
+            Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( refseq.IGHJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat, stringent=False )
             (query,j_start_idx) = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg, query )
             chain.add_tags('j_start_idx|%d'%(v_end_idx+j_start_idx))
         
@@ -398,7 +398,7 @@ class vdj_aligner(object):
         return (queryseq[:j_start_idx],j_start_idx)
     
     @staticmethod
-    def construct_alignment(seq1,seq2,scoremat,tracemat):
+    def construct_alignment(seq1,seq2,scoremat,tracemat,stringent=True):
         """Construct alignment of ref segment to query from score and trace matrices."""
         nrows,ncols = scoremat.shape
         
@@ -421,12 +421,22 @@ class vdj_aligner(object):
         }
         
         # compute col where alignment should start
-        if nrows <= ncols:
-            col = np.argmax( scoremat[nrows-1,:] )
-            row = nrows-1
+        if stringent:
+            if nrows <= ncols:
+                col = np.argmax( scoremat[nrows-1,:] )
+                row = nrows-1
+            else:
+                col = ncols-1
+                row = np.argmax( scoremat[:,ncols-1] )
         else:
-            col = ncols-1
-            row = np.argmax( scoremat[:,ncols-1] )
+            colmax = np.max( scoremat[nrows-1,:] )
+            rowmax = np.max( scoremat[:,ncols-1] )
+            if colmax > rowmax:
+                col = np.argmax( scoremat[nrows-1,:] )
+                row = nrows-1
+            else:
+                col = ncols-1
+                row = np.argmax( scoremat[:,ncols-1] )
         #DEBUG
         # col = np.argmax( scoremat[nrows-1,:] )
         # row = nrows-1
@@ -472,19 +482,28 @@ class vdj_aligner(object):
         return aln1, (aln1start,aln1end), aln2, (aln2start,aln2end)
     
     @staticmethod
-    def scoreVJalign(scorematrix):
+    def scoreVJalign(scorematrix,stringent=True):
         """Computes score of V alignment given Needleman-Wunsch score matrix
         
         ASSUMES num rows < num cols, i.e., refseq V seg is on vertical axis
         
+        stringent True requires that the shorter sequence gets aligned fully
+        along the longer one somewhere.
+        
+        stringent False will just search for the max score along both the
+        last row and column.
         """
         nrows,ncols = scorematrix.shape
         
-        
-        if nrows <= ncols:
-            return np.max( scorematrix[nrows-1,:] )
+        if stringent:
+            if nrows <= ncols:
+                return np.max( scorematrix[nrows-1,:] )
+            else:
+                return np.max( scorematrix[:,ncols-1] )
         else:
-            return np.max( scorematrix[:,ncols-1] )
+            colmax = np.max( scorematrix[nrows-1,:] )
+            rowmax = np.max( scorematrix[:,ncols-1] )
+            return np.max( [colmax,rowmax] )
         
         #DEBUG
         #OLD WAY
