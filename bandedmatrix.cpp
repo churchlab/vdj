@@ -129,6 +129,17 @@ S& MatrixCol<S>::operator[](const int ii){
 }
 
 template <class T>
+BandedMatrix<T>::BandedMatrix(){
+    _numCols = 0;
+    _numRows = 0;
+    _left    = 0;
+    _right   = 0;
+    _cols    = vector<MatrixCol<T> >(0);
+    _startPos = vector<int>(0);
+    _size    = 0;
+}
+
+template <class T>
 BandedMatrix<T>::BandedMatrix(int x, int y){
     _numCols = x;
     _numRows = y;
