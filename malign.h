@@ -15,84 +15,7 @@
 #include <utility>
 #include <vector>
 
-#ifndef MINVAL
-#define MINVAL (-16384)
-#endif
-
-#ifndef MAXVAL
-#define MAXVAL (16384)
-#endif
-
-class MAlignerEntry;
-
-typedef struct{
-    int *matrix;
-    int size;
-    MAlignerEntry* _owner;
-} dp_matrix;
-
-class MAlignerEntry {
-            public:
-                MAlignerEntry(std::string, std::string, dp_matrix *dp, int);
-                ~MAlignerEntry();
-                bool initialize(std::string, int);
-                bool isAligned();
-                bool isInitialized();
-                int align();
-                bool step();
-                int upperBound();
-                int lowerBound();
-                int getScore();
-                int getId(){ return _id; }
-                int gap, match, mismatch;
-                std::string getName();
-                std::pair<std::string,std::string> getAlignment();
-            private:
-                int _id;
-                bool myMemory();
-                int scoreDP(int, int, int, int*, int*);
-                std::string _name;
-                char *refSequence;
-                int ref_length;
-
-                char *testSequence;
-                int test_length;
-
-                bool ref_is_row;
-                // #rows >= #cols;
-                char *row_seq;
-                char *col_seq;
-                int num_rows;
-                int num_cols;
-
-                dp_matrix *dpm;
-                int matrix_size;
-                
-                int uBound;
-                int lBound;
-                int _left;
-                int _right;
-
-                int grow(bool, bool);
-                bool doGrow;
-                int setLowerBound(int, int, int);
-                int setUpperBound(int, int, int);
-
-                int* _index;
-                int score;
-                bool aligned;
-                bool initialized;
-                std::list<std::pair<int*,int*> > offsetData;
-};
-
-bool operator>(MAlignerEntry&, MAlignerEntry&);
-bool operator<(MAlignerEntry&, MAlignerEntry&);
-
-struct CompareMEntry : public std::binary_function<MAlignerEntry*, MAlignerEntry*, bool>{
-    bool operator()(MAlignerEntry*, MAlignerEntry*) const;
-};
-
-typedef std::priority_queue<MAlignerEntry*, std::vector<MAlignerEntry*>, CompareMEntry> MAE_queue;
+#include "bandedaligner.cpp"
 
 class MAlignerCore {
     public:
@@ -103,11 +26,9 @@ class MAlignerCore {
         std::pair<std::string, std::string> bestAlign(std::string input);
         std::string alignWith(std::string input, std::list<std::string> refs);
         MAE_queue align(std::string input);
-        MAE_queue roundRobin(std::queue<MAlignerEntry*>);
+        MAE_queue roundRobin(std::queue<BandedAligner*>);
 
     private:
-        int _id;
-        std::map<std::string,MAlignerEntry*> entries;
-        dp_matrix *global_matrix;
+        std::map<std::string,BandedAligner*> entries;
 };
    
