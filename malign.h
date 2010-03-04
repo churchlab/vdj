@@ -1,3 +1,6 @@
+#ifndef __MALIGNER_CORE__
+#define __MALIGNER_CORE__
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,8 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "bandedaligner.cpp"
-
+#include "bandedalignment.h"
 class MAlignerCore {
     public:
       
@@ -25,10 +27,11 @@ class MAlignerCore {
         void addEntry(std::string name, std::string sequence);
         std::pair<std::string, std::string> bestAlign(std::string input);
         std::string alignWith(std::string input, std::list<std::string> refs);
-        MAE_queue align(std::string input);
-        MAE_queue roundRobin(std::queue<BandedAligner*>);
+        std::list<std::pair<int, BandedAligner*> > align(std::string input);
+        std::list<std::pair<int, BandedAligner*> > roundRobin(std::queue<BandedAligner*>);
 
     private:
         std::map<std::string,BandedAligner*> entries;
 };
-   
+
+#endif

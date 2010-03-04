@@ -71,8 +71,6 @@ void BandedMatrixIterator<T>::test(){
         ii++;
     }
 
-    printf("Expected %d cells, got %d.\n", _size, ii);
-
     while( hasPrev() ){
         _index--;
         --(*this);
@@ -109,7 +107,6 @@ BandedMatrixIterator<T>& BandedMatrixIterator<T>::operator--() {
 
 template <class T>
 T& BandedMatrixIterator<T>::operator*() const {
-    printf("%p + %d = %p\n", _dat, _index, _dat + _index);
     return _dat[_index];
 }
 
@@ -197,7 +194,6 @@ bool BandedMatrix<T>::inbounds(int x, int y){
 
 template <class T>
 void BandedMatrix<T>::makeCols(){
-    printf("Building the columns... ");
     int colLength = 1 + _left;
     T* index = _dat; 
     int effectiveRight = 0;
@@ -222,7 +218,6 @@ void BandedMatrix<T>::makeCols(){
         index += colLength;
 
     } 
-    printf("done!\n");
 }
 
 template <class T>
@@ -239,12 +234,10 @@ template <class T>
 int BandedMatrix<T>::resize(bool gLeft, bool gRight){
     
     if( gLeft ){
-        printf("Grew the left...\n");
         _left = min(_left * 2, _numRows - 1);
     }
 
     if( gRight ){
-        printf("Grew the right...\n");
         _right = min(_right * 2, _numCols - 1);
     }
 
@@ -255,13 +248,11 @@ int BandedMatrix<T>::resize(bool gLeft, bool gRight){
      */
     int upperTriangle = _numCols - 1 - _right;
     int lowerTriangle = _numRows - 1 - _left;
-    printf("%d -> ", _size);
     _size = 
         (_numCols * _numRows) -
         (upperTriangle * (upperTriangle + 1)) / 2 -
         (lowerTriangle * (lowerTriangle + 1)) / 2;
     assert(_size > 0);  
-    printf("%d\n", _size);
     if( _dat ){ free(_dat); }
     _dat = (T*) malloc(sizeof(T) * _size);
 
@@ -284,102 +275,208 @@ BandedAligner::BandedAligner(string ref){
     _aligned = false;
 }
 
+BandedAligner::~BandedAligner(){
+}
+
 void BandedAligner::initialize(string test){
     _test = test;
     _initialized = true;
     _aligned = false;
-    _matrix = BandedMatrix<int>((int)_ref.size(), (int)_test.size());
+    _matrix = new BandedMatrix<int>((int)_ref.size(), (int)_test.size());
     setBounds(0,0,0);
+}
+
+pair<string, string> BandedAligner::getBacktrace(){
+
+    stack<Direction> backtrace;
+
+    if( !_aligned ){
+        align();
+    }
+
+    int x = _matrix->cols() - 1;
+    int y = _matrix->rows() - 1;
+
+    while( x > 0 && y > 0 ){
+       
+        assert( _matrix->inbounds(x, y - 1 ));
+        assert( _matrix->inbounds(x - 1, y - 1 ));
+        assert( _matrix->inbounds(x - 1, y ));
+
+        int up   = (*_matrix)[x][y-1];
+        int left = (*_matrix)[x-1][y];
+        int diag = (*_matrix)[x-1][y-1];
+
+        if( diag >= up && diag >= left )
+        {
+            backtrace.push(Diagonal);
+            x--;
+            y--;
+        } else if( up >= left ){
+            backtrace.push(Up);
+            y--;
+        } else {
+            backtrace.push(Left);
+            x--;
+        }
+    }
+    
+    //It was just too tempting to write this:
+    while(x-->0){
+        backtrace.push(Left);
+    }
+
+    while(y-->0){
+        backtrace.push(Up);
+    }
+    
+    string refAlign;
+    string testAlign;
+
+    x = 0;
+    y = 0;
+    while(!backtrace.empty()){
+        Direction d = backtrace.top();
+        backtrace.pop();
+
+        switch(d){
+            case Diagonal:
+                refAlign  += _ref[x];
+                testAlign += _test[y];
+                x++;
+                y++;
+                break;
+            case Up:
+                refAlign  += "-";
+                testAlign += _test[y];
+                y++;
+                break;
+            case Left:
+                refAlign  += _ref[x];
+                testAlign += "-";
+                x++;
+                break;
+        }
+    }
+   
+    printf("R: %s\nT: %s\n", refAlign.c_str(), testAlign.c_str());
+    return pair<string, string>(refAlign, testAlign);
+
+
 }
 
 int BandedAligner::step(){
 
-    BandedMatrixIterator<int> itr = _matrix.begin();
+    BandedMatrixIterator<int> itr = _matrix->begin();
     int ii = 0;
-    int min = -8388608;
+    const int min = -8388608;
     int x = 0;
     int y = 0;
     int prevX = -1;
     int upperScore = min;
     int lowerScore = min;
-    int columnBest = min;
+    int columnBest = 0;
     int score = min;
-    int maxX = _matrix.cols();
-    int maxY = _matrix.rows();
+    int maxX = _matrix->cols();
+    int maxY = _matrix->rows();
+    pair<int, int> coords; 
+    
+    bool upperBoundary = false;
+    bool lowerBoundary = (_matrix->left() + 1 == maxY ? false : true);
+    
+    int left = min;
+    int diag = min;
+    int up = min;
 
-    for(; ii < _matrix.size(); ++ii){
+    for(; ii < _matrix->size(); ++ii){
+        x = itr.coordinates().first;
 
-        assert(x >= 0 && x < maxX);
-        assert(y >= 0 && y < maxY);
         if( x > prevX ){
             lowerScore = score;
+            
+            if( left == min ){
+                lowerBoundary = true;
+            } else {
+                lowerBoundary = false;
+            }
+            
+            bool growRight = false;
+            bool growLeft  = false;
+
+            if( upperBoundary && upperScore >= columnBest ){
+                growRight = true;
+            }
+
+            if( lowerBoundary && lowerScore >= columnBest ){
+                growLeft = true;
+            }
+
+            if( growLeft || growRight ){
+                _matrix->resize(growLeft, growRight);
+                return min;
+            }
         }
 
-        pair<int, int> coords = itr.coordinates();
-        x = coords.first;
-        y = coords.second;
+        y = itr.coordinates().second;
+        
+        assert(x >= 0 && x < maxX);
+        assert(y >= 0 && y < maxY);
 
-        int diag = min;
-        int up = min;
-        int left = min;
+        diag = min;
+        up = min;
+        left = min;
 
         if( x > 0 && y > 0 ){
-            diag = _matrix[x - 1][y - 1] +
+            diag = (*_matrix)[x - 1][y - 1] +
                 (_ref[x] == _test[y] ? 1 : -1);
         } else {
             diag = (_ref[x] == _test[y] ? 1 : - 1) - x - y;
         }
 
-        if( _matrix.inbounds(x - 1, y) ){
-            left = _matrix[x-1][y] - 1; 
+        if( _matrix->inbounds(x - 1, y) ){
+            left = (*_matrix)[x-1][y] - 1; 
         }
 
-        if( _matrix.inbounds(x, y - 1) ){
-            up = _matrix[x][y-1] - 1;
+        if( _matrix->inbounds(x, y - 1) ){
+            up = (*_matrix)[x][y-1] - 1;
         }
 
         score = max(diag, max(left, up));
-        _matrix[x][y] = score;
+        (*_matrix)[x][y] = score;
 
-        columnBest = max(columnBest, score);
-
-        // we've rolled over to a new column
         if( x > prevX ){
-            if(x != 0 &&
-               x != maxX &&
-               y != 0 &&
-               y != maxY ){
-                bool growLeft, growRight;
-
-                if( upperScore >= columnBest ){
-                    printf("Upper score %d beats %d\n", upperScore, columnBest);
-                    growRight = true;
-                }
-
-                if( lowerScore >= columnBest ){
-                    printf("Lower score %d beats %d\n", lowerScore, columnBest);
-                    growLeft = true;
-                }
-
-                if( growRight || growLeft ){
-                    printf("Resizing...\n");
-                    _matrix.resize(growLeft, growRight);
-
-                    return min;
-                }
-            }
-            //reset our variables
             upperScore = score;
+            if( up == min && x > 0){
+                upperBoundary = true;
+            } else {
+                upperBoundary = false;
+            }
+
             prevX = x;
-            columnBest = min;
         }
 
-        printf("[%d][%d]: %d (d: %d u: %d l: %d)\n", x, y, _matrix[x][y], diag, up, left);
+        columnBest = max(columnBest, score);
+        //printf("[%d][%d]: %d (d: %d u: %d l: %d)\n", x, y, (*_matrix)[x][y], diag, up, left);
         ++itr;
+    }
+
+    bool growLeft = false;
+    bool growRight = false;
+    if( min == left ){
+        growLeft = true;
+    }
+    if( min == up ){
+        growRight = true;
+    }
+
+    if( growLeft || growRight ){
+        _matrix->resize(growLeft, growRight);
+        return min;
     }
     _aligned = true;
     setBounds(x,y, score);
-    return _matrix[x][y];
+    _score = score;
+    return (*_matrix)[x][y];
 }
 
 int BandedAligner::align(){
@@ -392,25 +489,10 @@ int BandedAligner::align(){
 
 void BandedAligner::setBounds(int x, int y, int score){
 
-    int maxX = _matrix.cols();
-    int maxY = _matrix.rows();
+    int maxX = _matrix->cols();
+    int maxY = _matrix->rows();
     int diagonal = min(maxX - x, maxY - y);
     int horizontal = max(maxX - x, maxY - y);
     _upperBound = score + diagonal - (horizontal - diagonal);
     _lowerBound = score - (maxX - x) - (maxY - y);
 }
-
-int main(int argc, void **argv){
-
-    BandedAligner alg("AAAAAAAAAAAA");
-       alg.initialize("GGGGGGGGGAAA");
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    printf("%d\n", alg.step());
-    return 0;
-}
-

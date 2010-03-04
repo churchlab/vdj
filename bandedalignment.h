@@ -1,12 +1,15 @@
+#ifndef __BANDED_ALIGNMENT__
+#define __BANDED_ALIGNMENT__
+
 #include <assert.h>
 #include <signal.h>
 
 #include <string>
+#include <stack>
 #include <utility>
 #include <vector>
 
-#ifndef __BANDED_ALIGNMENT__
-#define __BANDED_ALIGNMENT__
+enum Direction { Diagonal, Up, Left };
 
 template <class T>
 class MatrixCol;
@@ -75,6 +78,8 @@ class BandedMatrix
         int rows(){ return _numRows; }
         int cols(){ return _numCols; }
         int size();
+        int left(){ return _left; }
+        int right(){ return _right; }
         int resize(bool, bool);
     private:
         T* _dat; //TODO use shared swap space later;
@@ -98,13 +103,16 @@ class BandedMatrix
 class BandedAligner {
     public:
         BandedAligner(std::string);
+        ~BandedAligner();
         void initialize(std::string);
         int step();
         int align();
+        int getScore(){ return _score; }
         bool isAligned(){ return _aligned; }
         bool isInitialized(){ return _initialized; }
         int lowerBound(){ return _lowerBound; }
         int upperBound(){ return _upperBound; }
+        std::pair<std::string, std::string> getBacktrace();
     private:
         void setBounds(int, int, int);
         std::string _ref;
@@ -113,7 +121,8 @@ class BandedAligner {
         bool _initialized;
         int _upperBound;
         int _lowerBound;
-        BandedMatrix<int> _matrix;
+        int _score;
+        BandedMatrix<int> *_matrix;
 };
 
 #endif
