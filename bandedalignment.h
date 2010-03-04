@@ -5,6 +5,9 @@
 #include <utility>
 #include <vector>
 
+#ifndef __BANDED_ALIGNMENT__
+#define __BANDED_ALIGNMENT__
+
 template <class T>
 class MatrixCol;
 
@@ -25,6 +28,7 @@ class BandedMatrixIterator
         
         bool hasNext();
         bool hasPrev();
+        void test();
 
         //FIXME these operators only work as prefix ops.
         BandedMatrixIterator<T>& operator++();
@@ -63,10 +67,13 @@ class BandedMatrix
     public:
         BandedMatrix();
         BandedMatrix(int, int);
+        ~BandedMatrix();
         MatrixCol<T> operator[](const int);
         const BandedMatrixIterator<T> begin();
         const BandedMatrixIterator<T> end();
         bool inbounds(int, int);
+        int rows(){ return _numRows; }
+        int cols(){ return _numCols; }
         int size();
         int resize(bool, bool);
     private:
@@ -92,10 +99,21 @@ class BandedAligner {
     public:
         BandedAligner(std::string);
         void initialize(std::string);
+        int step();
         int align();
+        bool isAligned(){ return _aligned; }
+        bool isInitialized(){ return _initialized; }
+        int lowerBound(){ return _lowerBound; }
+        int upperBound(){ return _upperBound; }
     private:
+        void setBounds(int, int, int);
         std::string _ref;
         std::string _test;
+        bool _aligned;
         bool _initialized;
+        int _upperBound;
+        int _lowerBound;
         BandedMatrix<int> _matrix;
 };
+
+#endif
