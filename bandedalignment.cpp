@@ -340,21 +340,21 @@ pair<string, string> BandedAligner::getBacktrace(){
         int left = (*_matrix)[x-1][y];
         int diag = (*_matrix)[x-1][y-1];
 
-        printf("BT: [%d][%d] up: %d left: %d diag: %d\t", x, y, up, left, diag);    
+        //printf("BT: [%d][%d] up: %d left: %d diag: %d\t", x, y, up, left, diag);    
         if( diag >= up && diag >= left )
         {
             backtrace.push(Diagonal);
             x--;
             y--;
-            printf("DIAGONAL\n");
+        //    printf("DIAGONAL\n");
         } else if( up >= left ){
             backtrace.push(Up);
             y--;
-            printf("UP\n");
+        //    printf("UP\n");
         } else {
             backtrace.push(Left);
             x--;
-            printf("LEFT\n");
+        //    printf("LEFT\n");
         }
     }
     

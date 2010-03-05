@@ -29,7 +29,7 @@ clusteringcoreext = Extension(
                         )
 
 maligner = Extension('maligner',
-                sources = ['malign.cpp', 'maligner.cxx',
+                sources = ['malign.cpp', 'bandedalignment.cpp', 'maligner.cxx',
                     os.path.join(support_dir,'cxxsupport.cxx'),
                     os.path.join(support_dir,'cxx_extensions.cxx'),
                     os.path.join(support_dir,'IndirectPythonInterface.cxx'),

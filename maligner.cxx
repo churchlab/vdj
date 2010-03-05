@@ -27,9 +27,9 @@ Object MAligner::align( const Tuple &args ){
     string name = res.first;
     pair<string, string> trace = res.second;
     Tuple t(3);
-    t[0] = name;
-    t[1] = trace.first;
-    t[2] = trace.second;
+    t[0] = String(name);
+    t[1] = String(trace.first);
+    t[2] = String(trace.second);
     return t;
 }
 
