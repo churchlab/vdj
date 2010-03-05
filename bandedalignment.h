@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include <string>
 #include <stack>
@@ -106,19 +107,22 @@ class BandedMatrix
 
 class BandedAligner {
     public:
-        BandedAligner(std::string);
+        BandedAligner(std::string, std::string);
         ~BandedAligner();
         void initialize(std::string);
         int step();
         int align();
+        std::string getName(){ return _name; }
         int getScore(){ return _score; }
         bool isAligned(){ return _aligned; }
         bool isInitialized(){ return _initialized; }
         int lowerBound(){ return _lowerBound; }
         int upperBound(){ return _upperBound; }
         std::pair<std::string, std::string> getBacktrace();
+        void dumpMatrix();
     private:
         void setBounds(int, int, int);
+        std::string _name;
         std::string _ref;
         std::string _test;
         bool _aligned;

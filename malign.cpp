@@ -12,7 +12,7 @@ MAlignerCore::MAlignerCore(){
 }
 
 void MAlignerCore::addEntry(string name, string sequence){
-    entries.insert(pair<string, BandedAligner*>(name, new BandedAligner(sequence)));
+    entries.insert(pair<string, BandedAligner*>(name, new BandedAligner(name, sequence)));
 
 }
 
@@ -27,7 +27,6 @@ list<pair<int, BandedAligner*> > MAlignerCore::align(string input){
     map<string, BandedAligner*>::iterator entry_itr;
 
     list<pair<int, BandedAligner*> > res;
-    int len = (int) input.length();
 
     for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
         BandedAligner *e = (*entry_itr).second;
@@ -62,7 +61,7 @@ MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
 }
 */
 
-pair<string, string> MAlignerCore::bestAlign(string input){
+pair<string, pair<string, string> > MAlignerCore::bestAlign(string input){
     list<pair<int, BandedAligner*> > res = align(input);
 
     int bestScore = -8388608;
@@ -79,11 +78,11 @@ pair<string, string> MAlignerCore::bestAlign(string input){
 
     if( bestAlignment ){
         pair<string, string> bt = bestAlignment->getBacktrace();
-        return bt;
+        return pair<string, pair<string, string> >(bestAlignment->getName(), bt);
     }
 
-    return pair<string,string>(string("FAILED"),string("FAILED")); 
-
+    pair<string,string> dummy(string(""),string("")); 
+    return pair<string, pair<string, string> >(string(""), dummy);
 }
 
 list<pair<int, BandedAligner*> > MAlignerCore::roundRobin(queue<BandedAligner*> robin){

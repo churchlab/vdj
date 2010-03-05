@@ -30,18 +30,21 @@ BandedMatrixIterator<T>::BandedMatrixIterator(const BandedMatrixIterator<T> &itr
     _maxX = itr._maxX;
     _maxY = itr._maxY;
     _dat = itr._dat;
+    //printf("itr._dat = %p\n", _dat);
 }
 
 template <class T>
 BandedMatrixIterator<T>::BandedMatrixIterator(vector<MatrixCol<T> > &cols, int size, int maxRows, int maxCols){
     _currCol = cols[0];
     _dat = _currCol._dat;
+    //printf("itr._dat = %p\n", _dat);
     _cols = cols;
     _x = 0;
     _y = 0;
     _size = size;
     _maxX = maxCols - 1;
     _maxY = maxRows - 1;
+    _index = 0;
 }
 
 template <class T>
@@ -114,6 +117,7 @@ BandedMatrixIterator<T>& BandedMatrixIterator<T>::operator--() {
 
 template <class T>
 T& BandedMatrixIterator<T>::operator*() const {
+    //printf("Deferencing %p (%p, %d)\n", _dat + _index, _dat, _index);
     return _dat[_index];
 }
 
@@ -155,6 +159,7 @@ MatrixCol<S>::MatrixCol(int offset, int length, S* row){
     _offset = offset;
     _length = length;
     _dat = row;
+    //printf("col._dat = %p\n", _dat);
 }
 
 template <class S>
@@ -163,6 +168,7 @@ S& MatrixCol<S>::operator[](const int ii){
         return _dat[ii - _offset]; 
     } else {
         raise(SIGSEGV);
+        return _dat[0];
     }
 }
 
@@ -238,11 +244,10 @@ void BandedMatrix<T>::makeCols(){
         colLength = d
             + allowableLeft 
             + allowableRight;
-        index += colLength;
        
         //printf("Column: %d Allowable Right: %d Allowable Left: %d Length: %d Offset: %d\n", ii, allowableRight, allowableLeft, colLength, colStart);
-
         _cols[ii] = MatrixCol<T>(colStart, colLength, index);
+        index += colLength;
     } 
 }
 
@@ -281,6 +286,7 @@ int BandedMatrix<T>::resize(bool gLeft, bool gRight){
     assert(_size > 0);  
     if( _dat ){ free(_dat); }
     _dat = (T*) malloc(sizeof(T) * _size);
+    //printf("mtx._dat = %p\n", _dat);
 
     makeCols();
     _begin = BandedMatrixIterator<T>(_cols, _size, _numRows, _numCols);
@@ -296,8 +302,9 @@ int BandedMatrix<T>::size(){
     return _size;
 }
 
-BandedAligner::BandedAligner(string ref){
+BandedAligner::BandedAligner(string name, string ref){
     _ref = ref;
+    _name = name;
     _initialized = false;
     _aligned = false;
 }
@@ -389,10 +396,23 @@ pair<string, string> BandedAligner::getBacktrace(){
         }
     }
    
-    printf("R: %s\nT: %s\n", refAlign.c_str(), testAlign.c_str());
+    //printf("R: %s\nT: %s\n", refAlign.c_str(), testAlign.c_str());
     return pair<string, string>(refAlign, testAlign);
 
 
+}
+
+void BandedAligner::dumpMatrix(){
+
+    BandedMatrixIterator<int> itr = _matrix->begin();
+
+    //printf("iterator pointer: %p\n", itr._dat);
+
+    for(int ii = 0; ii < _matrix->size(); ++ii){
+        
+        //printf("[%d][%d] %d\n", itr.coordinates().first, itr.coordinates().second, *itr); 
+        ++itr;
+    }
 }
 
 int BandedAligner::step(){
@@ -424,7 +444,7 @@ int BandedAligner::step(){
         if( x > prevX ){
             lowerScore = score;
 
-            printf("Column rolled over. Upper: %d Lower: %d Best: %d\n", upperScore, lowerScore, columnBest);
+            //printf("Column rolled over. Upper: %d Lower: %d Best: %d\n", upperScore, lowerScore, columnBest);
             bool growRight = false;
             bool growLeft  = false;
 
@@ -437,7 +457,7 @@ int BandedAligner::step(){
             }
 
             if( growLeft || growRight ){
-                printf("Growing Left[%s] Right[%s]\n\n\n", (growLeft?"X":" "), (growRight?"X":" "));
+                //printf("Growing Left[%s] Right[%s]\n\n\n", (growLeft?"X":" "), (growRight?"X":" "));
                 _matrix->resize(growLeft, growRight);
                 return min;
             }
@@ -479,7 +499,7 @@ int BandedAligner::step(){
 
         columnBest = max(columnBest, score);
         lowerBoundary = itr.boundary();
-        printf("[%d][%d]: %d (d: %d u: %d l: %d) %s\n", x, y, (*_matrix)[x][y], diag, up, left, (itr.boundary() ? "BOUNDARY" : ""));
+        //printf("[%d][%d]: %d (d: %d u: %d l: %d) %s\n", x, y, (*_matrix)[x][y], diag, up, left, (itr.boundary() ? "BOUNDARY" : ""));
         ++itr;
     }
 
@@ -520,13 +540,15 @@ void BandedAligner::setBounds(int x, int y, int score){
     _lowerBound = score - (maxX - x) - (maxY - y);
 }
 
-
+/*
 int main(int argc, char **argv){
 
     BandedAligner algn("AAAAAAAAAAAAAA");
        algn.initialize("AAATTTTTTAAAAA");
+       algn.dumpMatrix();
        algn.align();
+       algn.dumpMatrix();
        algn.getBacktrace();
        return 0;
 
-}
+}*/

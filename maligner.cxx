@@ -23,7 +23,14 @@ Object MAligner::addEntry( const Tuple &args ){
 Object MAligner::align( const Tuple &args ){
     args.verify_length(1);
     String sequence = args[0];
-    return String(_mcore->bestAlign(sequence));
+    pair<string, pair<string,string> > res = _mcore->bestAlign(sequence);
+    string name = res.first;
+    pair<string, string> trace = res.second;
+    Tuple t(3);
+    t[0] = name;
+    t[1] = trace.first;
+    t[2] = trace.second;
+    return t;
 }
 
 /*
