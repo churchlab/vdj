@@ -23,17 +23,19 @@ class BandedMatrixIterator
     public:
         BandedMatrixIterator();
         BandedMatrixIterator(const BandedMatrixIterator<T> &itr);
-        BandedMatrixIterator(std::vector<MatrixCol<T> > &itr, int size);
+        BandedMatrixIterator(std::vector<MatrixCol<T> > &itr, int size, int rows, int cols);
         ~BandedMatrixIterator();
         //FIXME these operators are broken. fix em.
         bool operator== (BandedMatrixIterator<T> &itr); 
         bool operator!= (BandedMatrixIterator<T> &itr); 
-        
+       
+        bool boundary();
+
         bool hasNext();
         bool hasPrev();
         void test();
 
-        //FIXME these operators only work as prefix ops.
+        //I will not define postfix operators. They are harmful.
         BandedMatrixIterator<T>& operator++();
         BandedMatrixIterator<T>& operator--();
         T& operator*() const;
@@ -46,6 +48,8 @@ class BandedMatrixIterator
         int _x;
         int _y;
         int _index;
+        int _maxX;
+        int _maxY;
 };
 
 template <class S>

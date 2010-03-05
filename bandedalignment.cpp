@@ -4,6 +4,7 @@
 
 using namespace std;
 
+
 /*
  * BandedMatrixIterator
  */
@@ -14,6 +15,8 @@ BandedMatrixIterator<T>::BandedMatrixIterator(){
     _index = 0;
     _x = 0;
     _y = 0;
+    _maxX = 0;
+    _maxY = 0;
 }
 
 template <class T>
@@ -24,17 +27,21 @@ BandedMatrixIterator<T>::BandedMatrixIterator(const BandedMatrixIterator<T> &itr
     _index = itr._index;
     _x = itr._x;
     _y = itr._y;
+    _maxX = itr._maxX;
+    _maxY = itr._maxY;
     _dat = itr._dat;
 }
 
 template <class T>
-BandedMatrixIterator<T>::BandedMatrixIterator(vector<MatrixCol<T> > &cols, int size){
+BandedMatrixIterator<T>::BandedMatrixIterator(vector<MatrixCol<T> > &cols, int size, int maxRows, int maxCols){
     _currCol = cols[0];
     _dat = _currCol._dat;
     _cols = cols;
     _x = 0;
     _y = 0;
     _size = size;
+    _maxX = maxCols - 1;
+    _maxY = maxRows - 1;
 }
 
 template <class T>
@@ -113,6 +120,24 @@ T& BandedMatrixIterator<T>::operator*() const {
 template <class T>
 pair<int, int> BandedMatrixIterator<T>::coordinates(){
     return pair<int, int>(_x,_y);
+}
+
+template <class T>
+bool BandedMatrixIterator<T>::boundary(){
+  
+    bool upBound = false;
+    bool leftBound = false;
+
+    if( _x > 0 && _y > 0 ){
+        upBound = ( 0 == _y - _currCol._offset );
+    
+        MatrixCol<T> prevCol = _cols[_x - 1];
+        int poffset = prevCol._offset;
+        int plen    = prevCol._length;
+        leftBound = (poffset + plen - 1 < _y);
+    }
+
+    return (upBound || leftBound);
 }
 
 /*
@@ -196,27 +221,28 @@ template <class T>
 void BandedMatrix<T>::makeCols(){
     int colLength = 1 + _left;
     T* index = _dat; 
-    int effectiveRight = 0;
-    int effectiveLeft  = _left;
+    int allowableRight = 0;
+    int allowableLeft  = _left;
     int colStart = 0;
-    for(int ii = 0; ii < _numCols; ++ii ){
-        _cols[ii] = MatrixCol<T>(colStart, colLength, index);
+    for(int ii = 0; ii < _numCols; ++ii){
+        
+        int d = 1; //(ii < _numRows - 1 ? 1 : 0);
 
-        if( ii + _left + 1 >= _numRows && effectiveLeft >= 0 ){
-            effectiveLeft--;
-        }
-
-        if( ii < _right ){
-            effectiveRight++;
-        } else {
-            colStart++;
-        }
-
-        colLength = (ii < _numRows ? 1 : 0) 
-            + effectiveRight 
-            + effectiveLeft;
+        allowableLeft  = _left  + min(0, _numRows - ii - 1 - _left);
+        allowableRight = _right + min(0, ii - _right);
+        colStart = ii - allowableRight;
+/*
+        assert(allowableLeft >= 0);
+        assert(allowableRight >= 0);
+*/
+        colLength = d
+            + allowableLeft 
+            + allowableRight;
         index += colLength;
+       
+        //printf("Column: %d Allowable Right: %d Allowable Left: %d Length: %d Offset: %d\n", ii, allowableRight, allowableLeft, colLength, colStart);
 
+        _cols[ii] = MatrixCol<T>(colStart, colLength, index);
     } 
 }
 
@@ -257,8 +283,9 @@ int BandedMatrix<T>::resize(bool gLeft, bool gRight){
     _dat = (T*) malloc(sizeof(T) * _size);
 
     makeCols();
-    _begin = BandedMatrixIterator<T>(_cols, _size);
-    _end   = BandedMatrixIterator<T>(_cols, _size);
+    _begin = BandedMatrixIterator<T>(_cols, _size, _numRows, _numCols);
+    //TODO set this iterator to the end.
+    _end   = BandedMatrixIterator<T>(_cols, _size, _numRows, _numCols);
 
     //_begin.test();
     return _size;
@@ -298,7 +325,6 @@ pair<string, string> BandedAligner::getBacktrace(){
     int y = _matrix->rows() - 1;
 
     while( x > 0 && y > 0 ){
-       
         assert( _matrix->inbounds(x, y - 1 ));
         assert( _matrix->inbounds(x - 1, y - 1 ));
         assert( _matrix->inbounds(x - 1, y ));
@@ -307,17 +333,21 @@ pair<string, string> BandedAligner::getBacktrace(){
         int left = (*_matrix)[x-1][y];
         int diag = (*_matrix)[x-1][y-1];
 
+        printf("BT: [%d][%d] up: %d left: %d diag: %d\t", x, y, up, left, diag);    
         if( diag >= up && diag >= left )
         {
             backtrace.push(Diagonal);
             x--;
             y--;
+            printf("DIAGONAL\n");
         } else if( up >= left ){
             backtrace.push(Up);
             y--;
+            printf("UP\n");
         } else {
             backtrace.push(Left);
             x--;
+            printf("LEFT\n");
         }
     }
     
@@ -393,13 +423,8 @@ int BandedAligner::step(){
 
         if( x > prevX ){
             lowerScore = score;
-            
-            if( left == min ){
-                lowerBoundary = true;
-            } else {
-                lowerBoundary = false;
-            }
-            
+
+            printf("Column rolled over. Upper: %d Lower: %d Best: %d\n", upperScore, lowerScore, columnBest);
             bool growRight = false;
             bool growLeft  = false;
 
@@ -412,6 +437,7 @@ int BandedAligner::step(){
             }
 
             if( growLeft || growRight ){
+                printf("Growing Left[%s] Right[%s]\n\n\n", (growLeft?"X":" "), (growRight?"X":" "));
                 _matrix->resize(growLeft, growRight);
                 return min;
             }
@@ -446,17 +472,14 @@ int BandedAligner::step(){
 
         if( x > prevX ){
             upperScore = score;
-            if( up == min && x > 0){
-                upperBoundary = true;
-            } else {
-                upperBoundary = false;
-            }
-
+            upperBoundary = itr.boundary();
+            columnBest = score;
             prevX = x;
         }
 
         columnBest = max(columnBest, score);
-        //printf("[%d][%d]: %d (d: %d u: %d l: %d)\n", x, y, (*_matrix)[x][y], diag, up, left);
+        lowerBoundary = itr.boundary();
+        printf("[%d][%d]: %d (d: %d u: %d l: %d) %s\n", x, y, (*_matrix)[x][y], diag, up, left, (itr.boundary() ? "BOUNDARY" : ""));
         ++itr;
     }
 
@@ -495,4 +518,15 @@ void BandedAligner::setBounds(int x, int y, int score){
     int horizontal = max(maxX - x, maxY - y);
     _upperBound = score + diagonal - (horizontal - diagonal);
     _lowerBound = score - (maxX - x) - (maxY - y);
+}
+
+
+int main(int argc, char **argv){
+
+    BandedAligner algn("AAAAAAAAAAAAAA");
+       algn.initialize("AAATTTTTTAAAAA");
+       algn.align();
+       algn.getBacktrace();
+       return 0;
+
 }
