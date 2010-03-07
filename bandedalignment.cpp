@@ -331,7 +331,7 @@ pair<string, string> BandedAligner::getBacktrace(){
     int x = _matrix->cols() - 1;
     int y = _matrix->rows() - 1;
 
-    while( x > 0 && y > 0 ){
+    while( x >= 0 && y >= 0 ){
         assert( _matrix->inbounds(x, y - 1 ));
         assert( _matrix->inbounds(x - 1, y - 1 ));
         assert( _matrix->inbounds(x - 1, y ));
