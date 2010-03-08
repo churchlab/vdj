@@ -17,66 +17,51 @@ void MAlignerCore::addEntry(string name, string sequence){
 }
 
 MAlignerCore::~MAlignerCore(){
-  
+
+    map<string, BandedAligner*>::iterator entry_itr;
+    for( entry_itr = entries.begin(); entry_itr != entries.end() ; entry_itr++ ){
+        delete (*entry_itr).second;
+    }
     entries.clear();
 
 }
 
-list<pair<int, BandedAligner*> > MAlignerCore::align(string input){
+pair<string, pair<string, string> > MAlignerCore::align(string input, list<string> refs){
     queue<BandedAligner*> robin; 
-    map<string, BandedAligner*>::iterator entry_itr;
+    
+    if( refs.empty() ){
+        
+        map<string, BandedAligner*>::iterator entry_itr;
+        
+        for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
+            BandedAligner *e = (*entry_itr).second;
+            e->initialize(input);
+            robin.push(e);
+        }
 
-    list<pair<int, BandedAligner*> > res;
+    } else {
 
-    for( entry_itr = entries.begin(); entry_itr != entries.end(); entry_itr++ ){
-        BandedAligner *e = (*entry_itr).second;
-        e->initialize(input);
-        e->align();
-        e->getBacktrace();
-        res.push_back(pair<int, BandedAligner*>(e->getScore(), e));
-    }
-    return res;
+        list<string>::iterator sel_itr;
+        map<string, BandedAligner*>::iterator ref_itr;
 
-}
-/*
-MAE_queue MAlignerCore::alignWith(string input, list<string> refs){
-
-    queue<MAlignerEntry*> robin; 
-    int len = (int) input.length();
-    list<string>::iterator ref_itr;
-    map<string,MAlignerEntry*>::iterator entry_itr;
-    for( ref_itr = refs.begin() ; ref_itr != refs.end(); ref_itr++ ){
-        entry_itr = entries.find(*ref_itr);
-        if( entry_itr != entries.end() ){
-            MAlignerEntry* algn = (*entry_itr).second;
-            algn->initialize(input, len);
-            robin.push(algn);
+        // extract all our keys
+        for( sel_itr = refs.begin() ; sel_itr != refs.end() ; sel_itr++ ){
+            ref_itr = entries.find(*sel_itr);
+            if( ref_itr != entries.end() ){
+                BandedAligner *e = (*ref_itr).second;
+                e->initialize(input);
+                robin.push(e);
+            }
         }
     }
 
-    MAE_queue res = this->roundRobin(robin);
-    if( (int) res.size() > 0 ){
-        return res.top().getName()
-    }
-}
-*/
+    multimap<int, BandedAligner*> algnResult = roundRobin(robin);
 
-pair<string, pair<string, string> > MAlignerCore::bestAlign(string input){
-    list<pair<int, BandedAligner*> > res = align(input);
 
-    int bestScore = -8388608;
-    BandedAligner* bestAlignment = NULL;
-
-    list<pair<int, BandedAligner*> >::iterator itr;
-
-    for( itr = res.begin(); itr != res.end(); itr++ ){
-        if((*itr).first > bestScore){
-            bestScore = (*itr).first;
-            bestAlignment = (*itr).second;
-        }
-    }
-
-    if( bestAlignment ){
+    if( !algnResult.empty() ){
+        multimap<int, BandedAligner*>::reverse_iterator res_itr;
+        res_itr = algnResult.rbegin(); // get the last element
+        BandedAligner *bestAlignment = (*res_itr).second;
         pair<string, string> bt = bestAlignment->getBacktrace();
         return pair<string, pair<string, string> >(bestAlignment->getName(), bt);
     }
@@ -85,9 +70,9 @@ pair<string, pair<string, string> > MAlignerCore::bestAlign(string input){
     return pair<string, pair<string, string> >(string(""), dummy);
 }
 
-list<pair<int, BandedAligner*> > MAlignerCore::roundRobin(queue<BandedAligner*> robin){
+multimap<int, BandedAligner*> MAlignerCore::roundRobin(queue<BandedAligner*> robin){
 
-    list<pair<int, BandedAligner*> > results;
+    multimap<int, BandedAligner* > results;
     int bestLowerBound = -8388608;
     int bestScore = bestLowerBound;
     BandedAligner* bestAlignment = NULL;
@@ -110,16 +95,9 @@ list<pair<int, BandedAligner*> > MAlignerCore::roundRobin(queue<BandedAligner*> 
         }
 
         if( algn->isAligned() ){
-            if( algn->getScore() > bestScore ){
-                bestScore = algn->getScore();
-                bestAlignment = algn;
-            }
-            results.push_back(pair<int, BandedAligner*>(algn->getScore(), algn)); 
+            results.insert(pair<int, BandedAligner*>(algn->getScore(), algn)); 
         }
     }
-    printf("Got here..\n");
-    if( bestAlignment ){
-        pair<string,string> bt = bestAlignment->getBacktrace();
-    }
+    
     return results;
 }

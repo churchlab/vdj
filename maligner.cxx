@@ -21,11 +21,28 @@ Object MAligner::addEntry( const Tuple &args ){
 }
 
 Object MAligner::align( const Tuple &args ){
-    args.verify_length(1);
+    args.verify_length(1, 2);
+
     String sequence = args[0];
-    pair<string, pair<string,string> > res = _mcore->bestAlign(sequence);
-    string name = res.first;
-    pair<string, string> trace = res.second;
+    pair<string, pair<string, string> > res;
+    string name;
+    pair<string, string> trace;
+    if( args.sequence_length() == 1 ){
+        res = _mcore->bestAlign(sequence);
+    } else {
+        List refs = args[1];
+        SeqBase<Object>::iterator itr;
+
+        list<string> refs;
+        for( itr = refs.begin() ; itr != refs.end(); itr++ ){
+            refs.push_back(*itr);    
+        }
+
+        res = _mcore->alignWith(sequence,refs);
+    }
+        
+    res.first;
+    trace = res.second;
     Tuple t(3);
     t[0] = String(name);
     t[1] = String(trace.first);
@@ -59,7 +76,7 @@ void MAligner::init_type(){
     behaviors().supportRepr();
 
     add_varargs_method("addEntry",  &MAligner::addEntry, "addEntry(name, sequence): add an aligner entry");
-    add_varargs_method("align",     &MAligner::align, "align(sequence): align a sequence against the reference");
+    add_varargs_method("align",     &MAligner::align, "align(sequence,[refs]): align a sequence against the references");
     add_varargs_method("reference_count", &MAligner::reference_count);
 }
 

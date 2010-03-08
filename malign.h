@@ -25,10 +25,8 @@ class MAlignerCore {
         MAlignerCore();
         ~MAlignerCore();
         void addEntry(std::string name, std::string sequence);
-        std::pair<std::string, std::pair<std::string, std::string> > bestAlign(std::string input);
-        std::string alignWith(std::string input, std::list<std::string> refs);
-        std::list<std::pair<int, BandedAligner*> > align(std::string input);
-        std::list<std::pair<int, BandedAligner*> > roundRobin(std::queue<BandedAligner*>);
+        std::pair< std::string, std::pair<std::string, std::string> > align(std::string input, std::list<std::string> = std::list<std::string>());
+        std::multimap<int, BandedAligner* > roundRobin(std::queue<BandedAligner*>);
 
     private:
         std::map<std::string,BandedAligner*> entries;
