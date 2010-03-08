@@ -331,7 +331,7 @@ pair<string, string> BandedAligner::getBacktrace(){
     int x = _matrix->cols() - 1;
     int y = _matrix->rows() - 1;
 
-    while( x >= 0 && y >= 0 ){
+    while( x > 0 && y > 0 ){
         assert( _matrix->inbounds(x, y - 1 ));
         assert( _matrix->inbounds(x - 1, y - 1 ));
         assert( _matrix->inbounds(x - 1, y ));
@@ -346,25 +346,28 @@ pair<string, string> BandedAligner::getBacktrace(){
             backtrace.push(Diagonal);
             x--;
             y--;
-        //    printf("DIAGONAL\n");
         } else if( up >= left ){
             backtrace.push(Up);
             y--;
-        //    printf("UP\n");
         } else {
             backtrace.push(Left);
             x--;
-        //    printf("LEFT\n");
         }
     }
     
-    //It was just too tempting to write this:
-    while(x-->0){
+    while(x >= 0 && y >= 0){
+        backtrace.push(Diagonal);
+        x--;
+        y--;
+    }
+    while(x >= 0){
         backtrace.push(Left);
+        x--;
     }
 
-    while(y-->0){
+    while(y >= 0){
         backtrace.push(Up);
+        y--;
     }
     
     string refAlign;

@@ -101,3 +101,17 @@ multimap<int, BandedAligner*> MAlignerCore::roundRobin(queue<BandedAligner*> rob
     
     return results;
 }
+/*
+int main() {
+
+    MAlignerCore a;
+    a.addEntry("polyATCG", "ATCGATCG");
+    pair<string, pair<string, string> > alignment = a.align("GATCGAT");
+    string name = alignment.first;
+    pair<string, string> bt = alignment.second;
+
+    printf("%s\n\t%s\n\t%s\n", name.c_str(), bt.first.c_str(), bt.second.c_str());
+    return 0;
+
+}
+*/

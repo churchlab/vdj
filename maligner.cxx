@@ -27,21 +27,22 @@ Object MAligner::align( const Tuple &args ){
     pair<string, pair<string, string> > res;
     string name;
     pair<string, string> trace;
-    if( args.sequence_length() == 1 ){
-        res = _mcore->bestAlign(sequence);
+    if( args.length() == 1 ){
+        res = _mcore->align(sequence);
     } else {
-        List refs = args[1];
+        List py_refs = args[1];
         SeqBase<Object>::iterator itr;
 
         list<string> refs;
-        for( itr = refs.begin() ; itr != refs.end(); itr++ ){
-            refs.push_back(*itr);    
+        for( itr = py_refs.begin() ; itr != py_refs.end(); itr++ ){
+            string s = String(*itr);
+            refs.push_back(s);    
         }
 
-        res = _mcore->alignWith(sequence,refs);
+        res = _mcore->align(sequence,refs);
     }
         
-    res.first;
+    name = res.first;
     trace = res.second;
     Tuple t(3);
     t[0] = String(name);
