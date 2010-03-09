@@ -1,40 +1,71 @@
-#include <stdlib.h>
-#include <queue>
+#include "pairedAlign.h"
+
 using namespace std;
 
-int binomialTable[] = { 0, 1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 15, 16, 16, 16, 17, 17, 18, 18, 18, 19, 19, 19, 20, 20, 20, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24, 25, 25, 25, 26, 26, 26, 27, 27, 27, 28, 28, 28, 29, 29, 29, 30, 30, 30, 31, 31, 31 };
-
-enum nucleotide { A, C, T, G };
-enum quality { nil, Q10, Q20, Q30, Q40, Q50 };
-
-nucleotide complement(nucleotide n){
+bool goodBase(char n){
     switch(n){
-        case A: return T;
-        case C: return G;
-        case T: return A;
-        case G: return G;
+        case 'a':
+        case 'A': 
+        case 'c':
+        case 'C':
+        case 't':
+        case 'T':
+        case 'g':
+        case 'G': return true;
+        default:  return false;
     }
 }
 
-typedef struct {
-    nucleotide *_seq;
-    quality    *_qual;
-    int        length;
-} qread;
+char normalizeBase(char n){
+    switch(n){
+        case 'a':
+        case 'A': return 'A';
+        case 'c':
+        case 'C': return 'C';
+        case 't':
+        case 'T': return 'T';
+        case 'g':
+        case 'G': return 'G';
+        default:  return n;
+    }
+}
+
+char complement(char n){
+    switch(n){
+        case 'a': return 't';
+        case 'A': return 'T';
+        case 'c': return 'g';
+        case 'C': return 'G';
+        case 't': return 'a';
+        case 'T': return 'A';
+        case 'g': return 'c';
+        case 'G': return 'C';
+        default:  return n;
+    }
+}
 
 qread align(qread readA, qread readB){
-    int minLen = min(readA.length, readB.length);
+
+    assert(readA._qual.size() == readA._seq.size());
+    assert(readB._qual.size() == readB._seq.size());
+
+    string seqA = readA._seq;
+    string seqB = readB._seq;
+    vector<int> qualA = readA._qual;
+    vector<int> qualB = readB._qual;
+
+
+    int minLen = min(seqA.size(), seqB.size());
     priority_queue<pair<double, int> > res;
 
-    nucleotide *seqA = readA._seq;
-    nucleotide *seqB = readB._seq;
-
-    for(int ii = 10 ; ii < minLen; ii++){
+     for(int ii = 10 ; ii < minLen; ii++){
         int hits = 0;
         for(int jj = 0; jj < ii; jj++){
-            nucleotide baseA = seqA[readA.length - 1 - jj];
-            nucleotide baseB = seqB[readB.length - 1 - jj];
-            hits += (baseA == complement(baseB) ? 1 : 0);
+            char baseA = seqA[seqA.size() - 1 - jj];
+            char baseB = seqB[seqB.size() - 1 - jj];
+            if( goodBase(baseA) && goodBase(baseB) ){
+                hits += (normalizeBase(baseA) == complement(baseB) ? 1 : 0);
+            }
         }
 
         if( hits > binomialTable[ii] ){
@@ -44,16 +75,66 @@ qread align(qread readA, qread readB){
     }
 
         qread result;
+        int overlap;
 
+        // Reverse complement one of the read pair ends.
+        reverse(seqB.begin(), seqB.end());
+        string::iterator pos;
+        for( pos = seqB.begin(); pos != seqB.end() ; pos++ ){
+            *pos = complement(*pos);
+        }
+        reverse(qualB.begin(), qualB.end()); 
+
+        int res_length = 0;
+        // We have no evidence that indicates that our paired reads overlap.
         if( res.empty() ){
-            result.length = readA.length + readB.length + 1;
-            result._seq = (nucleotide*) malloc(sizeof(nucleotide) * result.length);
-            result._qual = (quality*) malloc(sizeof(quality) * result.length);
-        } else {
-            pair<double, int> so = res.top();
+            overlap = -1;
 
+            res_length = seqA.size() + seqB.size() + 1;
+            result._qual.reserve(res_length);
+            result._qual = qualA;
+            result._seq = seqA;
+            // insert a Q00 gap between the sequences
+            result._seq += '-';
+            result._qual.push_back(0);
+
+            result._seq += readB._seq; // tack on the other read
+            result._qual.insert(result._qual.end(), qualB.begin(), qualB.end());
+        } else {
+            overlap = res.top().second;
+            res_length = seqA.size() + seqB.size() - overlap;
+            result._qual.reserve(res_length);
+            result._seq = seqA.substr(0, seqA.size() - overlap);    
+        
+            string::iterator pos;
+            for( pos = seqB.begin(); pos != seqB.end() ; pos++ ){
+                *pos = complement(*pos);
+            }
+
+            int al = seqA.size();
+            int bl = seqB.size();
+
+            for(int ii = 0; ii < overlap; ii++ ){
+                int aind = al - overlap + ii - 1;
+                if( seqA[aind] == seqB[ii] ){
+                    result._seq += seqB[ii];
+                    result._qual.push_back(qualA[aind] + qualB[ii]);
+                } else {
+                    if( qualA[aind] >= qualB[ii] ){
+                        result._seq += seqA[aind];
+                    } else {
+                        result._seq += seqB[ii];
+                    }
+                        result._qual.push_back(0);
+                }
+            }
+
+            if( overlap < bl ){
+                result._seq += seqB.substr(overlap, bl - overlap);
+                result._qual.insert(result._qual.end(), result._qual.begin() + overlap, result._qual.end());
+            }
         }
 
+        assert(result._qual.size() == result._seq.size());
         return result;
-
 }
