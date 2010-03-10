@@ -1,9 +1,21 @@
-#include "pairedAligner.hxx"
+#include <assert.h>
+
+#include <queue>
+#include <vector>
+#include <string>
 
 using namespace std;
-using namespace Py;
 
-bool PAlign::goodBase(char n){
+class qread {
+    public:
+        std::string      _seq;
+        std::vector<int> _qual;
+};
+
+
+int binomialTable[] = { 0, 1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 15, 16, 16, 16, 17, 17, 18, 18, 18, 19, 19, 19, 20, 20, 20, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24, 25, 25, 25, 26, 26, 26, 27, 27, 27, 28, 28, 28, 29, 29, 29, 30, 30, 30, 31, 31, 31 };
+
+bool goodBase(char n){
     switch(n){
         case 'a':
         case 'A': 
@@ -17,7 +29,7 @@ bool PAlign::goodBase(char n){
     }
 }
 
-char PAlign::normalizeBase(char n){
+char normalizeBase(char n){
     switch(n){
         case 'a':
         case 'A': return 'A';
@@ -31,7 +43,7 @@ char PAlign::normalizeBase(char n){
     }
 }
 
-char PAlign::complement(char n){
+char complement(char n){
     switch(n){
         case 'a': return 't';
         case 'A': return 'T';
@@ -45,15 +57,16 @@ char PAlign::complement(char n){
     }
 }
 
-string PAlign::reverse_complement(string s){
+string reverse_complement(string s){
     string res;
+    res.resize(s.size());
     reverse(s.begin(), s.end());
     transform(s.begin(),s.end(), res.begin(), complement);
     return res;
 }
 
 
-qread PAlign::align(qread readA, qread readB){
+qread align(qread readA, qread readB){
 
     assert(readA._qual.size() == readA._seq.size());
     assert(readB._qual.size() == readB._seq.size());
@@ -65,16 +78,18 @@ qread PAlign::align(qread readA, qread readB){
     reverse(qualB.begin(), qualB.end());
 
 
+    //printf("SeqA: %s (%d)\nSeqB: %s (%d)\n", seqA.c_str(), seqA.size(), seqB.c_str(), seqB.size());
     int minLen = min(seqA.size(), seqB.size());
     priority_queue<pair<double, int> > res;
 
-     for(int ii = 10 ; ii < minLen; ii++){
+     for(int ii = 5 ; ii <= minLen; ii++){
         int hits = 0;
-        printf("%s\n%s\n\n", seqA.substr(seqA.size() - 1 - ii, ii).c_str(), seqB.substr(0,ii).c_str());
+        //printf("%d\t%d\n", seqA.size() - ii, ii);
+        //printf("%s\n%s\n\n", seqA.substr(seqA.size() - ii, ii).c_str(), seqB.substr(0,ii).c_str());
         for(int jj = 0; jj < ii; jj++){
             char baseA = seqA[seqA.size() - 1 - jj];
-            char baseB = seqB[jj];
-    
+            char baseB = seqB[ii - jj - 1];
+            //printf("%c %c (%d %d)\n", baseA, baseB, seqA.size() - 1 - jj, ii - jj);
             if( goodBase(baseA) && goodBase(baseB) ){
                 hits += (normalizeBase(baseA) == normalizeBase(baseB) ? 1 : 0);
             }
@@ -82,6 +97,7 @@ qread PAlign::align(qread readA, qread readB){
 
         if( hits > binomialTable[ii] ){
             double score = (double) hits / (double) ii;
+            //printf("Pushing <%f,%d>\n", score, ii);
             res.push(pair<double, int>(score, ii));
         }
     }
@@ -143,116 +159,13 @@ qread PAlign::align(qread readA, qread readB){
         return result;
 }
 
-PairedAligner::PairedAligner(){
-}
-
-PairedAligner::~PairedAligner(){
-}
-
-Object PairedAligner::py_align( const Tuple &args ){
-    args.verify_length(2,4);
-
-    String seqA;
-    String seqB;
-    vector<int> qualA;
-    vector<int> qualB;
-    
-    if( args.length() == 2 ){
-        seqA = args[0];
-        seqB = args[1];
-        qualA = vector<int>(seqA.size(), 0);
-        qualB = vector<int>(seqB.size(), 0);
-    }
-
-    if( args.length() == 3 ){
-        args.verify_length(2);
-    }
-
-    if( args.length() == 4 ){
-        seqA = String(args[0]);
-        seqB = String(args[2]);
-        List qA = List(args[1]);
-        List qB = List(args[3]);
-        
-        qualA.reserve(qA.size());
-        qualB.reserve(qB.size());
-
-        List::iterator itr;
-
-        for( itr = qA.begin() ; itr != qA.end() ; itr ++ ){
-            qualA.push_back(Int(*itr));
-        }
-
-        for( itr = qB.begin() ; itr != qB.end() ; itr ++ ){
-            qualB.push_back(Int(*itr));
-        }
-    }
-
-    qread readA;
-        readA._seq  = seqA;
-        readA._qual = qualA;
-    qread readB;
-        readB._seq  = seqB;
-        readB._qual = qualB;
-    qread res = PAlign::align(readA, readB);
-
-    List quals;
-    Tuple r(2);
-    r[0] = String(res._seq);
-    
-    vector<int>::iterator q_itr;
-    for( q_itr = res._qual.begin(); q_itr != res._qual.end(); q_itr++ ){
-        quals.append( Int(*q_itr) );
-    }
-    //FIXME I'm discarding qualities for now.
-    //r[1] = quals;
-    return r;
-
-}
-
-Object PairedAligner::getattr( const char *name ){
-    return getattr_methods(name);    
-}
-
-Object PairedAligner::repr(){
-    return Py::String("Paired End Aligner Object");
-}
-
-void PairedAligner::init_type(){
-    behaviors().name("PairedAligner");
-    behaviors().doc("PairedAligner objects: nil");
-    behaviors().supportGetattr();
-    behaviors().supportRepr();
-
-    add_varargs_method("align",     &PairedAligner::py_align, "align(seq,[qual],seq,[qual]): align a sequence against the references");
-    add_varargs_method("reference_count", &PairedAligner::reference_count);
-}
-
-class paligner_module : public Py::ExtensionModule<paligner_module>
-{
-public:
-    paligner_module()
-    : Py::ExtensionModule<paligner_module>( "pairedAligner" ) // this must be name of the file on disk e.g. simple.so or simple.pyd
-    {
-        PairedAligner::init_type();
-        add_varargs_method("PairedAligner",&paligner_module::new_paligner,"PairedAligner()");
-        initialize( "documentation for the simple module" );
-    }
-
-    virtual ~paligner_module()
-    {}
-
-private:
-    Object new_paligner(const Py::Tuple& args){
-        return asObject(new PairedAligner());
-    }
-
-};
-
-extern "C" void initpairedAligner()
-{
-#if defined(PY_WIN32_DELAYLOAD_PYTHON_DLL)
-    Py::InitialisePythonIndirectPy::Interface();
-#endif
-    static paligner_module* paligner = new paligner_module;
+int main(int argc, char **argv){
+    qread polyA, polyT;
+    polyA._seq = string("AAAAAAGGGGGC");
+    polyA._qual = vector<int>(12,10);
+    polyT._seq = string("TTTTTTGCCCCC");
+    polyT._qual = vector<int>(12,10);
+    qread r = align(polyA, polyT);
+    printf("%s\n", r._seq.c_str());
+    return 0;
 }

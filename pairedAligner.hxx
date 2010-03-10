@@ -17,6 +17,7 @@ class PAlign {
     public:
         static qread align(qread, qread);
     private:
+        static std::string reverse_complement(std::string s);
         static bool goodBase(char);
         static char normalizeBase(char);
         static char complement(char);
