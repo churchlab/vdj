@@ -76,7 +76,7 @@ void MAligner::init_type(){
     behaviors().supportGetattr();
     behaviors().supportRepr();
 
-    add_varargs_method("addEntry",  &MAligner::addEntry, "addEntry(name, sequence): add an aligner entry");
+    add_varargs_method("addReference",  &MAligner::addEntry, "addReference(name, sequence): add an aligner reference");
     add_varargs_method("align",     &MAligner::align, "align(sequence,[refs]): align a sequence against the references");
     add_varargs_method("reference_count", &MAligner::reference_count);
 }
