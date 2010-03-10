@@ -125,9 +125,11 @@ qread align(qread readA, qread readB){
             overlap = res.top().second;
             res_length = seqA.size() + seqB.size() - overlap;
             result._qual.reserve(res_length);
-            result._seq = seqA.substr(0, seqA.size() - overlap);    
+            result._seq = seqA.substr(0, seqA.size() - overlap);
+            printf("%s\n", result._seq.c_str());
             string bPart = seqB.substr(overlap, seqB.size() - overlap);
 
+            printf("%s\n", bPart.c_str());
 
             result._qual.insert(result._qual.end(), qualA.begin(), qualA.end() - overlap);
 
@@ -135,7 +137,7 @@ qread align(qread readA, qread readB){
             int bl = seqB.size();
 
             for(int ii = 0; ii < overlap; ii++ ){
-                int aind = al - overlap + ii - 1;
+                int aind = al - overlap + ii;
                 if( seqA[aind] == seqB[ii] ){
                     result._seq += seqB[ii];
                     result._qual.push_back(qualA[aind] + qualB[ii]);
@@ -151,20 +153,30 @@ qread align(qread readA, qread readB){
 
             if( overlap < bl ){
                 result._seq += bPart;
-                result._qual.insert(result._qual.end(), result._qual.begin() + overlap, result._qual.end());
+                result._qual.insert(result._qual.end(), qualB.begin() + overlap, qualB.end());
             }
         }
 
-        assert(result._qual.size() == result._seq.size());
+        printf("Assembly: %s (%d)\n", result._seq.c_str(), (int) result._seq.size());
+        printf("Qual length: %d\n", (int) result._qual.size());
+        vector<int>::iterator q_itr;
+
+        for( q_itr = result._qual.begin(); q_itr != result._qual.end(); q_itr++ ){
+            printf("%d ", *q_itr);
+        }
+        printf("\n");
+        //assert(result._qual.size() == result._seq.size());
         return result;
 }
 
 int main(int argc, char **argv){
     qread polyA, polyT;
-    polyA._seq = string("AAAAAAGGGGGC");
-    polyA._qual = vector<int>(12,10);
-    polyT._seq = string("TTTTTTGCCCCC");
-    polyT._qual = vector<int>(12,10);
+
+    
+    polyA._seq = string("AAACCCTTTT");
+    polyA._qual = vector<int>(polyA._seq.size(),10);
+    polyT._seq = string("GGGAAAAGG");
+    polyT._qual = vector<int>(polyT._seq.size(),10);
     qread r = align(polyA, polyT);
     printf("%s\n", r._seq.c_str());
     return 0;

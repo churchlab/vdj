@@ -47,6 +47,7 @@ char PAlign::complement(char n){
 
 string PAlign::reverse_complement(string s){
     string res;
+    res.resize(s.size());
     reverse(s.begin(), s.end());
     transform(s.begin(),s.end(), res.begin(), complement);
     return res;
@@ -65,16 +66,18 @@ qread PAlign::align(qread readA, qread readB){
     reverse(qualB.begin(), qualB.end());
 
 
+    //printf("SeqA: %s (%d)\nSeqB: %s (%d)\n", seqA.c_str(), seqA.size(), seqB.c_str(), seqB.size());
     int minLen = min(seqA.size(), seqB.size());
     priority_queue<pair<double, int> > res;
 
-     for(int ii = 10 ; ii < minLen; ii++){
+     for(int ii = 5 ; ii <= minLen; ii++){
         int hits = 0;
-        printf("%s\n%s\n\n", seqA.substr(seqA.size() - 1 - ii, ii).c_str(), seqB.substr(0,ii).c_str());
+        //printf("%d\t%d\n", seqA.size() - ii, ii);
+        //printf("%s\n%s\n\n", seqA.substr(seqA.size() - ii, ii).c_str(), seqB.substr(0,ii).c_str());
         for(int jj = 0; jj < ii; jj++){
             char baseA = seqA[seqA.size() - 1 - jj];
-            char baseB = seqB[jj];
-    
+            char baseB = seqB[ii - jj - 1];
+            //printf("%c %c (%d %d)\n", baseA, baseB, seqA.size() - 1 - jj, ii - jj);
             if( goodBase(baseA) && goodBase(baseB) ){
                 hits += (normalizeBase(baseA) == normalizeBase(baseB) ? 1 : 0);
             }
@@ -82,6 +85,7 @@ qread PAlign::align(qread readA, qread readB){
 
         if( hits > binomialTable[ii] ){
             double score = (double) hits / (double) ii;
+            //printf("Pushing <%f,%d>\n", score, ii);
             res.push(pair<double, int>(score, ii));
         }
     }
@@ -119,7 +123,7 @@ qread PAlign::align(qread readA, qread readB){
             int bl = seqB.size();
 
             for(int ii = 0; ii < overlap; ii++ ){
-                int aind = al - overlap + ii - 1;
+                int aind = al - overlap + ii;
                 if( seqA[aind] == seqB[ii] ){
                     result._seq += seqB[ii];
                     result._qual.push_back(qualA[aind] + qualB[ii]);
@@ -135,7 +139,7 @@ qread PAlign::align(qread readA, qread readB){
 
             if( overlap < bl ){
                 result._seq += bPart;
-                result._qual.insert(result._qual.end(), result._qual.begin() + overlap, result._qual.end());
+                result._qual.insert(result._qual.end(), qualB.begin() + overlap, qualB.end());
             }
         }
 
@@ -205,7 +209,7 @@ Object PairedAligner::py_align( const Tuple &args ){
         quals.append( Int(*q_itr) );
     }
     //FIXME I'm discarding qualities for now.
-    //r[1] = quals;
+    r[1] = quals;
     return r;
 
 }
