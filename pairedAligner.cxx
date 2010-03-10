@@ -128,12 +128,27 @@ qread PAlign::align(qread readA, qread readB){
                     result._seq += seqB[ii];
                     result._qual.push_back(qualA[aind] + qualB[ii]);
                 } else {
+
+                    /* When faced with contradictory observations, prefer the more
+                     * likely base.
+                     * What score should we assign in the face of contradictory information?
+                     * Let B be some base, 
+                     * BQn = obs B with quality n
+                     * ~BQm = obs not-B wih quality m
+                     * P(B | BQn ^ ~BQm) = P(BQn | B) P(~BQm | B) / P(BQn ^ ~BQm)
+                     * P(BQn ^ ~BQm) = P(BQn) * P(~BQm) + (1 - P(BQn)) * (1 - P(~BQm))
+                     *
+                     * Unsurprisingly, this becomes vanishingly close to subtracting
+                     * Phred scores.
+                     */
+
                     if( qualA[aind] >= qualB[ii] ){
                         result._seq += seqA[aind];
+                        result._qual.push_back(qualA[aind] - qualB[ii]);
                     } else {
                         result._seq += seqB[ii];
+                        result._qual.push_back(qualB[ii] - qualA[aind]);
                     }
-                        result._qual.push_back(0);
                 }
             }
 
