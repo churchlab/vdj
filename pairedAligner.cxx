@@ -223,7 +223,7 @@ Object PairedAligner::py_align( const Tuple &args ){
     for( q_itr = res._qual.begin(); q_itr != res._qual.end(); q_itr++ ){
         quals.append( Int(*q_itr) );
     }
-    //FIXME I'm discarding qualities for now.
+    
     r[1] = quals;
     return r;
 
