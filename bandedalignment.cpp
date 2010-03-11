@@ -342,11 +342,11 @@ pair<string, string> BandedAligner::getBacktrace(){
         assert( _matrix->inbounds(x - 1, y - 1 ));
         assert( _matrix->inbounds(x - 1, y ));
 
-        int up   = (*_matrix)[x][y-1].getScore();
-        int left = (*_matrix)[x-1][y].getScore();
-        int diag = (*_matrix)[x-1][y-1].getScore();
+        double up   = (*_matrix)[x][y-1].getScore();
+        double left = (*_matrix)[x-1][y].getScore();
+        double diag = (*_matrix)[x-1][y-1].getScore();
 
-        //printf("BT: [%d][%d] up: %d left: %d diag: %d\t", x, y, up, left, diag);    
+        //printf("BT: [%d][%d] up: %f left: %f diag: %f\n", x, y, up, left, diag);    
         if( diag >= up && diag >= left )
         {
             backtrace.push(Diagonal);
@@ -405,7 +405,6 @@ pair<string, string> BandedAligner::getBacktrace(){
         }
     }
    
-    //printf("R: %s\nT: %s\n", refAlign.c_str(), testAlign.c_str());
     return pair<string, string>(refAlign, testAlign);
 
 
@@ -419,7 +418,7 @@ void BandedAligner::dumpMatrix(){
 
     for(int ii = 0; ii < _matrix->size(); ++ii){
         
-        //printf("[%d][%d] %d\n", itr.coordinates().first, itr.coordinates().second, *itr); 
+        //printf("[%d][%d] %f\n", itr.coordinates().first, itr.coordinates().second, (*itr).getScore()); 
         ++itr;
     }
 }
@@ -481,10 +480,11 @@ int BandedAligner::step(){
           up = MatrixCell(min,true);
         left = MatrixCell(min,true);
 
+        double dScore = (_ref[x] == _test[y] ? _match : _mismatch);
         if( x > 0 && y > 0 ){
-            diag = (*_matrix)[x - 1][y - 1];
+            MatrixCell prevDiag = (*_matrix)[x - 1][y - 1];
+            diag.resetScore(prevDiag.getScore() + dScore);
         } else {
-            double dScore = (_ref[x] == _test[y] ? _match : _mismatch);
             if( x > 0 ){
                 dScore += _gapOpen + _gapExtension * (x - 1);
             } else if( y > 0 ){
@@ -501,8 +501,6 @@ int BandedAligner::step(){
             } else {
                 left.resetScore(lScore + _gapOpen); 
             }
-
-            left.makeGapped();
         }
 
         if( _matrix->inbounds(x, y - 1) ){
@@ -513,8 +511,6 @@ int BandedAligner::step(){
             } else {
                 up.resetScore(uScore + _gapOpen); 
             }
-            
-            up.makeGapped();
         }
 
         if( diag.getScore() >= up.getScore() &&
@@ -524,8 +520,10 @@ int BandedAligner::step(){
         } else if( up.getScore() >= left.getScore() ){
             (*_matrix)[x][y] = up;
             score = up.getScore();
+            assert((*_matrix)[x][y].isGap());
         } else {
             (*_matrix)[x][y] = left;
+            assert((*_matrix)[x][y].isGap());
             score = left.getScore();
         }
 
@@ -582,7 +580,7 @@ void BandedAligner::setBounds(int x, int y, int score){
 /*
 int main(int argc, char **argv){
 
-    BandedAligner algn("AAAAAAAAAAAAAA");
+    BandedAligner algn("polyA", "AAAAAAAAAAAAAA");
        algn.initialize("AAATTTTTTAAAAA");
        algn.dumpMatrix();
        algn.align();
@@ -590,4 +588,5 @@ int main(int argc, char **argv){
        algn.getBacktrace();
        return 0;
 
-}*/
+}
+*/

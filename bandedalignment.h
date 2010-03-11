@@ -15,6 +15,10 @@ enum Direction { Diagonal, Up, Left };
 class MatrixCell {
     public:
         MatrixCell(){ _score = 0; _fromGap = false; }
+        MatrixCell(const MatrixCell &cell){
+            _score = cell._score;
+            _fromGap = cell._fromGap;
+        }
         MatrixCell(double score, bool gap){ _score = score; _fromGap = gap; }
         ~MatrixCell(){};
         double getScore(){ return _score; }
