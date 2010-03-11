@@ -12,6 +12,20 @@
 
 enum Direction { Diagonal, Up, Left };
 
+class MatrixCell {
+    public:
+        MatrixCell(){ _score = 0; _fromGap = false; }
+        MatrixCell(double score, bool gap){ _score = score; _fromGap = gap; }
+        ~MatrixCell(){};
+        double getScore(){ return _score; }
+        void resetScore(double s){ _score = s; }
+        bool   isGap(){ return _fromGap;  }
+        void makeGapped(){ _fromGap = true; }
+    private:
+        bool _fromGap;
+        double _score;
+};
+
 template <class T>
 class MatrixCol;
 
@@ -127,10 +141,15 @@ class BandedAligner {
         std::string _test;
         bool _aligned;
         bool _initialized;
-        int _upperBound;
-        int _lowerBound;
-        int _score;
-        BandedMatrix<int> *_matrix;
+        double _upperBound;
+        double _lowerBound;
+        double _score;
+        BandedMatrix<MatrixCell> *_matrix;
+
+        double _match;
+        double _mismatch;
+        double _gapOpen;
+        double _gapExtension;
 };
 
 #endif

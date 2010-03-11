@@ -307,6 +307,12 @@ BandedAligner::BandedAligner(string name, string ref){
     _name = name;
     _initialized = false;
     _aligned = false;
+    
+    _match = 0.5;
+    _mismatch = -0.75;
+    _gapOpen = -2.0;
+    _gapExtension = -1.5;
+
 }
 
 BandedAligner::~BandedAligner(){
@@ -316,7 +322,7 @@ void BandedAligner::initialize(string test){
     _test = test;
     _initialized = true;
     _aligned = false;
-    _matrix = new BandedMatrix<int>((int)_ref.size(), (int)_test.size());
+    _matrix = new BandedMatrix<MatrixCell>((int)_ref.size(), (int)_test.size());
     setBounds(0,0,0);
 }
 
@@ -336,9 +342,9 @@ pair<string, string> BandedAligner::getBacktrace(){
         assert( _matrix->inbounds(x - 1, y - 1 ));
         assert( _matrix->inbounds(x - 1, y ));
 
-        int up   = (*_matrix)[x][y-1];
-        int left = (*_matrix)[x-1][y];
-        int diag = (*_matrix)[x-1][y-1];
+        int up   = (*_matrix)[x][y-1].getScore();
+        int left = (*_matrix)[x-1][y].getScore();
+        int diag = (*_matrix)[x-1][y-1].getScore();
 
         //printf("BT: [%d][%d] up: %d left: %d diag: %d\t", x, y, up, left, diag);    
         if( diag >= up && diag >= left )
@@ -407,7 +413,7 @@ pair<string, string> BandedAligner::getBacktrace(){
 
 void BandedAligner::dumpMatrix(){
 
-    BandedMatrixIterator<int> itr = _matrix->begin();
+    BandedMatrixIterator<MatrixCell> itr = _matrix->begin();
 
     //printf("iterator pointer: %p\n", itr._dat);
 
@@ -420,7 +426,7 @@ void BandedAligner::dumpMatrix(){
 
 int BandedAligner::step(){
 
-    BandedMatrixIterator<int> itr = _matrix->begin();
+    BandedMatrixIterator<MatrixCell> itr = _matrix->begin();
     int ii = 0;
     const int min = -8388608;
     int x = 0;
@@ -437,9 +443,9 @@ int BandedAligner::step(){
     bool upperBoundary = false;
     bool lowerBoundary = (_matrix->left() + 1 == maxY ? false : true);
     
-    int left = min;
-    int diag = min;
-    int up = min;
+    MatrixCell left;
+    MatrixCell diag;
+    MatrixCell up;
 
     for(; ii < _matrix->size(); ++ii){
         x = itr.coordinates().first;
@@ -471,27 +477,57 @@ int BandedAligner::step(){
         assert(x >= 0 && x < maxX);
         assert(y >= 0 && y < maxY);
 
-        diag = min;
-        up = min;
-        left = min;
+        diag = MatrixCell(min,false);
+          up = MatrixCell(min,true);
+        left = MatrixCell(min,true);
 
         if( x > 0 && y > 0 ){
-            diag = (*_matrix)[x - 1][y - 1] +
-                (_ref[x] == _test[y] ? 1 : -1);
+            diag = (*_matrix)[x - 1][y - 1];
         } else {
-            diag = (_ref[x] == _test[y] ? 1 : - 1) - x - y;
+            double dScore = (_ref[x] == _test[y] ? _match : _mismatch);
+            if( x > 0 ){
+                dScore += _gapOpen + _gapExtension * (x - 1);
+            } else if( y > 0 ){
+                dScore += _gapOpen + _gapExtension * (y - 1);
+            }
+            diag.resetScore(dScore);
         }
 
         if( _matrix->inbounds(x - 1, y) ){
-            left = (*_matrix)[x-1][y] - 1; 
+            MatrixCell prevLeft = (*_matrix)[x-1][y];
+            double lScore = prevLeft.getScore();
+            if( prevLeft.isGap() ){
+                left.resetScore(lScore + _gapExtension);
+            } else {
+                left.resetScore(lScore + _gapOpen); 
+            }
+
+            left.makeGapped();
         }
 
         if( _matrix->inbounds(x, y - 1) ){
-            up = (*_matrix)[x][y-1] - 1;
+            MatrixCell prevUp = (*_matrix)[x][y-1];
+            double uScore = prevUp.getScore();
+            if( prevUp.isGap() ){
+                up.resetScore(uScore + _gapExtension);
+            } else {
+                up.resetScore(uScore + _gapOpen); 
+            }
+            
+            up.makeGapped();
         }
 
-        score = max(diag, max(left, up));
-        (*_matrix)[x][y] = score;
+        if( diag.getScore() >= up.getScore() &&
+            diag.getScore() >= left.getScore()){
+            (*_matrix)[x][y] = diag;
+            score = diag.getScore();
+        } else if( up.getScore() >= left.getScore() ){
+            (*_matrix)[x][y] = up;
+            score = up.getScore();
+        } else {
+            (*_matrix)[x][y] = left;
+            score = left.getScore();
+        }
 
         if( x > prevX ){
             upperScore = score;
@@ -508,10 +544,10 @@ int BandedAligner::step(){
 
     bool growLeft = false;
     bool growRight = false;
-    if( min == left ){
+    if( min == left.getScore() ){
         growLeft = true;
     }
-    if( min == up ){
+    if( min == up.getScore() ){
         growRight = true;
     }
 
@@ -522,7 +558,7 @@ int BandedAligner::step(){
     _aligned = true;
     setBounds(x,y, score);
     _score = score;
-    return (*_matrix)[x][y];
+    return (*_matrix)[x][y].getScore();
 }
 
 int BandedAligner::align(){
