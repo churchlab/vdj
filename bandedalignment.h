@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <climits>
 
 #include <string>
 #include <stack>

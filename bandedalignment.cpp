@@ -427,14 +427,13 @@ int BandedAligner::step(){
 
     BandedMatrixIterator<MatrixCell> itr = _matrix->begin();
     int ii = 0;
-    const int min = -8388608;
     int x = 0;
     int y = 0;
     int prevX = -1;
-    int upperScore = min;
-    int lowerScore = min;
+    int upperScore = INT_MIN;
+    int lowerScore = INT_MIN;
     int columnBest = 0;
-    int score = min;
+    int score = INT_MIN;
     int maxX = _matrix->cols();
     int maxY = _matrix->rows();
     pair<int, int> coords; 
@@ -467,7 +466,7 @@ int BandedAligner::step(){
             if( growLeft || growRight ){
                 //printf("Growing Left[%s] Right[%s]\n\n\n", (growLeft?"X":" "), (growRight?"X":" "));
                 _matrix->resize(growLeft, growRight);
-                return min;
+                return INT_MIN;
             }
         }
 
@@ -476,9 +475,9 @@ int BandedAligner::step(){
         assert(x >= 0 && x < maxX);
         assert(y >= 0 && y < maxY);
 
-        diag = MatrixCell(min,false);
-          up = MatrixCell(min,true);
-        left = MatrixCell(min,true);
+        diag = MatrixCell(INT_MIN,false);
+          up = MatrixCell(INT_MIN,true);
+        left = MatrixCell(INT_MIN,true);
 
         double dScore = (_ref[x] == _test[y] ? _match : _mismatch);
         if( x > 0 && y > 0 ){
@@ -542,16 +541,16 @@ int BandedAligner::step(){
 
     bool growLeft = false;
     bool growRight = false;
-    if( min == left.getScore() ){
+    if( INT_MIN == left.getScore() ){
         growLeft = true;
     }
-    if( min == up.getScore() ){
+    if( INT_MIN == up.getScore() ){
         growRight = true;
     }
 
     if( growLeft || growRight ){
         _matrix->resize(growLeft, growRight);
-        return min;
+        return INT_MIN;
     }
     _aligned = true;
     setBounds(x,y, score);
