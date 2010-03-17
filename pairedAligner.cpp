@@ -23,6 +23,19 @@ LLCell::LLCell(double l, char b, int q){
     _match = false;
 }
 LLCell::LLCell(char chrA, int qualA, char chrB, int qualB){
+
+    /* When faced with contradictory observations, prefer the more
+     * likely base.
+     * What score should we assign in the face of contradictory information?
+     * Let B be some base, 
+     * BQn = obs B with quality n
+     * ~BQm = obs not-B wih quality m
+     * P(B | BQn ^ ~BQm) = P(BQn | B) P(~BQm | B) / P(BQn ^ ~BQm)
+     * P(BQn ^ ~BQm) = P(BQn) * P(~BQm) + (1 - P(BQn)) * (1 - P(~BQm))
+     *
+     * Unsurprisingly, this becomes vanishingly close to subtracting
+     * Phred scores.
+     */
     _match = false;
     if( chrA == chrB ){
         _quality = qualA + qualB;
@@ -35,7 +48,7 @@ LLCell::LLCell(char chrA, int qualA, char chrB, int qualB){
         _quality = qualB - qualA;
         _base = chrB;
     }
-    _likelihood = phredTable[_quality/10];
+    _likelihood = MLA::phred2log(_quality);
 }
 void LLCell::adjustLikelihood(double adj){ _likelihood += adj; }
 char LLCell::getBase(){ return _base; }
@@ -43,11 +56,13 @@ int  LLCell::getQuality(){ return _quality; }
 double LLCell::getLikelihood(){ return _likelihood; }
 bool LLCell::isMatch(){ return _match; }
 
-bool significantMatch(int matches, int overlap){
-    printf("%d > %d ? ", matches, binomialTable[overlap]);
-    printf("%s\n", (matches > binomialTable[overlap] ? "SIGNIFICANT" : "NOT SIGNIFICANT"));
-    return matches > binomialTable[overlap];
+bool MLA::significantMatch(int matches, int overlap){
+    return matches > MLA::binomialTable[overlap];
 }
+
+double MLA::phredTable[] = {-0.6931471805599453,-0.10536051565782628,-1.005033585350145e-2,-1.0005003335835344e-3,-1.0000500033334732e-4,-1.0000050000287824e-5,-1.000000500029089e-6,-1.0000000494736474e-7,-1.0000000100247594e-8,-9.999999722180686e-10,-1.000000082790371e-10};
+int MLA::binomialTable[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 37, 37, 38, 38, 39, 39, 40, 40, 41, 41, 41, 42, 42, 43, 43, 44, 44, 44, 45, 45, 46, 46, 47, 47, 47, 48, 48, 49, 49, 50, 50, 50, 51, 51, 52, 52, 52, 53, 53, 54, 54, 55, 55, 55, 56, 56, 57 };
+
 
 bool goodBase(char n){
     switch(n){
@@ -99,7 +114,7 @@ string reverse_complement(string s){
     return res;
 }
 
-double phred2log(int q){
+double MLA::phred2log(int q){
     return phredTable[q/10];
 
 }
@@ -118,7 +133,6 @@ qread align(qread readA, qread readB){
     int lenA = seqA.size();
     int lenB = seqB.size();
 
-    printf("%s (%d)\n", seqA.c_str(), lenA);
     LLCell dpm[lenA+1][lenB+1];
 
     int ii;
@@ -128,19 +142,19 @@ qread align(qread readA, qread readB){
 
     for( ii = 1 ; ii < lenA; ii++ ){
         dpm[ii][0] = LLCell(
-            dpm[ii-1][0].getLikelihood() + phred2log(qualA[ii - 1]),
-            seqA[ii - 1],
-            qualA[ii - 1]);
+                dpm[ii-1][0].getLikelihood() + MLA::phred2log(qualA[ii - 1]),
+                seqA[ii - 1],
+                qualA[ii - 1]);
     }
 
     dpm[lenA][0] = LLCell(
             seqA[lenA-1], qualA[lenA-1],
             seqB[0],qualB[0]
             );
-    
+
     for( jj = 1 ; jj < lenB; jj++ ){
         dpm[0][jj] = LLCell(
-                dpm[0][jj-1].getLikelihood() + phred2log(qualB[jj - 1]),
+                dpm[0][jj-1].getLikelihood() + MLA::phred2log(qualB[jj - 1]),
                 seqB[jj - 1],
                 qualB[jj - 1]);
     }
@@ -158,10 +172,10 @@ qread align(qread readA, qread readB){
 
     for( ii = 1 ; ii < lenA ; ii++ ){
         dpm[ii][lenB] = 
-            LLCell(phred2log(qualA[ii]),
-                        seqA[ii],
-                        qualA[ii]);
-    
+            LLCell( MLA::phred2log(qualA[ii]),
+                    seqA[ii],
+                    qualA[ii]);
+
         double bt = max(
                 dpm[ii - 1][lenB].getLikelihood(),
                 dpm[ii - 1][lenB -1].getLikelihood());
@@ -169,16 +183,16 @@ qread align(qread readA, qread readB){
         dpm[lenA][jj].adjustLikelihood(bt);
 
 
-        
+
         dpm[ii][lenB].adjustLikelihood( dpm[ii - 1][lenB].getLikelihood());
 
     }
 
     for( jj = 1; jj < lenB; jj++ ){
         dpm[lenA][jj] = 
-            LLCell(phred2log(qualB[jj]),
-                        seqB[jj],
-                        qualB[jj]);
+            LLCell( MLA::phred2log(qualB[jj]),
+                    seqB[jj],
+                    qualB[jj]);
 
         double bt = max(
                 dpm[lenA][jj - 1].getLikelihood(),
@@ -189,15 +203,6 @@ qread align(qread readA, qread readB){
     }
 
     dpm[lenA][lenB] = LLCell(-DBL_MAX, '*', 0);
-
-    for( ii = 0; ii < lenB + 1; ii++ ){
-        for( jj = 0; jj < lenA + 1 ; jj++ ){
-        printf("%c  ", dpm[jj][ii].getBase());
-        }
-
-        printf("\n");
-    }
-
 
     ii = lenA;
     jj = lenB;
@@ -217,11 +222,11 @@ qread align(qread readA, qread readB){
         upLikelihood   = -DBL_MAX;
         leftLikelihood = -DBL_MAX; 
         diagLikelihood = -DBL_MAX;
-        
+
         if( 0 == ii || lenA == ii ){
             upLikelihood = dpm[ii][jj - 1].getLikelihood();
         }
-        
+
         if( 0 == jj || lenB == jj ){
             leftLikelihood = dpm[ii - 1][jj].getLikelihood();
         }
@@ -229,7 +234,7 @@ qread align(qread readA, qread readB){
         diagLikelihood = dpm[ii - 1][jj - 1].getLikelihood();
 
         if( diagLikelihood >= upLikelihood &&
-            diagLikelihood >= leftLikelihood ){ 
+                diagLikelihood >= leftLikelihood ){ 
             // Move diagonally through the overlap
             if( dpm[ii][jj].isMatch() ){
                 matches++;
@@ -244,7 +249,7 @@ qread align(qread readA, qread readB){
             // Move left
             ii--;
         }
-        
+
         consensus += dpm[ii][jj].getBase();
         qualities.push_back(dpm[ii][jj].getQuality());
     }
@@ -261,11 +266,10 @@ qread align(qread readA, qread readB){
         jj--;
     }
 
-    bool significant = significantMatch(matches, overlap);
-    printf("%d matches in %d overlap\n", matches, overlap);
+    bool significant = MLA::significantMatch(matches, overlap);
 
     qread consensusRead;
-    
+
     if( significant ){
         reverse(consensus.begin(), consensus.end());
         reverse(qualities.begin(), qualities.end());
@@ -282,7 +286,7 @@ qread align(qread readA, qread readB){
 
     return consensusRead;
 }
-
+/*
 int main(int argc, char **argv){
     qread polyA, polyT;
 
@@ -300,4 +304,4 @@ int main(int argc, char **argv){
     }
     printf("\n");
     return 0;
-}
+} */
