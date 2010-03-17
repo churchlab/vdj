@@ -7,12 +7,12 @@
 #include <string>
 #include <vector>
 
-//#include "maximumAligner.h"
+#include "maxAligner.h"
 
-class PairedAligner : public Py::PythonExtension<PairedAligner> {
+class MaximumAligner : public Py::PythonExtension<MaximumAligner> {
 	public:
-        PairedAligner();
-        ~PairedAligner();
+        MaximumAligner();
+        ~MaximumAligner();
 
         //python methods
         Py::Object py_align(const Py::Tuple &args);

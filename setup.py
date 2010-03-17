@@ -38,7 +38,7 @@ maligner = Extension('maligner',
             )
 
 maximumAligner = Extension('maximumAligner',
-                sources = ['maximumAligner.cpp', 'maximumAligner.cxx',
+                sources = ['maxAligner.cpp', 'maximumAligner.cxx',
                     os.path.join(support_dir,'cxxsupport.cxx'),
                     os.path.join(support_dir,'cxx_extensions.cxx'),
                     os.path.join(support_dir,'IndirectPythonInterface.cxx'),

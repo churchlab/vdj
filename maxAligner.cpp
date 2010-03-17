@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-#include "maximumAligner.h"
+#include "maxAligner.h"
 
 using namespace std;
 
@@ -57,7 +57,8 @@ double LLCell::getLikelihood(){ return _likelihood; }
 bool LLCell::isMatch(){ return _match; }
 
 bool MLA::significantMatch(int matches, int overlap){
-    return matches > MLA::binomialTable[overlap];
+    //printf("Found %d matches with an overlap of %d (hurdle: %d)\n", matches, overlap, MLA::binomialTable[overlap]);
+    return matches >= MLA::binomialTable[overlap];
 }
 
 double MLA::phredTable[] = {-0.6931471805599453,-0.10536051565782628,-1.005033585350145e-2,-1.0005003335835344e-3,-1.0000500033334732e-4,-1.0000050000287824e-5,-1.000000500029089e-6,-1.0000000494736474e-7,-1.0000000100247594e-8,-9.999999722180686e-10,-1.000000082790371e-10};
@@ -164,9 +165,12 @@ qread align(qread readA, qread readB){
             seqB[lenB-1],qualB[lenB-1]);
 
 
+    dpm[0][0] = LLCell(seqA[0],qualA[0],seqB[0],qualB[0]);
+    
     for( jj = 1; jj < lenB; jj++ ){
         for( ii = 1; ii < lenA; ii++ ){
             dpm[ii][jj] = LLCell(seqA[ii - 1],qualA[ii - 1],seqB[jj - 1],qualB[jj - 1]);
+            dpm[ii][jj].adjustLikelihood(dpm[ii-1][jj-1].getLikelihood());
         }
     }
 
@@ -235,13 +239,15 @@ qread align(qread readA, qread readB){
 
         if( diagLikelihood >= upLikelihood &&
                 diagLikelihood >= leftLikelihood ){ 
+            ii--;
+            jj--;
             // Move diagonally through the overlap
             if( dpm[ii][jj].isMatch() ){
                 matches++;
             }
             overlap++;
-            ii--;
-            jj--;
+
+
         } else if( upLikelihood >= leftLikelihood ){
             // Move up
             jj--;

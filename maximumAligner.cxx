@@ -3,9 +3,15 @@
 using namespace std;
 using namespace Py;
 
-Object PairedAligner::py_align( const Tuple &args ){
-    return args; 
-    /*
+MaximumAligner::MaximumAligner(){
+
+}
+
+MaximumAligner::~MaximumAligner(){
+
+}
+
+Object MaximumAligner::py_align( const Tuple &args ){
     args.verify_length(2,4);
 
     String seqA;
@@ -16,8 +22,8 @@ Object PairedAligner::py_align( const Tuple &args ){
     if( args.length() == 2 ){
         seqA = args[0];
         seqB = args[1];
-        qualA = vector<int>(seqA.size(), 0);
-        qualB = vector<int>(seqB.size(), 0);
+        qualA = vector<int>(seqA.size(), 10);
+        qualB = vector<int>(seqB.size(), 10);
     }
 
     if( args.length() == 3 ){
@@ -63,52 +69,51 @@ Object PairedAligner::py_align( const Tuple &args ){
     
     r[1] = quals;
     return r;
-    */
 }
 
-Object PairedAligner::getattr( const char *name ){
+Object MaximumAligner::getattr( const char *name ){
     return getattr_methods(name);    
 }
 
-Object PairedAligner::repr(){
+Object MaximumAligner::repr(){
     return Py::String("Paired End Aligner Object");
 }
 
-void PairedAligner::init_type(){
-    behaviors().name("PairedAligner");
-    behaviors().doc("PairedAligner objects: nil");
+void MaximumAligner::init_type(){
+    behaviors().name("MaximumAligner");
+    behaviors().doc("MaximumAligner objects: nil");
     behaviors().supportGetattr();
     behaviors().supportRepr();
 
-    add_varargs_method("align",     &PairedAligner::py_align, "align(seq,[qual],seq,[qual]): align a sequence against the references");
-    add_varargs_method("reference_count", &PairedAligner::reference_count);
+    add_varargs_method("align",     &MaximumAligner::py_align, "align(seq,[qual],seq,[qual]): align a sequence against the references");
+    add_varargs_method("reference_count", &MaximumAligner::reference_count);
 }
 
-class paligner_module : public Py::ExtensionModule<paligner_module>
+class maxaligner_module : public Py::ExtensionModule<maxaligner_module>
 {
 public:
-    paligner_module()
-    : Py::ExtensionModule<paligner_module>( "pairedAligner" ) // this must be name of the file on disk e.g. simple.so or simple.pyd
+    maxaligner_module()
+    : Py::ExtensionModule<maxaligner_module>( "maximumAligner" ) // this must be name of the file on disk e.g. simple.so or simple.pyd
     {
-        PairedAligner::init_type();
-        add_varargs_method("PairedAligner",&paligner_module::new_paligner,"PairedAligner()");
+        MaximumAligner::init_type();
+        add_varargs_method("MaximumAligner",&maxaligner_module::new_maxaligner,"MaximumAligner()");
         initialize( "documentation for the simple module" );
     }
 
-    virtual ~paligner_module()
+    virtual ~maxaligner_module()
     {}
 
 private:
-    Object new_paligner(const Py::Tuple& args){
-        return asObject(new PairedAligner());
+    Object new_maxaligner(const Py::Tuple& args){
+        return asObject(new MaximumAligner());
     }
 
 };
 
-extern "C" void initpairedAligner()
+extern "C" void initmaximumAligner()
 {
 #if defined(PY_WIN32_DELAYLOAD_PYTHON_DLL)
     Py::InitialisePythonIndirectPy::Interface();
 #endif
-    static paligner_module* paligner = new paligner_module;
+    static maxaligner_module* maxaligner = new maxaligner_module;
 }
