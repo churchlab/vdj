@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-//#include "pairedAligner.h"
+//#include "maximumAligner.h"
 
 class PairedAligner : public Py::PythonExtension<PairedAligner> {
 	public:

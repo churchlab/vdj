@@ -1,10 +1,10 @@
-#include "pairedAligner.hxx"
+#include "maximumAligner.hxx"
 
 using namespace std;
 using namespace Py;
 
 Object PairedAligner::py_align( const Tuple &args ){
-    return args;
+    return args; 
     /*
     args.verify_length(2,4);
 
@@ -62,7 +62,8 @@ Object PairedAligner::py_align( const Tuple &args ){
     }
     
     r[1] = quals;
-    return r; */
+    return r;
+    */
 }
 
 Object PairedAligner::getattr( const char *name ){

@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-#include "pairedAligner.h"
+#include "maximumAligner.h"
 
 using namespace std;
 

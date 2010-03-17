@@ -37,8 +37,8 @@ maligner = Extension('maligner',
                 ],
             )
 
-pairedAligner = Extension('pairedAligner',
-                sources = ['pairedAligner.cxx',
+maximumAligner = Extension('maximumAligner',
+                sources = ['maximumAligner.cpp', 'maximumAligner.cxx',
                     os.path.join(support_dir,'cxxsupport.cxx'),
                     os.path.join(support_dir,'cxx_extensions.cxx'),
                     os.path.join(support_dir,'IndirectPythonInterface.cxx'),
@@ -59,11 +59,11 @@ seqHash = Extension('hasher',
 
 
 setup(  name = "vdj",
-        version = "2.0",
+        version = "2.1",
         packages = ['CXX'],
         package_dir = {'CXX': '.'},
         include_dirs= [r'.','/usr/include/python2.6','/usr/include/python2.6/CXX'],
         library_dirs= [r'.'],
         libraryes=['stdc++','m'],
-        ext_modules = [pairedAligner, maligner, seqHash, alignmentcoreext,clusteringcoreext]
+        ext_modules = [maximumAligner, maligner, seqHash, alignmentcoreext,clusteringcoreext]
     )
