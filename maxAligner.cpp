@@ -153,6 +153,7 @@ qread align(qread readA, qread readB){
             seqA[lenA-1], qualA[lenA-1],
             seqB[0],qualB[0]
             );
+    dpm[lenA][0].adjustLikelihood(dpm[lenA-1][0].getLikelihood());
 
     for( jj = 1 ; jj < lenB; jj++ ){
         dpm[0][jj] = LLCell(
@@ -164,7 +165,7 @@ qread align(qread readA, qread readB){
     dpm[0][lenB] = LLCell(
             seqA[0], qualA[0],
             seqB[lenB-1],qualB[lenB-1]);
-
+    dpm[0][lenB].adjustLikelihood(dpm[0][lenB-1].getLikelihood());
 
     dpm[0][0] = LLCell(seqA[0],qualA[0],seqB[0],qualB[0]);
     
@@ -209,6 +210,43 @@ qread align(qread readA, qread readB){
 
     dpm[lenA][lenB] = LLCell(-DBL_MAX, '*', 0);
 
+    /* DUMP MATRIX BACKTRACES 
+    for(jj = 0; jj <= lenB; jj++ ){
+        int row_index = -1;
+        int row_max = INT_MIN;
+        for(ii = 0 ; ii <= lenA; ii++ ){
+                
+            double left = -DBL_MAX;
+            double up   = -DBL_MAX;
+            double diag = -DBL_MAX;
+
+            if( ii > 0 ){
+                left = dpm[ii-1][jj].getLikelihood();
+            }
+
+            if( jj > 0 ){
+                up = dpm[ii][jj-1].getLikelihood();
+            }
+
+            if( jj > 0 && ii > 0 ){
+                diag = dpm[ii-1][jj-1].getLikelihood();
+            }
+
+            if( ii == 0 && jj == 0 ){
+                printf("*");
+            } else if( diag >= up && diag >= left ){
+                printf("\\");
+            } else if( up >= left ){
+                printf("|");
+            } else {
+                printf("-");
+            }
+        
+        }
+        printf("\n");
+    }
+    */
+
     ii = lenA;
     jj = lenB;
 
@@ -221,6 +259,9 @@ qread align(qread readA, qread readB){
 
     double upLikelihood, leftLikelihood, diagLikelihood;
 
+
+    bool wentUp = false;
+    bool retry  = true;
     // Backtrace
     while( ii > 0 && jj > 0 ){
 
@@ -234,6 +275,15 @@ qread align(qread readA, qread readB){
 
         if( 0 == jj || lenB == jj ){
             leftLikelihood = dpm[ii - 1][jj].getLikelihood();
+        }
+
+        if( lenA == ii && lenB == jj ){
+            wentUp = upLikelihood >= leftLikelihood;
+        }
+
+        // if we're backtracing for the second time through...
+        if( !retry && (ii == lenA && jj == lenB )){
+            if( wentUp ){ upLikelihood = -DBL_MAX; } else { leftLikelihood = -DBL_MAX; }
         }
 
         diagLikelihood = dpm[ii - 1][jj - 1].getLikelihood();
@@ -257,8 +307,19 @@ qread align(qread readA, qread readB){
             ii--;
         }
 
+        
         consensus += dpm[ii][jj].getBase();
         qualities.push_back(dpm[ii][jj].getQuality());
+
+        if( !ii || !jj ){
+            if( !MLA::significantMatch(matches, overlap) && retry){
+                retry = false;
+                ii = lenA;
+                jj = lenB;
+                qualities.clear();
+                consensus = "";
+            }
+        }
     }
 
     while(ii > 0){
@@ -293,15 +354,25 @@ qread align(qread readA, qread readB){
 
     return consensusRead;
 }
+
 /*
 int main(int argc, char **argv){
     qread polyA, polyT;
 
-    polyA._seq = string("AAAAAAAAAAA");
-    polyA._qual = vector<int>(polyA._seq.size(),40);
-    polyT._seq = string("GGGGGGGGTTTTG");
-    polyT._qual = vector<int>(polyT._seq.size(),50);
-    qread r = align(polyA, polyT);
+    polyA._seq = string("ATATCGCGAGCGGCTCCCAGATGGGTCCTGTCCCAGGTGCAGCTACAGCAGTGGGGCGCAGGACTGTTGAAGCCTTCGGAGACCCTGTCCCTCACCTGCG");
+
+    
+    int arr1[] = {37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 40, 40, 40, 40, 30, 30, 30, 40, 40, 40, 40, 39, 39, 39, 40, 40, 40, 40, 40, 40, 30, 30, 30, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 21, 21, 21, 21, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37};
+    
+    polyA._qual = vector<int>(arr1,arr1+100);
+    polyT._seq = string("CCCCTTCCGTGGGGCTGGCGGATCCAGCTCCAGTAGTAACCACTGAAGGACCCACCATAGACAGCGCAGGTGAGGGACAGGGTCTCCGAAGGCTTCAACA"); 
+    
+    int arr2[] = {13, 13, 13, 13, 17, 19, 28, 27, 21, 28, 26, 26, 28, 32, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 35, 35, 35, 35, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 30, 21, 21, 21, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37};
+
+    polyT._qual = vector<int>(arr2,arr2+100); 
+    //polyT._qual = vector<int>(100,36); 
+        qread r = align(polyA, polyT);
+
 
     printf("%s\n", r._seq.c_str());
     vector<int>::iterator itr;
@@ -311,4 +382,5 @@ int main(int argc, char **argv){
     }
     printf("\n");
     return 0;
-} */
+}
+*/
