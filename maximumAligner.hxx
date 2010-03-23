@@ -11,7 +11,7 @@
 
 class MaximumAligner : public Py::PythonExtension<MaximumAligner> {
 	public:
-        MaximumAligner();
+        MaximumAligner(const Py::Tuple &args);
         ~MaximumAligner();
 
         //python methods
@@ -25,5 +25,6 @@ class MaximumAligner : public Py::PythonExtension<MaximumAligner> {
             return Py::Int(this->ob_refcnt);
         }
     private:
+        LikelihoodAligner _aligner;
 };
 

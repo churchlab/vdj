@@ -3,8 +3,21 @@
 using namespace std;
 using namespace Py;
 
-MaximumAligner::MaximumAligner(){
+MaximumAligner::MaximumAligner( const Tuple &args ){
+    args.verify_length(0,1);
 
+    if( args.length() == 1 ){
+        vector<int> binomial;
+        List pyBin = args[0];
+        List::iterator itr;
+        
+        for(itr = pyBin.begin(); itr != pyBin.end(); itr++ ){
+            binomial.push_back(Int(*itr));
+        }
+        _aligner = LikelihoodAligner(binomial); 
+    } else {
+        _aligner = LikelihoodAligner(); 
+    }
 }
 
 MaximumAligner::~MaximumAligner(){
@@ -56,7 +69,7 @@ Object MaximumAligner::py_align( const Tuple &args ){
     qread readB;
         readB._seq  = seqB;
         readB._qual = qualB;
-    qread res = align(readA, readB);
+    qread res = _aligner.align(readA, readB);
 
     List quals;
     Tuple r(2);
@@ -105,7 +118,7 @@ public:
 
 private:
     Object new_maxaligner(const Py::Tuple& args){
-        return asObject(new MaximumAligner());
+        return asObject(new MaximumAligner(args));
     }
 
 };

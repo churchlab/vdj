@@ -33,14 +33,25 @@ class LLCell {
 
 class MLA {
     public:
+        MLA();
+        MLA(std::vector<int>);
+        ~MLA();
         static double phred2log(int);
-        static bool significantMatch(int, int);
+        bool significantMatch(int, int);
     private:
         static double phredTable[];
-        static int binomialTable[];
+        static int defaultBinomialTable[];
+        std::vector<int> binomialTable;
 
 };
 
-qread align(qread, qread);
-
+class LikelihoodAligner {
+    public:
+        LikelihoodAligner();
+        LikelihoodAligner(std::vector<int>);
+        ~LikelihoodAligner();
+        qread align(qread, qread);
+    private:
+        MLA _table;
+};
 #endif
