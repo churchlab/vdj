@@ -1,0 +1,42 @@
+>M22198|TRDV1*01|Homo sapiens|F|V-REGION|363..649|287 nt|1| | | | |287+39=326| | |
+gcccagaaggttactcaagcccagtcatcagtatccatgccagtgaggaaagcagtcacc
+ctgaactgcctgtatgaaacaagttggtgg...............tcatattatattttt
+tggtacaagcaacttcccagcaaagagatgattttccttattcgccagggt.........
+............tctgatgaacagaatgcaaaaagt...ggtcgctattctgtcaacttc
+aagaaagcagcgaaatccgtcgccttaaccatttcagccttacagctagaagattcagca
+aagtacttttgtgctcttggggaact
+>X15207|TRDV2*01|Homo sapiens|F|V-REGION|208..495|288 nt|1| | | | |288+36=324| | |
+gccattgagttggtgcctgaacaccaaacagtgcctgtgtcaataggggtccctgccacc
+ctcaggtgctccatgaaaggagaagcgatc............ggtaactactatatcaac
+tggtacaggaagacccaaggtaacacaatcactttcatataccgagaaaag.........
+............gacatctatggccctggtttcaaa...gacaatttccaaggtgacatt
+gatattgcaaagaacctggctgtacttaagatacttgcaccatcagagagagatgaaggg
+tcttactactgtgcctgtgacacc
+>Y13426|TRDV2*02|Homo sapiens|F|V-REGION|1..283|283 nt|1| | | | |283+39=322|partial in 5'| |
+...attgagttggtgcctgaacaccaaacagtgcctgtgtcaatagggatccctgccacc
+ctcaggtgctccatgaaaggagaagcgatc............ggtaactactatatcaac
+tggtacaggaagacccaaggtaacacaatcactttcatataccgagaaaag.........
+............gacatctatggccctggtttcaaa...gacaatttccaaggtgacatt
+gatattgcaaagaacctggctgtacttaagatacttgcaccatcagagagagatgaaggg
+tcttactactgtgcctgtgaca
+>AE000661|TRDV2*03|Homo sapiens|F|V-REGION|176712..176999|288 nt|1| | | | |288+36=324| | |
+gccattgagttggtgcctgaacaccaaacagtgcctgtgtcaataggggtccctgccacc
+ctcaggtgctccatgaaaggagaagcgatc............ggtaactactatatcaac
+tggtacaggaagacccaaggtaacacaatgactttcatataccgagaaaag.........
+............gacatctatggccctggtttcaaa...gacaatttccaaggtgacatt
+gatattgcaaagaacctggctgtacttaagatacttgcaccatcagagagagatgaaggg
+tcttactactgtgcctgtgacacc
+>M23326|TRDV3*01|Homo sapiens|F|V-REGION|303..592|290 nt|1| | | | |290+30=320| | |
+tgtgacaaagtaacccagagttccccggaccagacggtggcgagtggcagtgaggtggta
+ctgctctgcacttacgacactgtatattca...............aatccagatttattc
+tggtaccggataaggccagattattcctttcagtttgtcttttatggggataac......
+.........agcagatcagaaggtgcagattttactcaaggacggttttctgtgaaacac
+attctgacccagaaagcctttcacttggtgatctctccagtaaggactgaagacagtgcc
+acttactactgtgcctttag
+>X15261|TRDV3*02|Homo sapiens|F|V-REGION|316..605|290 nt|1| | | | |290+30=320| | |
+tgtgacaaagtaacccagagttccccggaccagacggtggcgagtggcagtgaggtggta
+ctgctctgcacttacgacactgtatattca...............aatccagatttattc
+tggtactggataaggccagattattcctttcagtttgtcttttatggggataac......
+.........agcagatcagaaggtgcagattttactcaaggacggttttctgtgaaacac
+attctgacccagaaagcctttcacttggtgatctctccagtaaggactgaagacagtgcc
+acttactactgtgcctttag
