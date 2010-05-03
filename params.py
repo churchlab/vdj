@@ -10,13 +10,29 @@ to point to certain resources.
 #
 # NOTE: this should be fixed to not require manual pointing to IMGT
 
-# full IMGT flatfile database dir
-imgtdir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
-
 # packaged data dir
-datadir = 'data'
+data_dir = 'data'
+IGHV_filename = 'IGHV.fasta'
+IGHD_filename = 'IGHD.fasta'
+IGHJ_filename = 'IGHJ.fasta'
+IGKV_filename = 'IGKV.fasta'
+IGKJ_filename = 'IGKJ.fasta'
+IGLV_filename = 'IGLV.fasta'
+IGLJ_filename = 'IGLJ.fasta'
+TRBV_filename = 'TRBV.fasta'
+TRBD_filename = 'TRBD.fasta'
+TRBJ_filename = 'TRBJ.fasta'
+TRAV_filename = 'TRAV.fasta'
+TRAJ_filename = 'TRAJ.fasta'
+TRDV_filename = 'TRDV.fasta'
+TRDD_filename = 'TRDD.fasta'
+TRDJ_filename = 'TRDJ.fasta'
+TRGV_filename = 'TRGV.fasta'
+TRGJ_filename = 'TRGJ.fasta'
 
-
+# full IMGT flatfile database dir
+imgt_dir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
+ligm_filename = 'imgt.dat'
 
 # refdatadir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
 # imgtdat = 'imgt.dat'

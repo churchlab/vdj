@@ -1,3 +1,38 @@
+
+
+
+
+
+
+
+IGHV = []
+IGHD = []
+IGHJ = []
+
+IGKV = []
+IGKJ = []
+
+IGLV = []
+IGLJ = []
+
+TRBV = []
+TRBD = []
+TRBJ = []
+
+TRAV = []
+TRAJ = []
+
+TRDV = []
+TRDD = []
+TRDJ = []
+
+TRGV = []
+TRGJ = []
+
+
+
+
+
 # refseq.py
 
 """Contains data and functions for dealing with reference IMGT data.
