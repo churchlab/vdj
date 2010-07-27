@@ -17,20 +17,20 @@ class ReferenceEntry(object):
     """
     
     def __init__(self,**kw):
-        # self.seq=None
-        # self.gapped_seq=None
-        # self.accession=None
-        # self.description=None
-        # self.locus=None
-        # self.gene=None
-        # self.allele=None
-        # self.species=None
-        # self.functional=None
-        # self.imgt_label=None
-        # self.accession_coords=None
-        # self.length=None
-        # self.frame=None
-        # self.partial=None
+        # self.seq                = kw.get('seq',None)
+        # self.gapped_seq         = kw.get('gapped_seq',None)
+        # self.accession          = kw.get('accession',None)
+        # self.description        = kw.get('description',None)
+        # self.locus              = kw.get('locus',None)
+        # self.gene               = kw.get('gene',None)
+        # self.allele             = kw.get('allele',None)
+        # self.species            = kw.get('species',None)
+        # self.functional         = kw.get('functional',None)
+        # self.imgt_label         = kw.get('imgt_label',None)
+        # self.accession_coords   = kw.get('accession_coords',None)
+        # self.length             = kw.get('length',None)
+        # self.frame              = kw.get('frame',None)
+        # self.partial            = kw.get('partial',None)
         
         if kw.has_key('accession'): self.accession = accession
         if kw.has_key('seq'): self.seq = seq
@@ -49,7 +49,7 @@ class ReferenceEntry(object):
     
     def init_from_imgt(self,fasta_header,seq):
         """Initialize object from IMGT fasta header and seq"""
-        data = fasta_header.lstrip('>').split('|')
+        data = fasta_header.lstrip('>').rstrip().split('|')
         self.accession = data[0]
         self.gapped_seq = seq
         self.seq = seq.translate(None,'.').upper()  # remove periods (gaps)
@@ -86,55 +86,77 @@ class JReferenceEntry(ReferenceEntry):
 # = Parsing IMGT =
 # ================
 
-
 import os
 import simplejson as json
 
 from Bio import SeqIO
 
-def load_references(locus,data_dir,filename):
+import seqtools
+
+def load_IMGT_references(ref_entry_cls,filename):
+    """Load references from the IMGT/V-QUEST fasta file refs
+    
+    e.g., IGHV.fasta, present in the data directory
+    ref_entry_cls is the class object for the reference type,
+        e.g., VReferenceEntry, JReferenceEntry, etc.
+    """
     references = []
-    ip = open(os.path.join(data_dir,filename),'r')
+    ip = open(filename,'r')
     for record in SeqIO.parse(ip,'fasta'):
-        if locus[-1] == 'V':
-            curr_reference = VReferenceEntry()
-            curr_header = record.description
-            curr_seq = record.seq.tostring()
-            curr_reference.init_from_imgt(curr_header,curr_seq)
-            references.append(curr_reference)
-        elif locus[-1] == 'J':
-            curr_reference = JReferenceEntry()
-            curr_header = record.description
-            curr_seq = record.seq.tostring()
-            curr_reference.init_from_imgt(curr_header,curr_seq)
-            references.append(curr_reference)
-        else:
-            curr_reference = ReferenceEntry()
-            curr_header = record.description
-            curr_seq = record.seq.tostring()
-            curr_reference.init_from_imgt(curr_header,curr_seq)
-            references.append(curr_reference)
+        curr_reference = ref_entry_cls()
+        curr_header = record.description
+        curr_seq = record.seq.tostring()
+        curr_reference.init_from_imgt(curr_header,curr_seq)
+        references.append(curr_reference)
     ip.close()
+    return references
 
-
-def get_LIGM_records(accessions,data_dir,imgt_dir,ligm_file,output_file):
+def get_LIGM_records(accessions,ligm_file):
+    """Pull set of accessions from full LIGM file imgt.dat"""
     records = {}
-    
-    ip = open(os.path.join(imgt_dir,ligm_file),'r')
-    for record in SeqIO.parse(ip,'embl'):
-        if name in accessions:
-            records[name] = record
-    ip.close()
-    
+    ligm = SeqIO.index(ligm_file,'imgt')
+    for name in accessions:
+        records[name] = ligm[name]
+    return records
+
+def store_LIGM_records(accessions,ligm_file,output_file):
+    """Write set of accessions from LIGM as json"""
+    records = get_LIGM_records(accessions,ligm_file)
     op = open(output_file,'w')
     json.dump(records,op)
     op.close()
-    
-    return records
 
-
-def get_FR3_IMGT_end(v_ref_elt,ligm_record):
+def set_FR3_IMGT_end(v_ref_elt,ligm_record):
+    """Get coord of end of FR3 from IMGT LIGM database.
     
+    v_ref_elt is a VReferenceEntry object, and ligm_record is its
+    corresponding LIGM entry in imgt.dat (biopython SeqRecord obj)
+    """
+    conserved_cys = seqtools.get_features(ligm_record.features,'2nd-CYS')
+    
+    # error checking
+    if len(conserved_cys) == 0:
+        raise ValueError, "could not find 2nd-CYS in %s" % v_ref_elt.accession
+    elif len(conserved_cys) > 1:
+        raise ValueError, "found multiple 2nd-CYS in %s" % v_ref_elt.accession
+    conserved_cys = conserved_cys[0]
+    
+    # note: biopython features already use pythonic indexing
+    v_ref_elt.fr3_end = conserved_cys.location.start.position
+    
+    return
+
+def get_J_TRP_start(j_ref_elt,ligm_record):
+    """Get coord of start of FR4 from IMGT LIGM database.
+    
+    j_ref_elt is a JReferenceEntry object, and ligm_record is its
+    corresponding LIGM entry in imgt.dat (biopython SeqRecord obj)
+    
+    note: complication because one record can have multiple genes
+    """
+    # find correct feature
+    feature_iter = ligm_record.features.__iter__()
+    conserved_trp = seqtools.get_features(ligm_record.features,'2nd-CYS')
 
 
 
