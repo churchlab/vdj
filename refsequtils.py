@@ -90,6 +90,12 @@ class ReferenceEntry(object):
     
     def pull_LIGM_record(self):
         """Get SeqRecord object for LIGM record from IMGT server"""
+        
+        # NOTE: this can potentially be significantly simplified by accessing the URL
+        # interface to LIGM, through:
+        # http://imgt.cines.fr/cgi-bin/IMGTlect.jv?query=5+numacc
+        # where numacc is the accession number
+        
         request = urllib2.Request('http://imgt.cines.fr/cgi-bin/IMGTlect.jv?livret=0')
         # LIGM page
         response = urllib2.urlopen(request)
