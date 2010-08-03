@@ -1,16 +1,18 @@
 import types
 import string
+import xml.parsers.expat
 
 import numpy as np
 import Bio.SeqIO
 
-import refseq
-import sequtils
-import alignment
-import clustering
-import LSF
-import params
-import analysis
+# import refseq
+# import sequtils
+# import alignment
+# import clustering
+# import LSF
+# import params
+# import analysis
+import legacy
 
 
 
@@ -21,37 +23,36 @@ import analysis
 class ImmuneChain(object):
     """Data structure to represent an immune chain."""
     
-    def __init__(self, seq='', func='', v='', d='', j='', ighc='', junction='', descr='', tags=set([])):
+    def __init__(self,**kw):
         """Initialize ImmuneChain
         
         seq is 5'->3'
         """
-        self.seq = seq.upper()
-        self.descr = descr
-        if isinstance(tags,types.StringTypes): tags = [tags]
-        self.tags = set(tags)   # tag for sample number/experiment etc
-        self.v = v
-        self.d = d
-        self.j = j
-        self.ighc = ighc
-        self.junction = junction
-        self.func = func
+        def kw_init(attrib):
+            if kw.has_key(attrib):
+                self.__setattr__(attrib,kw[attrib])
+        
+        kw_init('seq')
+        kw_init('descr')
+        kw_init('locus')
+        kw_init('v')
+        kw_init('d')
+        kw_init('j')
+        kw_init('c')
+        kw_init('junction')
+        
+        if kw.has_key('tags'):
+            tags = kw['tags']
+            if isinstance(tags,types.StringTypes): tags = [tags]
+            self.tags = set(tags)
+        else:
+            self.tags = set([])
     
     def get_cdr3(self):
         return len(self.junction)
     def set_cdr3(self,value):
         pass
     cdr3 = property(fget=get_cdr3,fset=set_cdr3)
-    
-    @property
-    def all_tags(self):
-        """Return set object containing all non-empty tags and identifiers.
-        
-        This includes all tags, v, d, j, ighc, and descr
-        """
-        tagset = self.tags | set([self.v,self.d,self.j,self.ighc,self.descr])
-        tagset.discard('')
-        return tagset
     
     def add_tags(self,tagset):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
@@ -77,19 +78,14 @@ class ImmuneChain(object):
         return self.get_XML()
     
     def get_XML(self):
-        xmlstring = ''
-        xmlstring += '<ImmuneChain>\n'
-        xmlstring += '\t<descr>'    + self.descr +      '</descr>\n'
-        xmlstring += '\t<seq>'      + self.seq +        '</seq>\n'
-        xmlstring += '\t<v>'        + self.v +          '</v>\n' 
-        xmlstring += '\t<d>'        + self.d +          '</d>\n'
-        xmlstring += '\t<j>'        + self.j +          '</j>\n'
-        xmlstring += '\t<ighc>'     + self.ighc +       '</ighc>\n'
-        xmlstring += '\t<cdr3>'     + str(self.cdr3) +  '</cdr3>\n' # measured in nt
-        xmlstring += '\t<junction>' + self.junction +   '</junction>\n'
-        xmlstring += '\t<func>'     + self.func +       '</func>\n'
-        for tag in self.tags:
-            xmlstring += '\t<tag>' + tag + '</tag>\n'
+        format_xml = lambda attrib,value: "\t<%(attrib)s>%(value)s</%(attrib)s>\n" % {'attrib':attrib,'value':value}
+        xmlstring = '<ImmuneChain>\n'
+        for (attrib,value) in self.__dict__.iteritems():
+            if attrib == 'tags':
+                for tag in self.tags:
+                    xmlstring += format_xml('tag',tag)
+            else:
+                xmlstring += format_xml(attrib,value)
         xmlstring += '</ImmuneChain>\n'
         return xmlstring
 
@@ -99,135 +95,63 @@ class ImmuneChain(object):
 # = INPUT/OUTPUT =
 # ================
 
-def parse_VDJXML(inputfile):
-    """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
-    
-    NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
-    that takes input line by line.
-    
-    THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY ONE LINE
-    
-    """
-    
-    if isinstance(inputfile,types.StringTypes):
-        ip = open(inputfile,'r')
-    elif isinstance(inputfile,file):
-        ip = inputfile
-    
-    numChains = 0
-    
-    possible_elements = [
-                'descr',
-                'seq',
-                'v',
-                'd',
-                'j',
-                'ighc',
-                'cdr3',
-                'junction',
-                'func',
-                'tag'
-                ]
-    
-    for line in ip:
-        line = line.strip()
-        endelementpos = line.find('>') + 1
-        xmlelement = line[0:endelementpos]
-        element = xmlelement[1:-1]
+class ParserVDJXML(object):
+    """Parser for VDJXML"""
+    def __init__(self):
+        self.chain = None
+        self.data_buffer = None
         
-        if xmlelement == '<ImmuneChain>':
-            chain = ImmuneChain()
-        elif xmlelement == '</ImmuneChain>':
-            numChains += 1
-            yield chain
-        elif element in possible_elements:
-            if element == 'cdr3':
-                chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
-            elif element == 'tag':
-                chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
-            else:
-                chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
+        self.xmlparser = xml.parsers.expat.ParserCreate()
+        self.xmlparser.StartElementHandler  = self.start_handler
+        self.xmlparser.EndElementHandler    = self.end_handler
+        self.xmlparser.CharacterDataHandler = self.data_handler
     
-    if isinstance(inputfile,types.StringTypes):
-        ip.close()
+    def start_handler(self,name,attributes):
+        if name == 'ImmuneChain':
+            self.chain = ImmuneChain()
+        else:
+            self.data_buffer = ''
+    
+    def end_handler(self,name):
+        if name == 'ImmuneChain':
+            yield self.chain
+        elif name == 'tag':
+            self.chain.add_tags(data_buffer)
+        else:
+            self.chain.__setattr__(name,data_buffer)
+    
+    def data_handler(self,data):
+        self.data_buffer += data
+    
+    def parse(inputfile):
+        if not hasattr(inputfile,'read'):
+            inputfile = open(inputfile,'r')
+        self.xmlparser.ParseFile(inputfile)
 
+class PredicateParserVDJXML(ParserVDJXML):
+    """VDJXML Parser that takes a predicate function"""
+    def __init__(self,predicate):
+        ParserVDJXML.__init__(self)
+        self.predicate = predicate
+        self.xmlparser.EndElementHandler = self.end_handler
+    
+    def end_handler(self,name):
+        if name == 'ImmuneChain':
+            if self.predicate(self.chain) == True:
+                yield chain
+        elif name == 'tag':
+            chain.add_tags(data_buffer)
+        else:
+            chain.__setattr__(name,data_buffer)
+
+
+def parse_VDJXML(inputfile):
+    vdjxmlparser = ParserVDJXML()
+    vdjxmlparser.parse(inputfile)
 
 def filter_parse_VDJXML(inputfile,predicate):
-    """Load a data from a VDJXML file as a Repertoire or list of ImmuneChains
-    
-    predicate is a function that takes a chain and return True or False.  Things
-    that return false are skipped.
-    
-    NOTE: this fn does NOT utilize the XML libraries; it implements a manual parser
-    that takes input line by line.
-    
-    THIS ASSUMES THAT EVERY XML ELEMENT TAKES ONE AND ONLY ONE LINE
-    
-    """
-    
-    if isinstance(inputfile,types.StringTypes):
-        ip = open(inputfile,'r')
-    elif isinstance(inputfile,file):
-        ip = inputfile
-    
-    numChains = 0
-    
-    possible_elements = [
-                'descr',
-                'seq',
-                'v',
-                'd',
-                'j',
-                'ighc',
-                'cdr3',
-                'junction',
-                'func',
-                'tag'
-                ]
-    
-    for line in ip:
-        line = line.strip()
-        endelementpos = line.find('>') + 1
-        xmlelement = line[0:endelementpos]
-        element = xmlelement[1:-1]
-        
-        if xmlelement == '<ImmuneChain>':
-            chain = ImmuneChain()
-        elif xmlelement == '</ImmuneChain>':
-            numChains += 1
-            if predicate(chain) == True:
-                yield chain
-            else:
-                pass
-        elif element in possible_elements:
-            if element == 'cdr3':
-                chain.cdr3 = eval(line[endelementpos:-1*(endelementpos+1)])
-            elif element == 'tag':
-                chain.add_tags(line[endelementpos:-1*(endelementpos+1)])
-            else:
-                chain.__setattr__(element,line[endelementpos:-1*(endelementpos+1)])
-    
-    if isinstance(inputfile,types.StringTypes):
-        ip.close()
-
-
-def write_VDJXML(data, outputfile):
-    """Write list of ImmuneChains to a file in VDJXML format"""
-    
-    if isinstance(outputfile,types.StringTypes):
-        op = open(outputfile,'w')
-    elif isinstance(outputfile,file):
-        op = outputfile
-    
-    if isinstance(data,list) and isinstance(data[0],ImmuneChain):
-        for (i,chain) in enumerate(data):
-            print >>op, chain
-    else:
-        raise Exception, "Must supply a list of ImmuneChain objects."
-    
-    if isinstance(outputfile,types.StringTypes):
-        op.close()
-
+    vdjxmlparser = PredicateParserVDJXML(predicate)
+    vdjxmlparser.parse(inputfile)
 
 
 # ============
