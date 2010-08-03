@@ -34,35 +34,24 @@ class ReferenceEntry(object):
     """
     
     def __init__(self,**kw):
-        # self.seq                = kw.get('seq',None)
-        # self.gapped_seq         = kw.get('gapped_seq',None)
-        # self.accession          = kw.get('accession',None)
-        # self.description        = kw.get('description',None)
-        # self.locus              = kw.get('locus',None)
-        # self.gene               = kw.get('gene',None)
-        # self.allele             = kw.get('allele',None)
-        # self.species            = kw.get('species',None)
-        # self.functional         = kw.get('functional',None)
-        # self.imgt_label         = kw.get('imgt_label',None)
-        # self.accession_coords   = kw.get('accession_coords',None)
-        # self.length             = kw.get('length',None)
-        # self.frame              = kw.get('frame',None)
-        # self.partial            = kw.get('partial',None)
+        def kw_init(attrib):
+            if kw.has_key(attrib):
+                self.__setattr__(attrib,kw[attrib])
         
-        if kw.has_key('accession'): self.accession = accession
-        if kw.has_key('seq'): self.seq = seq
-        if kw.has_key('gapped_seq'): self.gapped_seq = gapped_seq
-        if kw.has_key('description'): self.description = description
-        if kw.has_key('locus'): self.locus = locus
-        if kw.has_key('gene'): self.gene = gene
-        if kw.has_key('allele'): self.allele = allele
-        if kw.has_key('species'): self.species = species
-        if kw.has_key('functional'): self.functional = functional
-        if kw.has_key('imgt_label'): self.imgt_label = imgt_label
-        if kw.has_key('accession_coords'): self.accession_coords = accession_coords
-        if kw.has_key('length'): self.length = length
-        if kw.has_key('frame'): self.frame = frame
-        if kw.has_key('partial'): self.partial = partial
+        kw_init('accession')
+        kw_init('seq')
+        kw_init('gapped_seq')
+        kw_init('description')
+        kw_init('locus')
+        kw_init('gene')
+        kw_init('allele')
+        kw_init('species')
+        kw_init('functional')
+        kw_init('imgt_label')
+        kw_init('accession_coords')
+        kw_init('length')
+        kw_init('frame')
+        kw_init('partial')
     
     def init_from_imgt(self,fasta_header,seq):
         """Initialize object from IMGT fasta header and seq"""
