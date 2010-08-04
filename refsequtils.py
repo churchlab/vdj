@@ -199,7 +199,7 @@ def process_IMGT_references(ref_entry_cls,fasta_infilename,pickle_outfilename,ve
     ip.close()
     
     op = open(pickle_outfilename,'w')
-    pickle.dump(references,op)
+    pickle.dump(references,op,protocol=2)
     op.close()
     
     return references
