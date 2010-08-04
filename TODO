@@ -1,8 +1,4 @@
-Clean up refseq and make it so vdj loads instantly by precomputing reference stuff and checking for changed versions of IMGT.
-
 Add option for local alignment instead of global alignment in the multialigner.  This requires full Smith-Waterman dynamic programming.
-
-Rewrite refseq module to be good.
 
 Calibrate aligner
 
