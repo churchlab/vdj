@@ -1,9 +1,14 @@
+#DEBUG
+import time
+
 import os
 import cPickle as pickle
 
 import params
 import refsequtils
 
+#DEBUG
+t0 = time.time()
 
 # ==============================
 # = First-time initializations =
@@ -36,9 +41,15 @@ if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_
 # (including the LIGM-dependent parts)
 
 
+#DEBUG
+t1 = time.time()
+print "Check existance of pickle files: %s" % (t1-t0)
+
 # =======================
 # = Load reference data =
 # =======================
+
+def __getattr__():
 
 IGHV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)))
 IGHD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHD_pickle)))
@@ -58,6 +69,9 @@ TRDJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRD
 TRGV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGV_pickle)))
 TRGJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_pickle)))
 
+#DEBUG
+t2 = time.time()
+print "Loading pickled files: %s" % (t2-t1)
 
 # =========================================================
 # = Define data structures for compatibility with aligner =
@@ -99,6 +113,10 @@ def legacy_data(ref_data):
 (TRGV_list,TRGV_seqs,TRGV_idx,TRGV_offset) = legacy_data(TRGV)
 (TRGJ_list,TRGJ_seqs,TRGJ_idx,TRGJ_offset) = legacy_data(TRGJ)
 
+
+#DEBUG
+t3 = time.time()
+print "Converting to legacy reference objects: %s" % (t3-t2)
 
 # # refseq.py
 # 
