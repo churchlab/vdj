@@ -13,7 +13,6 @@ import seqtools
 # import LSF
 # import params
 # import analysis
-import legacy
 
 
 
@@ -440,7 +439,6 @@ def split_vdjxml_into_parts(packetsize,inhandle,outname):
 
 
 # for generating identifiers from VJ combos
-cleanup_table = string.maketrans('/*|','___')
 def vj_id(v_seg,j_seg):
     return seqtools.cleanup_id(v_seg)+'_'+seqtools.cleanup_id(j_seg)
 
