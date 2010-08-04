@@ -1,9 +1,10 @@
 import types
-import string
 import xml.parsers.expat
 
 import numpy as np
 import Bio.SeqIO
+
+import seqtools
 
 # import refseq
 # import sequtils
@@ -441,7 +442,7 @@ def split_vdjxml_into_parts(packetsize,inhandle,outname):
 # for generating identifiers from VJ combos
 cleanup_table = string.maketrans('/*|','___')
 def vj_id(v_seg,j_seg):
-    return v_seg.translate(cleanup_table)+'_'+j_seg.translate(cleanup_table)
+    return seqtools.cleanup_id(v_seg)+'_'+seqtools.cleanup_id(j_seg)
 
 
 def split_vdjxml_into_VJ_parts(inhandle,outname):
