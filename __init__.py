@@ -63,7 +63,7 @@ class ImmuneChain(object):
         for tag in tagset: self.tags.remove(tag)
     
     def has_tag(self,tag):
-        if tag in self.all_tags:
+        if tag in self.tags:
             return True
         else:
             return False
