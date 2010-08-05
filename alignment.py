@@ -8,6 +8,8 @@ import refseq
 import sequtils
 import alignmentcore
 
+warnings.simplefilter('always')
+
 class vdj_aligner(object):
     
     def __init__(self,**kw):
@@ -164,6 +166,9 @@ class vdj_aligner(object):
     
     
     def align_chain(self,chain,verbose=False):
+        
+        if not chain.has_tag('positive'):
+            warnings.warn('chain %s may not be the correct strand' % chain.descr)
         
         self.Valign_chain(chain,verbose)
         
