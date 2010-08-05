@@ -58,9 +58,15 @@ class ImmuneChain(object):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
         self.tags.update(tagset)
     
+    def add_tag(self,tag):
+        self.add_tags(tag)
+    
     def remove_tags(self,tagset):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
         for tag in tagset: self.tags.remove(tag)
+    
+    def remove_tag(self,tag):
+        self.remove_tags(tag)
     
     def has_tag(self,tag):
         if tag in self.tags:
