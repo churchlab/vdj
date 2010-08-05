@@ -1,14 +1,11 @@
-#DEBUG
-import time
-
 import os
+import sys
+import types
 import cPickle as pickle
 
 import params
 import refsequtils
 
-#DEBUG
-t0 = time.time()
 
 # ==============================
 # = First-time initializations =
@@ -41,15 +38,9 @@ if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_
 # (including the LIGM-dependent parts)
 
 
-#DEBUG
-t1 = time.time()
-print "Check existance of pickle files: %s" % (t1-t0)
-
 # =======================
 # = Load reference data =
 # =======================
-
-def __getattr__():
 
 IGHV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)))
 IGHD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHD_pickle)))
@@ -58,20 +49,17 @@ IGKV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGK
 IGKJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKJ_pickle)))
 IGLV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLV_pickle)))
 IGLJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLJ_pickle)))
-TRBV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBV_pickle)))
-TRBD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBD_pickle)))
-TRBJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBJ_pickle)))
-TRAV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAV_pickle)))
-TRAJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAJ_pickle)))
-TRDV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDV_pickle)))
-TRDD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDD_pickle)))
-TRDJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDJ_pickle)))
-TRGV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGV_pickle)))
-TRGJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_pickle)))
+# TRBV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBV_pickle)))
+# TRBD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBD_pickle)))
+# TRBJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBJ_pickle)))
+# TRAV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAV_pickle)))
+# TRAJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAJ_pickle)))
+# TRDV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDV_pickle)))
+# TRDD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDD_pickle)))
+# TRDJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDJ_pickle)))
+# TRGV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGV_pickle)))
+# TRGJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_pickle)))
 
-#DEBUG
-t2 = time.time()
-print "Loading pickled files: %s" % (t2-t1)
 
 # =========================================================
 # = Define data structures for compatibility with aligner =
@@ -102,21 +90,20 @@ def legacy_data(ref_data):
 (IGKJ_list,IGKJ_seqs,IGKJ_idx,IGKJ_offset) = legacy_data(IGKJ)
 (IGLV_list,IGLV_seqs,IGLV_idx,IGLV_offset) = legacy_data(IGLV)
 (IGLJ_list,IGLJ_seqs,IGLJ_idx,IGLJ_offset) = legacy_data(IGLJ)
-(TRBV_list,TRBV_seqs,TRBV_idx,TRBV_offset) = legacy_data(TRBV)
-(TRBD_list,TRBD_seqs,TRBD_idx)             = legacy_data(TRBD)
-(TRBJ_list,TRBJ_seqs,TRBJ_idx,TRBJ_offset) = legacy_data(TRBJ)
-(TRAV_list,TRAV_seqs,TRAV_idx,TRAV_offset) = legacy_data(TRAV)
-(TRAJ_list,TRAJ_seqs,TRAJ_idx,TRAJ_offset) = legacy_data(TRAJ)
-(TRDV_list,TRDV_seqs,TRDV_idx,TRDV_offset) = legacy_data(TRDV)
-(TRDD_list,TRDD_seqs,TRDD_idx)             = legacy_data(TRDD)
-(TRDJ_list,TRDJ_seqs,TRDJ_idx,TRDJ_offset) = legacy_data(TRDJ)
-(TRGV_list,TRGV_seqs,TRGV_idx,TRGV_offset) = legacy_data(TRGV)
-(TRGJ_list,TRGJ_seqs,TRGJ_idx,TRGJ_offset) = legacy_data(TRGJ)
+# (TRBV_list,TRBV_seqs,TRBV_idx,TRBV_offset) = legacy_data(TRBV)
+# (TRBD_list,TRBD_seqs,TRBD_idx)             = legacy_data(TRBD)
+# (TRBJ_list,TRBJ_seqs,TRBJ_idx,TRBJ_offset) = legacy_data(TRBJ)
+# (TRAV_list,TRAV_seqs,TRAV_idx,TRAV_offset) = legacy_data(TRAV)
+# (TRAJ_list,TRAJ_seqs,TRAJ_idx,TRAJ_offset) = legacy_data(TRAJ)
+# (TRDV_list,TRDV_seqs,TRDV_idx,TRDV_offset) = legacy_data(TRDV)
+# (TRDD_list,TRDD_seqs,TRDD_idx)             = legacy_data(TRDD)
+# (TRDJ_list,TRDJ_seqs,TRDJ_idx,TRDJ_offset) = legacy_data(TRDJ)
+# (TRGV_list,TRGV_seqs,TRGV_idx,TRGV_offset) = legacy_data(TRGV)
+# (TRGJ_list,TRGJ_seqs,TRGJ_idx,TRGJ_offset) = legacy_data(TRGJ)
 
 
-#DEBUG
-t3 = time.time()
-print "Converting to legacy reference objects: %s" % (t3-t2)
+
+
 
 # # refseq.py
 # 
