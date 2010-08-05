@@ -3,6 +3,7 @@
 import sys
 
 import vdj
+import vdj.legacy
 
 if len(sys.argv) == 3:
     inhandle = open(sys.argv[1],'r')
