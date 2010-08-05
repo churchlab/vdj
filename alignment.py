@@ -1,4 +1,5 @@
 import operator
+import warnings
 
 import numpy as np
 
@@ -99,13 +100,13 @@ class vdj_aligner(object):
             Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( self.refV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
             
             # find CDR3 boundary
-            chain.v_end_idx = pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, bestVseg )
+            chain.v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, self.refV_offset[bestVseg] )
     
     
     def Jalign_chain(self,chain,verbose=False):
         # try pruning off V region for J alignment
         try:
-            query = chain.seq[0:chain.v_end_idx]
+            query = chain.seq[chain.v_end_idx:]
         except AttributeError:
             query = chain.seq
         
@@ -131,14 +132,17 @@ class vdj_aligner(object):
             Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( self.refJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
             
             # find CDR3 boundary
-            chain.j_start_idx = pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, bestJseg )
+            j_start_offset = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, self.refJ_offset[bestJseg] )
+            try:
+                chain.j_start_idx = chain.v_end_idx + j_start_offset
+            except AttributeError:
+                chain.j_start_idx = j_start_offset
     
     
     def Dalign_chain(self,chain,verbose=False):
         # prune off V and J regions for D alignment
         # we should not be attempting D alignment unless we have
         # a well-defined CDR3
-        chain.junction = chain.seq[chain.v_end_idx:chain.j_start_idx]
         query = chain.junction
         
         # compute hashes from query seq
@@ -165,11 +169,13 @@ class vdj_aligner(object):
         
         self.Jalign_chain(chain,verbose)
         
-        # only attempt D alignment if both V and J were successful
+        # only process junction if V and J successful
         if hasattr(chain,'v') and hasattr(chain,'j'):
-            chain.junction = query
+            chain.junction = chain.seq[chain.v_end_idx:chain.j_start_idx]
             
-            self.Dalign_chain(chain,verbose)
+            # only align D if I am in a locus that has D chains
+            if self.locus in ['IGH','TRB','TRD']:
+                self.Dalign_chain(chain,verbose)
     
     
     def align_seq(self,seq,verbose=False):
@@ -300,7 +306,7 @@ class vdj_aligner(object):
     
     
     @staticmethod
-    def pruneVregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID ):
+    def pruneVregion( alnref, alnrefcoords, alnquery, alnquerycoords, offset ):
         """Prune V region out of query sequence based on alignment.
         
         Given ref and query alignments of V region, refID, and the original
@@ -308,7 +314,8 @@ class vdj_aligner(object):
         the 2nd-CYS.  Also needs query alignment coords.
         
         """
-        FR3end = self.refV_offset[refID] - alnrefcoords[0]        # first candidate position  
+        # FR3end = self.refV_offset[refID] - alnrefcoords[0]        # first candidate position  
+        FR3end = offset - alnrefcoords[0]        # first candidate position  
         refgaps = alnref[:FR3end].count('-')    # count gaps up to putative CYS pos
         seengaps = 0
         while refgaps > 0:     # iteratively find all gaps up to the CYS
@@ -325,7 +332,7 @@ class vdj_aligner(object):
     
     
     @staticmethod
-    def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, refID, queryseq ):
+    def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, offset ):
         """Prune J region out of query sequence based on alignment.
         
         Given ref and query alignments of J region, refID, and the original
@@ -333,7 +340,8 @@ class vdj_aligner(object):
         the J-TRP.  Also needs query alignment coords.
         
         """
-        FR4start = self.refJ_offset[refID] - alnrefcoords[0]  # first candidate position of J-TRP start   
+        # FR4start = self.refJ_offset[refID] - alnrefcoords[0]  # first candidate position of J-TRP start
+        FR4start = offset - alnrefcoords[0]  # first candidate position of J-TRP start
         refgaps = alnref[:FR4start].count('-')  # count gaps up to putative TRP pos
         seengaps = 0
         while refgaps > 0:     # iteratively find all gaps up to the TRP
@@ -343,10 +351,11 @@ class vdj_aligner(object):
         
         querygaps = alnquery[:FR4start].count('-')
         
-        # j_start_idx = idx of start of aln of query + distance into aln - # of gaps + 3 nt for J-TRP
-        j_start_idx = alnquerycoords[0] + FR4start - querygaps + 3
+        # j_start_offset = idx of start of aln of query + distance into aln - # of gaps
+        # note: j_start_offset is from the pruned query seq
+        j_start_offset = alnquerycoords[0] + FR4start - querygaps
         
-        return j_start_idx
+        return j_start_offset
     
     
     @staticmethod
