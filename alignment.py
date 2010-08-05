@@ -1,7 +1,8 @@
-import operator
 import warnings
 
 import numpy as np
+
+import seqtools
 
 import vdj
 import refseq
@@ -103,6 +104,8 @@ class vdj_aligner(object):
             
             # find CDR3 boundary
             chain.v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, self.refV_offset[bestVseg] )
+        
+        return bestVscore
     
     
     def Jalign_chain(self,chain,verbose=False):
@@ -139,6 +142,8 @@ class vdj_aligner(object):
                 chain.j_start_idx = chain.v_end_idx + j_start_offset
             except AttributeError:
                 chain.j_start_idx = j_start_offset
+        
+        return bestJscore
     
     
     def Dalign_chain(self,chain,verbose=False):
@@ -163,16 +168,20 @@ class vdj_aligner(object):
         # if successful alignment
         if bestDseg is not None:
             chain.d = bestDseg
+        
+        return bestDscore
     
     
     def align_chain(self,chain,verbose=False):
         
-        if not chain.has_tag('positive'):
+        if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.descr)
         
-        self.Valign_chain(chain,verbose)
+        scores = {}
         
-        self.Jalign_chain(chain,verbose)
+        scores['v'] = self.Valign_chain(chain,verbose)
+        
+        scores['j'] = self.Jalign_chain(chain,verbose)
         
         # only process junction if V and J successful
         if hasattr(chain,'v') and hasattr(chain,'j'):
@@ -180,7 +189,9 @@ class vdj_aligner(object):
             
             # only align D if I am in a locus that has D chains
             if self.locus in ['IGH','TRB','TRD']:
-                self.Dalign_chain(chain,verbose)
+                scores['d'] = self.Dalign_chain(chain,verbose)
+        
+        return scores
     
     
     def align_seq(self,seq,verbose=False):
@@ -189,7 +200,15 @@ class vdj_aligner(object):
         return chain
     
     
-    def seq2posstrand(self,seq):        
+    def positive_chain(self,chain,verbose=False):
+        strand = self.seq2strand(chain.seq)
+        if strand == -1:
+            chain.seq = seqtools.reverse_complement(chain.seq)
+            chain.add_tag('revcomp')
+        chain.add_tag('coding')
+    
+    
+    def seq2strand(self,seq):        
         seqkeys = vdj_aligner.seq2kmers(seq,[self.patternPos])
         seqwords = seqkeys[self.patternPos]
         strandid = 1
@@ -455,6 +474,55 @@ class vdj_aligner(object):
         return revcompdict
 
 
+class vdj_aligner_combined(object):
+    """vdj aligner for 'light' chains
+    
+    this class will perform alignment for both loci, e.g., IGK and IGL
+    and pick the one with the better V score
+    """
+    def __init__(self,**kw):
+        self.loci = kw['loci']
+        self.aligners = [vdj_aligner(locus=locus) for locus in self.loci]
+        self.posset = set()
+        self.negset = set()
+        for aligner in self.aligners:
+            self.posset.update(aligner.posset)
+            self.negset.update(aligner.negset)
+    
+    def align_chain(self,chain,verbose):
+        alignments = []
+        for aligner in self.aligners:
+            curr_chain = vdj.ImmuneChain(descr=chain.descr,seq=chain.seq)
+            curr_score = aligner.align_chain(curr_chain)
+            alignments.append((curr_chain,curr_score))
+        alignments = sorted(filter(lambda a: hasattr(a[0],'v'),alignments),key=lambda a:a[1]['v'],reverse=True)
+        if len(alignments) > 0:
+            bestchain = alignments[0][0]
+            if hasattr(bestchain,'v'):
+                chain.v = bestchain.v
+                chain.v_end_idx = bestchain.v_end_idx
+            if hasattr(bestchain,'j'):
+                chain.j = bestchain.j
+                chain.j_start_idx = bestchain.j_start_idx
+            if hasattr(bestchain,'junction'):
+                chain.junction = bestchain.junction
+            if hasattr(bestchain,'d'):
+                chain.d = bestchain.d
+        
+        return alignments[0][1]
+    
+    def align_seq(self,seq,verbose=False):
+        chain = vdj.ImmuneChain(descr='sequence',seq=seq)
+        self.align_chain(chain,verbose)
+        return chain
+    
+    def positive_chain(self,chain):
+        strand = self.seq2strand(chain.seq)
+        if strand == -1:
+            chain.seq = seqtools.reverse_complement(chain.seq)
+            chain.add_tag('revcomp')
+        chain.add_tag('coding')
+
 def igh_aligner():
     return vdj_aligner(locus='IGH')
 
@@ -463,6 +531,9 @@ def igk_aligner():
 
 def igl_aligner():
     return vdj_aligner(locus='IGL')
+
+def igkl_aligner():
+    return vdj_aligner_combined(loci=['IGK','IGL'])
 
 def trb_aligner():
     return vdj_aligner(locus='TRB')
