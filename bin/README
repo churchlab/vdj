@@ -1,0 +1,26 @@
+Lots of scripts for performing vdj operations.
+
+fasta2vdjxml.py             Convert fasta file to vdjxml. Takes first white-space delim field for descr
+size_select.py              Size select reads
+vdjxml2parts.py             Split vdjxml file into parts
+barcode_id.py               Annotate barcode onto sequences
+coding_strand.py            Convert chains to coding sequence
+isotype_id.py               Annote isotypes
+align_vdj.py                Perform vdj classification
+
+Older generation:
+
+cluster_cdr3.py
+cluster_split_VJ.py
+cluster_split_VJ_LSF.py
+filter_VJ.py
+filter_tags_and.py
+filter_tags_not.py
+filter_tags_or.py
+split_on_tags.py
+tag_chains.py
+update_vdjxml.py
+vdj_full_pipeline_LSF.py
+vdjxml2clone_counts.py
+vdjxml2fasta.py
+
