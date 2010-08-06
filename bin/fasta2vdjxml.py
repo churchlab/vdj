@@ -3,6 +3,8 @@
 import sys
 import optparse
 
+import seqtools
+
 import vdj
 
 parser = optparse.OptionParser()
@@ -18,4 +20,8 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.fasta2vdjxml(inhandle,outhandle)
+multiple_fields = False
+
+for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
+    chain = vdj.ImmuneChain(descr=descr,seq=seq)
+    print >>outhandle, chain

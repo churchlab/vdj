@@ -4,8 +4,10 @@ import sys
 import optparse
 
 import vdj
+import vdj.alignment
 
 parser = optparse.OptionParser()
+parser.add_option('-L','--locus',action='append',dest='loci')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -20,4 +22,7 @@ elif len(args) == 0:
 else:
     raise Exception, "Wrong number of arguments."
 
-vdj.align_vdj(inhandle,outhandle)
+aligner = vdj.alignment.vdj_aligner_combined(loci=options.loci)
+for chain in parse_VDJXML(inhandle):
+    aligner.align_chain(chain)
+    print >>outhandle, chain

@@ -289,106 +289,10 @@ def get_clone_counts(inhandle):
 # = Pipeline functions =
 # ======================
 
-def fasta2vdjxml(inhandle,outhandle):
-    multiple_fields = False
-    
-    for record in Bio.SeqIO.parse(inhandle,'fasta'):
-        description = record.description.split()
-        sequence = record.seq.tostring().upper()   # SeqRecord object
-        if not multiple_fields and len(description) > 1:
-            multiple_fields = True
-        chain = ImmuneChain(descr=description[0],seq=sequence)
-        print >>outhandle, chain
-    
-    if multiple_fields == True:
-        print "WARNING: input fasta file has descriptions with multiple fields"
-
-
 def vdjxml2fasta(inhandle,outhandle):
     for chain in parse_VDJXML(inhandle):
         print >>outhandle, '>'+chain.descr
         print >>outhandle, chain.seq
-
-
-def size_select(inhandle,outhandle,min_=None,max_=None):
-    if min_ == None:
-        min_ = 0
-    if max_ == None:
-        max_ = float('inf')
-    for chain in parse_VDJXML(inhandle):
-        if len(chain) >= min_ and len(chain) <= max_:
-            print >>outhandle, chain
-
-
-def barcode_id(barcode_fasta,inhandle,outhandle):
-    # NOTE: all barcodes must be the same length
-    # NOTE: all barcode names must start with 'barcode'
-    if isinstance(barcode_fasta,types.StringTypes):
-        bcip = open(barcode_fasta,'r')
-    elif isinstance(barcode_fasta,file):
-        bcip = barcode_fasta
-    
-    barcodes = {}
-    for record in Bio.SeqIO.parse(bcip,'fasta'):
-        barcodes[record.seq.tostring().upper()] = record.id
-    
-    barcode_len = len(barcodes.keys()[0])
-    for bc in barcodes.keys():
-        if len(bc) != barcode_len:
-            raise Exception, "ERROR: All barcode lengths must be equal."
-        if not barcodes[bc].startswith('barcode'):
-            raise Exception, "ERROR: All barcode names must start with 'barcode'"
-    
-    for chain in parse_VDJXML(inhandle):
-        curr_barcode = barcodes.get(chain.seq[:barcode_len],'')
-        if curr_barcode != '':
-            chain.seq = chain.seq[barcode_len:] # remove barcode from seq
-            chain.add_tags(curr_barcode)
-            print >>outhandle, chain
-        else:   # no barcode found; print chain unchanged
-            print >>outhandle, chain
-    
-    if isinstance(barcode_fasta,types.StringTypes):
-        bcip.close()
-
-
-def isotype_id(ighc_fasta,inhandle,outhandle):
-    if isinstance(ighc_fasta,types.StringTypes):
-        ighcip = open(ighc_fasta,'r')
-    elif isinstance(ighc_fasta,file):
-        ighcip = ighc_fasta
-    
-    isotypes = {}
-    for record in Bio.SeqIO.parse(ighcip,'fasta'):
-        isotypes[record.seq.reverse_complement().tostring().upper()] = record.id
-    
-    for chain in parse_VDJXML(inhandle):
-        get_tag_with_prefix(chain,'positive')   # will throw ValueError if finds non-positive chain
-        for iso in isotypes.iteritems():
-            if iso[0] in chain.seq[-50:]:   # arbitrary cutoff from 3' end
-                chain.ighc = iso[1]
-        print >>outhandle, chain
-    
-    if isinstance(ighc_fasta,types.StringTypes):
-        ighcip.close()
-
-
-def positive_strand(inhandle,outhandle):
-    aligner = alignment.vdj_aligner()
-    for chain in parse_VDJXML(inhandle):
-        strand = aligner.seq2posstrand(chain.seq)
-        chain.add_tags('positive')
-        if strand == -1:
-            chain.add_tags('revcomp')
-            chain.seq = sequtils.reverse_complement(chain.seq)
-        print >>outhandle, chain
-
-
-def align_vdj(inhandle,outhandle):
-    aligner = alignment.vdj_aligner()
-    for chain in parse_VDJXML(inhandle):
-        aln = aligner.align_chain(chain)
-        print >>outhandle, chain
 
 
 def cluster_chains(cutoff,tag,inhandle,outhandle,linkage='single'):
@@ -422,26 +326,7 @@ def cluster_chains(cutoff,tag,inhandle,outhandle,linkage='single'):
         print >>outhandle, chain
 
 
-def split_vdjxml_into_parts(packetsize,inhandle,outname):
-    parts = []
-    chains_processed = 0
-    file_num = 0
-    curr_outname = outname+'.'+str(file_num)
-    for chain in parse_VDJXML(inhandle):
-        if chains_processed == 0:
-            op = open(curr_outname,'w')
-            parts.append(curr_outname)
-        
-        print >>op, chain
-        chains_processed += 1
-        
-        if chains_processed == packetsize:
-            op.close()
-            chains_processed = 0
-            file_num += 1
-            curr_outname = outname+'.'+str(file_num)
-    
-    return parts
+
 
 
 # for generating identifiers from VJ combos

@@ -6,8 +6,8 @@ import optparse
 import vdj
 
 parser = optparse.OptionParser()
-parser.add_option('-m','--min',type='int')
-parser.add_option('-M','--max',type='int')
+parser.add_option('-m','--min',type='int',default=0)
+parser.add_option('-M','--max',type='int',default=float('inf'))
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
@@ -20,4 +20,6 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.size_select(inhandle,outhandle,options.min,options.max)
+for chain in vdj.parse_VDJXML(inhandle):
+    if len(chain) >= options.min and len(chain) <= options.max:
+        print >>outhandle, chain

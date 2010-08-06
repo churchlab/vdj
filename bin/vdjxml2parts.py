@@ -17,7 +17,25 @@ elif len(args) == 0:
 else:
     raise Exception, "Too many arguments."
 
-parts = vdj.split_vdjxml_into_parts(options.packetsize,inhandle,options.basename)
+parts = []
+chains_processed = 0
+file_num = 0
+
+curr_outname = options.basename+'.'+str(file_num)
+for chain in parse_VDJXML(inhandle):
+    if chains_processed == 0:
+        op = open(curr_outname,'w')
+        parts.append(curr_outname)
+    
+    print >>op, chain
+    chains_processed += 1
+    
+    if chains_processed == options.packetsize:
+        op.close()
+        chains_processed = 0
+        file_num += 1
+        curr_outname = options.basename+'.'+str(file_num)
+op.close()
 
 for part in parts:
     print part
