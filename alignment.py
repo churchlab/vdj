@@ -200,15 +200,15 @@ class vdj_aligner(object):
         return chain
     
     
-    def positive_chain(self,chain,verbose=False):
-        strand = self.seq2strand(chain.seq)
+    def coding_chain(self,chain,verbose=False):
+        strand = self.seq2coding(chain.seq)
         if strand == -1:
             chain.seq = seqtools.reverse_complement(chain.seq)
             chain.add_tag('revcomp')
         chain.add_tag('coding')
     
     
-    def seq2strand(self,seq):        
+    def seq2coding(self,seq):        
         seqkeys = vdj_aligner.seq2kmers(seq,[self.patternPos])
         seqwords = seqkeys[self.patternPos]
         strandid = 1
@@ -483,6 +483,8 @@ class vdj_aligner_combined(object):
     def __init__(self,**kw):
         self.loci = kw['loci']
         self.aligners = [vdj_aligner(locus=locus) for locus in self.loci]
+        
+        self.patternPos = '111111111111'
         self.posset = set()
         self.negset = set()
         for aligner in self.aligners:
@@ -516,12 +518,20 @@ class vdj_aligner_combined(object):
         self.align_chain(chain,verbose)
         return chain
     
-    def positive_chain(self,chain):
-        strand = self.seq2strand(chain.seq)
+    def coding_chain(self,chain):
+        strand = self.seq2coding(chain.seq)
         if strand == -1:
             chain.seq = seqtools.reverse_complement(chain.seq)
             chain.add_tag('revcomp')
         chain.add_tag('coding')
+    
+    def seq2coding(self,seq):
+        seqkeys = vdj_aligner.seq2kmers(seq,[self.patternPos])
+        seqwords = seqkeys[self.patternPos]
+        strandid = 1
+        if len(self.negset & seqwords) > len(self.posset & seqwords):
+            strandid = -1
+        return strandid
 
 def igh_aligner():
     return vdj_aligner(locus='IGH')
