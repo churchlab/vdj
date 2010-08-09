@@ -1,4 +1,5 @@
 import warnings
+import copy
 
 import numpy as np
 
@@ -494,7 +495,7 @@ class vdj_aligner_combined(object):
     def align_chain(self,chain,verbose=False):
         alignments = []
         for aligner in self.aligners:
-            curr_chain = vdj.ImmuneChain(descr=chain.descr,seq=chain.seq)
+            curr_chain = copy.deepcopy(chain)
             curr_score = aligner.align_chain(curr_chain)
             alignments.append((curr_chain,curr_score))
         alignments = sorted(filter(lambda a: hasattr(a[0],'v'),alignments),key=lambda a:a[1]['v'],reverse=True)
