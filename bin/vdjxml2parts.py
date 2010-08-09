@@ -25,17 +25,21 @@ curr_outname = options.basename+'.'+str(file_num)
 for chain in vdj.parse_VDJXML(inhandle):
     if chains_processed == 0:
         op = open(curr_outname,'w')
+        print >>op, "<root>"
         parts.append(curr_outname)
     
     print >>op, chain
     chains_processed += 1
     
     if chains_processed == options.packetsize:
+        print >>op, "</root>"
         op.close()
         chains_processed = 0
         file_num += 1
         curr_outname = options.basename+'.'+str(file_num)
-op.close()
+if not op.closed:
+    print >>op, "</root>"
+    op.close()
 
 for part in parts:
     print part
