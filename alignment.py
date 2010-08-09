@@ -511,8 +511,7 @@ class vdj_aligner_combined(object):
                 chain.junction = bestchain.junction
             if hasattr(bestchain,'d'):
                 chain.d = bestchain.d
-        
-        return alignments[0][1]
+            return alignments[0][1]     # NOTE: I only return the scores upon successful aln
     
     def align_seq(self,seq,verbose=False):
         chain = vdj.ImmuneChain(descr='sequence',seq=seq)
