@@ -132,7 +132,7 @@ class ParserVDJXML(object):
     def parse(self,inputfile):
         if not hasattr(inputfile,'read'):
             inputfile = open(inputfile,'r')
-        self.xmlparser.ParseFile(inputfile)
+        return self.xmlparser.ParseFile(inputfile)
 
 class PredicateParserVDJXML(ParserVDJXML):
     """VDJXML Parser that takes a predicate function"""
@@ -153,11 +153,11 @@ class PredicateParserVDJXML(ParserVDJXML):
 
 def parse_VDJXML(inputfile):
     vdjxmlparser = ParserVDJXML()
-    vdjxmlparser.parse(inputfile)
+    return vdjxmlparser.parse(inputfile)
 
 def filter_parse_VDJXML(inputfile,predicate):
     vdjxmlparser = PredicateParserVDJXML(predicate)
-    vdjxmlparser.parse(inputfile)
+    return vdjxmlparser.parse(inputfile)
 
 
 # ============
