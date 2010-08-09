@@ -105,7 +105,7 @@ class ParserVDJXML(object):
     """Parser for VDJXML"""
     def __init__(self):
         self.chain = None
-        self.data_buffer = None
+        self.data_buffer = ''
         
         self.xmlparser = xml.parsers.expat.ParserCreate()
         self.xmlparser.StartElementHandler  = self.start_handler
