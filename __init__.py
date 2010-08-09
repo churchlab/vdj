@@ -129,7 +129,7 @@ class ParserVDJXML(object):
     def data_handler(self,data):
         self.data_buffer += data
     
-    def parse(inputfile):
+    def parse(self,inputfile):
         if not hasattr(inputfile,'read'):
             inputfile = open(inputfile,'r')
         self.xmlparser.ParseFile(inputfile)
