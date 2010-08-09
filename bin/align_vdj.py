@@ -23,6 +23,8 @@ else:
     raise Exception, "Wrong number of arguments."
 
 aligner = vdj.alignment.vdj_aligner_combined(loci=options.loci)
+print >>outhandle, "<root>"
 for chain in parse_VDJXML(inhandle):
     aligner.align_chain(chain)
     print >>outhandle, chain
+print >>outhandle, "</root>"
