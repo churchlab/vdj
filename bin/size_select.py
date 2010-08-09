@@ -20,6 +20,10 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
+print >>outhandle, "<root>"
+
 for chain in vdj.parse_VDJXML(inhandle):
     if len(chain) >= options.min and len(chain) <= options.max:
         print >>outhandle, chain
+
+print >>outhandle, "</root>"
