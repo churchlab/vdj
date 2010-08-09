@@ -491,7 +491,7 @@ class vdj_aligner_combined(object):
             self.posset.update(aligner.posset)
             self.negset.update(aligner.negset)
     
-    def align_chain(self,chain,verbose):
+    def align_chain(self,chain,verbose=False):
         alignments = []
         for aligner in self.aligners:
             curr_chain = vdj.ImmuneChain(descr=chain.descr,seq=chain.seq)
