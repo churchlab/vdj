@@ -37,6 +37,7 @@ for bc in barcodes.keys():
         raise Exception, "ERROR: All barcode lengths must be equal."
 
 # iterate through chains
+print >>outhandle, "<root>"
 for chain in vdj.parse_VDJXML(inhandle):
     try:
         curr_barcode = barcodes[chain.seq[:barcode_len].upper()]
@@ -45,3 +46,4 @@ for chain in vdj.parse_VDJXML(inhandle):
     except KeyError:    # barcode not found; print chain unchanged
         pass    # chain remains unchanged
     print >>outhandle, chain
+print >>outhandle, "</root>"

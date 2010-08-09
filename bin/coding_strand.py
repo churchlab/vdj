@@ -21,6 +21,8 @@ elif len(args) == 0:
     outhandle = sys.stdout
 
 aligner = vdj.alignment.vdj_aligner_combined(loci=options.loci)
+print >>outhandle, "<root>"
 for chain in vdj.parse_VDJXML(inhandle):
     aligner.coding_chain(chain)
     print >>outhandle, chain
+print >>outhandle, "</root>"
