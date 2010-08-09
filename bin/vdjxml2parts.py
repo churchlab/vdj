@@ -22,7 +22,7 @@ chains_processed = 0
 file_num = 0
 
 curr_outname = options.basename+'.'+str(file_num)
-for chain in parse_VDJXML(inhandle):
+for chain in vdj.parse_VDJXML(inhandle):
     if chains_processed == 0:
         op = open(curr_outname,'w')
         parts.append(curr_outname)
