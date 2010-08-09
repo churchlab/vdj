@@ -20,8 +20,10 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-multiple_fields = False
+print >>outhandle, "<root>"
 
 for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
     chain = vdj.ImmuneChain(descr=descr,seq=seq)
     print >>outhandle, chain
+
+print >>outhandle, "</root>"
