@@ -1,5 +1,6 @@
 import types
-import xml.parsers.expat
+# import xml.parsers.expat
+import xml.etree.cElementTree as ElementTree
 
 import numpy as np
 import Bio.SeqIO
@@ -112,27 +113,68 @@ class ParserVDJXML(object):
         self.xmlparser.EndElementHandler    = self.end_handler
         self.xmlparser.CharacterDataHandler = self.data_handler
     
-    def start_handler(self,name,attributes):
-        if name == 'ImmuneChain':
+    def start_handler(self,elem):
+        if elem.tag == 'ImmuneChain':
             self.chain = ImmuneChain()
         else:
             self.data_buffer = ''
     
-    def end_handler(self,name):
-        if name == 'ImmuneChain':
+    def end_handler(self,elem):
+        if elem.tag == 'ImmuneChain':
             yield self.chain
-        elif name == 'tag':
-            self.chain.add_tags(data_buffer)
+        elif elem.tag == 'tag':
+            self.chain.add_tags(elem.text)
         else:
-            self.chain.__setattr__(name,data_buffer)
+            self.chain.__setattr__(name,elem.text)
     
     def data_handler(self,data):
         self.data_buffer += data
     
     def parse(self,inputfile):
+        for event, elem in ElementTree.iterparse(inputfile,events=('start','end')):
+            if event == 'start':
+                if elem.tag == 'ImmuneChain':
+                    chain = ImmuneChain()
+                else:
+                    data_buffer = ''
+            elif event == 'end':
+                if elem.tag == 'ImmuneChain':
         if not hasattr(inputfile,'read'):
             inputfile = open(inputfile,'r')
         return self.xmlparser.ParseFile(inputfile)
+
+# class ParserVDJXML(object):
+#     """Parser for VDJXML"""
+#     def __init__(self):
+#         self.chain = None
+#         self.data_buffer = ''
+#         
+#         self.xmlparser = xml.parsers.expat.ParserCreate()
+#         self.xmlparser.StartElementHandler  = self.start_handler
+#         self.xmlparser.EndElementHandler    = self.end_handler
+#         self.xmlparser.CharacterDataHandler = self.data_handler
+#     
+#     def start_handler(self,name,attributes):
+#         if name == 'ImmuneChain':
+#             self.chain = ImmuneChain()
+#         else:
+#             self.data_buffer = ''
+#     
+#     def end_handler(self,name):
+#         if name == 'ImmuneChain':
+#             yield self.chain
+#         elif name == 'tag':
+#             self.chain.add_tags(data_buffer)
+#         else:
+#             self.chain.__setattr__(name,data_buffer)
+#     
+#     def data_handler(self,data):
+#         self.data_buffer += data
+#     
+#     def parse(self,inputfile):
+#         if not hasattr(inputfile,'read'):
+#             inputfile = open(inputfile,'r')
+#         return self.xmlparser.ParseFile(inputfile)
 
 class PredicateParserVDJXML(ParserVDJXML):
     """VDJXML Parser that takes a predicate function"""
@@ -152,8 +194,28 @@ class PredicateParserVDJXML(ParserVDJXML):
 
 
 def parse_VDJXML(inputfile):
+    for event, elem in ElementTree.iterparse(inputfile,events=('start','end')):
+        if event == 'start':
+            if elem.tag == 'ImmuneChain':
+                chain = ImmuneChain()
+            else:
+                data_buffer = ''
+        elif event == 'end':
+            if elem.tag == 'ImmuneChain':
     vdjxmlparser = ParserVDJXML()
     return vdjxmlparser.parse(inputfile)
+    
+     if name == 'ImmuneChain':
+            yield self.chain
+        elif name == 'tag':
+            self.chain.add_tags(data_buffer)
+        else:
+            self.chain.__setattr__(name,data_buffer)
+    
+    def data_handler(self,data):
+        self.data_buffer += data
+    
+    
 
 def filter_parse_VDJXML(inputfile,predicate):
     vdjxmlparser = PredicateParserVDJXML(predicate)
