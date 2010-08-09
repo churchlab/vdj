@@ -24,7 +24,7 @@ elif len(args) == 0:
 # NOTE: all barcodes must be the same length
 
 # load barcodes
-bcip = open(options.barcode_fasta,'r')
+bcip = open(options.barcodes_fasta,'r')
 barcodes = {}
 for (descr,seq) in seqtools.FastaIterator(bcip):
     barcodes[seq.upper()] = descr
