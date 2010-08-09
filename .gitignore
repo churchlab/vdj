@@ -4,6 +4,7 @@
 *.out
 *.hi
 *.o
+*~
 build/
 pickle/
 .DS_Store
