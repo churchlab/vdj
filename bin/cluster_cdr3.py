@@ -48,7 +48,7 @@ else:
 
 print >>outhandle, "<root>"
 for (i,chain) in enumerate(chains):
-    cloneID = '%s%s' % (tag,T[seq_idxs[chain.junction]])   'clone' + options.tag + str(T[seq_idxs[chain.junction]])
+    cloneID = '%s%s' % (tag,T[seq_idxs[chain.junction]])
     chain.clone = cloneID
     print >>outhandle, chain
 print >>outhandle, "</root>"
