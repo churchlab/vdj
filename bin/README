@@ -11,9 +11,9 @@ cat_vdjxml.py               cat operation on vdjxml files (handles root elements
 filter_VJ.py                Select only chains with V and J alignments
 cluster_cdr3.py             Perform hierarchical clustering of ImmuneChains using their junctions
 partition_VJ.py             Partitions vdjxml into files by VJ combo
+update_vdjxml.py            Update vdjxml from older version to newer version
 
 Older generation:
-
 
 cluster_split_VJ.py
 cluster_split_VJ_LSF.py
@@ -22,8 +22,6 @@ filter_tags_not.py
 filter_tags_or.py
 split_on_tags.py
 tag_chains.py
-update_vdjxml.py
 vdj_full_pipeline_LSF.py
 vdjxml2clone_counts.py
 vdjxml2fasta.py
-
