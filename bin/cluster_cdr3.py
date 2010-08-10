@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import vdj
+import vdj.clustering
 
 parser = optparse.OptionParser()
 parser.add_option('-c','--cutoff',type='float',default=4.5)
@@ -30,7 +31,7 @@ elif len(args) == 0:
 # load data
 chains = []
 junctions = []
-for chain in parse_VDJXML(inhandle):
+for chain in vdj.parse_VDJXML(inhandle):
     # check for presence of V, J, and non-trivial junction
     if not hasattr(chain,'v') or not hasattr(chain,'j') or not hasattr(chain,'junction'):
         raise ValueError, "Chain %s has no junction of V-J aln." % chain.descr
@@ -38,7 +39,7 @@ for chain in parse_VDJXML(inhandle):
     junctions.append(chain.junction)
 
 # perform the sequence clustering
-(T,seq_idxs) = clustering.cluster_seqs(junctions,options.cutoff,options.linkage)
+(T,seq_idxs) = vdj.clustering.cluster_seqs(junctions,options.cutoff,options.linkage)
 
 # tag chains with unique cluster IDs
 if options.tag == '':
