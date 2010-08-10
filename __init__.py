@@ -290,40 +290,6 @@ def vdjxml2fasta(inhandle,outhandle):
         print >>outhandle, chain.seq
 
 
-def cluster_chains(cutoff,tag,inhandle,outhandle,linkage='single'):
-    # NOTE: this function requires there to be a well-defined junction
-    #       sequence.  It raises an exception if not.  Therefore, seqs
-    #       must be pre-filtered for having legit junctions
-    # NOTE: this function must hold all chains in memory in order to 
-    #       perform the clustering and then assign cluster names
-    
-    # load data
-    chains = []
-    junctions = []
-    for chain in parse_VDJXML(inhandle):
-        # check for presence of V, J, and non-trivial junction
-        if chain.v == '' or chain.j == '' or chain.junction == '':
-            raise ValueError, "Chain " + chain.descr + " has no junction of V-J aln."
-        chains.append(chain)
-        junctions.append(chain.junction)
-    
-    # perform the sequence clustering
-    (T,seq_idxs) = clustering.cluster_seqs(junctions,cutoff,linkage)
-    
-    # tag chains with unique cluster IDs
-    if tag == '':
-        tag = '|'
-    else:
-        tag = '|'+tag+'|'
-    for (i,chain) in enumerate(chains):
-        clusterID = 'clone' + tag + str(T[seq_idxs[chain.junction]])
-        chain.add_tags(clusterID)
-        print >>outhandle, chain
-
-
-
-
-
 # for generating identifiers from VJ combos
 def vj_id(v_seg,j_seg):
     return seqtools.cleanup_id(v_seg)+'_'+seqtools.cleanup_id(j_seg)

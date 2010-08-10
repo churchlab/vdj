@@ -7,13 +7,16 @@ barcode_id.py               Annotate barcode onto sequences
 coding_strand.py            Convert chains to coding sequence
 isotype_id.py               Annote isotypes
 align_vdj.py                Perform vdj classification
+cat_vdjxml.py               cat operation on vdjxml files (handles root elements)
+filter_VJ.py                Select only chains with V and J alignments
+cluster_cdr3.py             Perform hierarchical clustering of ImmuneChains using their junctions
+partition_VJ.py             Partitions vdjxml into files by VJ combo
 
 Older generation:
 
-cluster_cdr3.py
+
 cluster_split_VJ.py
 cluster_split_VJ_LSF.py
-filter_VJ.py
 filter_tags_and.py
 filter_tags_not.py
 filter_tags_or.py
