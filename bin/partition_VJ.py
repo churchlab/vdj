@@ -2,9 +2,6 @@
 
 import sys
 import optparse
-import subprocess
-import os
-import tempfile
 
 import seqtools
 
@@ -24,7 +21,7 @@ elif len(args) == 0:
 def vj_id_no_allele(chain):
     return seqtools.cleanup_id(chain.v.split('*')[0]) + '_' + seqtools.cleanup_id(chain.j.split('*')[0])
 
-for chain in parse_VDJXML(inhandle):
+for chain in vdj.parse_VDJXML(inhandle):
     curr_vj_id = vj_id_no_allele(chain)
     try:
         print >>outhandles[curr_vj_id], chain
