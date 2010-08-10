@@ -18,7 +18,8 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-
+print >>outhandle, "<root>"
 for chain in vdj.parse_VDJXML(inhandle):
-    if chain.v in vdj.refseq.IGHV_seqs.keys() and chain.j in vdj.refseq.IGHJ_seqs.keys():
+    if hasattr(chain,'v') and hasattr(chain,'j'):
         print >>outhandle, chain
+print >>outhandle, "</root>"
