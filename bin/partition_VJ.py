@@ -21,6 +21,7 @@ elif len(args) == 0:
 def vj_id_no_allele(chain):
     return seqtools.cleanup_id(chain.v.split('*')[0]) + '_' + seqtools.cleanup_id(chain.j.split('*')[0])
 
+outhandles = {}
 for chain in vdj.parse_VDJXML(inhandle):
     curr_vj_id = vj_id_no_allele(chain)
     try:
