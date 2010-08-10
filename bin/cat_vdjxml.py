@@ -13,9 +13,9 @@ files = []
 for arg in args:
     files.extend(glob.glob(arg))
 
-print >>outhandle, "<root>"
+print >>sys.stdout, "<root>"
 for f in files:
     inhandle = open(f,'r')
     for chain in vdj.parse_VDJXML(inhandle):
         print >>sys.stdout, chain
-print >>outhandle, "</root>"
+print >>sys.stdout, "</root>"
