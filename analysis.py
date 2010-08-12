@@ -8,11 +8,59 @@ import matplotlib.pyplot as plt
 
 import vdj
 
-# import numpy.ma as ma
+
+def barcode_clone_counts(inhandle):
+    """Return count dict from vdjxml file with counts[barcode][clone]"""
+    counts = dict()
+    for chain in vdj.parse_VDJXML(inhandle):
+        try:    # chain may not have barcode
+            counts_barcode = counts.setdefault(chain.barcode,dict())
+        except AttributeError:
+            continue
+        counts_barcode[chain.clone] = counts_barcode.get(chain.clone,0) + 1
+    return counts
+
+
+def barcode_junction_counts(inhandle):
+    """Return count dict from vdjxml file with counts[barcode][clone]"""
+    counts = dict()
+    for chain in vdj.parse_VDJXML(inhandle):
+        try:    # chain may not have barcode
+            counts_barcode = counts.setdefault(chain.barcode,dict())
+        except AttributeError:
+            continue
+        counts_barcode[chain.junction] = counts_barcode.get(chain.junction,0) + 1
+    return counts
+
+
+def barcode_clone_counts2matrix(counts,barcodes=None,clones=None):
+    """Generates matrix from count dict"""
+    if barcodes == None:
+        barcodes = counts.keys()
+    if clones == None:
+        clones = list( reduce( lambda x,y: x|y, [set(c.keys()) for c in counts.itervalues()] ) )
+    matrix = np.zeros((len(clones),len(barcodes)))
+    for (col,barcode) in enumerate(barcodes):
+        for (row,clone) in enumerate(clones):
+            matrix[row,col] = counts.get(barcode,dict()).get(clone,0)
+    return (clones,barcodes,matrix)
+
+barcode_junction_counts2matrix = barcode_clone_counts2matrix
+
+
+# ====================================================================
+# = OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD OLD  =
+# ====================================================================
+
 
 # ===============
 # = Time series =
 # ===============
+
+def clone_timeseries(inhandle, barcodes, reference_clones=None):
+    # generate count data
+    for chain in vdj.parse_VDJXML(inhandle):
+        counts
 
 def clone_timeseries(inhandle,time_tags,reference_clones=None):
     # get count data
