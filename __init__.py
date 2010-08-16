@@ -113,6 +113,8 @@ class ParserVDJXML(object):
     def end_handler(self,elem):
         if elem.tag == 'tag':
             self.chain.add_tags(elem.text)
+        elif elem.tag == 'v_end_idx' or elem.tag == 'j_start_idx':
+            self.chain.__setattr__(elem.tag,int(elem.text))
         else:
             self.chain.__setattr__(elem.tag,elem.text)
     
