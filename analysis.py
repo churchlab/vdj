@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 import vdj
 
-
 def barcode_clone_counts(inhandle):
     """Return count dict from vdjxml file with counts[barcode][clone]"""
     counts = dict()
@@ -22,7 +21,7 @@ def barcode_clone_counts(inhandle):
 
 
 def barcode_junction_counts(inhandle):
-    """Return count dict from vdjxml file with counts[barcode][clone]"""
+    """Return count dict from vdjxml file with counts[barcode][junction]"""
     counts = dict()
     for chain in vdj.parse_VDJXML(inhandle):
         try:    # chain may not have barcode
