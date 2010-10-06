@@ -6,6 +6,7 @@ import optparse
 import seqtools
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 parser.add_option('-b','--barcodes',dest='barcodes_fasta')
@@ -23,27 +24,11 @@ elif len(args) == 0:
 
 # NOTE: all barcodes must be the same length
 
-# load barcodes
-bcip = open(options.barcodes_fasta,'r')
-barcodes = {}
-for (descr,seq) in seqtools.FastaIterator(bcip):
-    barcodes[seq.upper()] = descr
-bcip.close()
-
-# check that barcodes meet necessary criteria
-barcode_len = len(barcodes.keys()[0])
-for bc in barcodes.keys():
-    if len(bc) != barcode_len:
-        raise Exception, "ERROR: All barcode lengths must be equal."
+barcodes = vdj.pipeline.load_barcodes(options.barcodes_fasta)
 
 # iterate through chains
 print >>outhandle, "<root>"
 for chain in vdj.parse_VDJXML(inhandle):
-    try:
-        curr_barcode = barcodes[chain.seq[:barcode_len].upper()]
-        chain.seq = chain.seq[barcode_len:] # prune off barcode from seq
-        chain.barcode = curr_barcode
-    except KeyError:    # barcode not found; print chain unchanged
-        pass    # chain remains unchanged
+    vdj.pipeline.id_barcode(chain,barcodes)
     print >>outhandle, chain
 print >>outhandle, "</root>"

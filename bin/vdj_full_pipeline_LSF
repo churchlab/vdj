@@ -1,5 +1,118 @@
 #! /usr/bin/env python
 
+import os
+
+import lsf
+import seqtools
+import vdj
+import vdj.pipeline
+
+join = os.path.join
+
+# filenames and directories
+basename =          # unique base identifier for data
+working_dir = 
+log_dir
+aligned_file = basename+'.aligned.vdjxml'
+vj_filtered_file = basename+'.VJ_filtered.vdjxml'
+
+# fasta file (full path) with the data
+input_fasta = 
+
+# fasta file (full path) with barcode assignments
+barcode_fasta = 
+isotype_fasta = 
+
+# Directory (full path) where the pipeline will put its data
+analysis_dir = 
+
+# Size selection
+min_size=
+max_size=
+
+packet_size = 10000
+
+# Output files
+size_selected_file = basename + '.size%i-%i' % (min_size,max_size) + '.vdjxml'
+
+# whitespace-separated list of loci to use for alignment, e.g., "IGK IGL"
+loci = 
+locus_options = ' '.join([' --locus %s' % locus for locus in loci.split()])
+
+
+
+
+
+
+
+# PIPELINE STARTS HERE
+
+# 0. CONVERSION TO VDJXML
+# 1. SIZE SELECTION
+inhandle = open(input_fasta_file,'r')
+outhandle = open(join(analysis_dir,size_selected_file),'w')
+# iterate through fasta entries
+for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
+    # convert to ImmuneChain
+    chain = vdj.ImmuneChain(descr=descr,seq=seq)
+    
+    # size select
+    if len(chain) < options.min or len(chain) > options.max:
+        continue
+    
+    print >>outhandle, chain
+inhandle.close()
+outhandle.close()
+    
+# 2. SPLIT INTO PARTS
+inhandle = open(join(analysis_dir,size_selected_file),'r')
+parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
+                                     join(analysis_dir,working_dir,size_selected_file),
+                                     packetsize,
+                                     prefix='<root>',
+                                     suffix='</root>')
+
+cmd = 'barcode_id --barcodes %s ' % barcode_file        # 3. BARCODE IDENTIFICATION
+cmd += ' | coding_strand' + locus_options               # 4. CODING STRAND
+if 'IGH' in loci:                                       # 5. ISOTYPE ID (heavy chain only)
+    cmd += ' | isotype_id --IGHC %s' % isotype_file
+cmd += ' | align_vdj' + locus_options                   # 6. VDJ CLASSIFICATION
+
+# submit cmd to LSF for each part
+jobIDs = []
+logfiles = []
+outnames = []
+for part in parts:
+    partID = part.split('.')[-1]
+    partoutname = basename+'.prealign.vdjxml.'+partID
+    outnames.append(partoutname)
+    cmd = 'cat %s | ' + cmd + ' > %s'
+    cmd = cmd % (part,partoutname)
+    logfile = join(analysis_dir,log_dir,'prealign.log.')+partID
+    jobID = lsf.submit_to_LSF('shared_2h',logfile,cmd)
+    logfiles.append(logfile)
+    jobIDs.append(jobID)
+lsf.wait_for_LSF_jobs(jobIDs,logfiles)
+
+# 7. CONCAT PARTS
+outhandle = open(join(analysis_dir,aligned_file),'w')
+vdj.pipeline.cat_vdjxml(outnames,outhandle)
+outhandle.close()
+
+# 8. FILTER VJ
+inhandle = open(join(analysis_dir,aligned_file),'r')
+outhandle = open(join(analysis_dir,vj_filtered_file),'w')
+print >>outhandle, "<root>"
+for chain in vdj.parse_VDJXML(inhandle):
+    if hasattr(chain,'v') and hasattr(chain,'j'):
+        print >>outhandle, chain
+print >>outhandle, "</root>"
+inhandle.close()
+outhandle.close()
+
+
+
+
 import subprocess
 import sys
 import optparse

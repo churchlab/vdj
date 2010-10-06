@@ -5,8 +5,8 @@ import warnings
 import optparse
 
 import seqtools
-
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 parser.add_option('-i','--IGHC',dest='ighc_fasta')
@@ -23,17 +23,8 @@ elif len(args) == 0:
     outhandle = sys.stdout
 
 # load isotypes
-ighcip = open(options.ighc_fasta,'r')
-isotypes = {}
-for (descr,seq) in seqtools.FastaIterator(ighcip):
-    isotypes[seq.upper()] = record.id
-ighcip.close()
+isotypes = vdj.pipeline.load_isotypes(options.ighc_fasta)
 
 for chain in parse_VDJXML(inhandle):
-    if not chain.has_tag('positive') and not chain.has_tag('coding'):
-        warnings.warn('chain %s may not be the correct strand' % chain.descr)
-    
-    for iso in isotypes.iteritems():
-        if iso[0] in chain.seq[-50:]:   # arbitrary cutoff from 3' end
-            chain.c = iso[1]
+    vdj.pipeline.id_isotype(chain,isotypes)
     print >>outhandle, chain

@@ -1,0 +1,21 @@
+# base name for all data files
+basename
+
+# input files (full paths)
+input_fasta     # the initial fasta data
+barcode_fasta   # barcode identifiers
+isotype_fasta   # isotype identifiers
+
+# working directories
+analysis_dir    # full path; base directory for everythin
+working_dir     # relative path; contains all split parts
+log_dir         # relative path; contains log files
+partition_dir   # relative path; contains VJ partitions
+
+# analysis parameters
+min_size
+max_size
+packet_size
+loci
+
+
