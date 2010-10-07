@@ -8,9 +8,7 @@ isotype_fasta   # isotype identifiers
 
 # working directories
 analysis_dir    # full path; base directory for everythin
-working_dir     # relative path; contains all split parts
-log_dir         # relative path; contains log files
-partition_dir   # relative path; contains VJ partitions
+
 
 # analysis parameters
 min_size
