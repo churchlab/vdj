@@ -1,19 +1,25 @@
 # base name for all data files
-basename
+basename = 
+
+# location of vdj installation (for scripts)
+# NOTE: this should be eliminated with proper install of package
+vdj_package_dir = 
 
 # input files (full paths)
-input_fasta     # the initial fasta data
-barcode_fasta   # barcode identifiers
-isotype_fasta   # isotype identifiers
+input_fasta   =      # the initial fasta data
+barcode_fasta =    # barcode identifiers
+isotype_fasta =    # isotype identifiers
 
 # working directories
-analysis_dir    # full path; base directory for everythin
+analysis_dir =     # full path; base directory for everythin
 
 
 # analysis parameters
-min_size
-max_size
-packet_size
-loci
+min_size = 
+max_size = 
+packet_size = 10000
+loci = 
+clustering_cutoff = 4.5
+clustering_linkage = 'single'
 
 

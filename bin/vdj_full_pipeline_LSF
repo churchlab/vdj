@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import os
+import optparse
 
 import lsf
 import seqtools
@@ -9,11 +10,21 @@ import vdj.pipeline
 
 join = os.path.join
 
+option_parser = optparse.OptionParser()
+# option_parser.add_option('-x','--xxx',dest='xxxx',type='int')
+(options,args) = option_parser.parse_args()
+
+if len(args) != 1:
+    raise ValueError, "Require a single input jobfile"
+
+jobfile = args[0]
+
 # PARAMETER DEFINITION
 
 # process jobfile for input parameters
 # defines the following variables:
     # basename        # unique base identifier for data
+    # vdj_package_dir # directory to find scripts.  will be added to shell PATH
     # input_fasta     # the initial fasta data
     # barcode_fasta   # barcode identifiers
     # isotype_fasta   # isotype identifiers
@@ -23,6 +34,10 @@ join = os.path.join
     # packet_size     # packet size for alignment jobs
     # loci            # the loci to use for VDJ aln
 
+execfile(jobfile)
+
+# add script directory to path
+os.environ['PATH'] = join(vdj_package_dir,'bin') + ':' + os.environ['PATH']
 
 # working directories
 parts_dir = 'parts'
@@ -34,31 +49,24 @@ raw_vdjxml = basename+'.raw.vdjxml'
 aligned_file = basename+'.aligned.vdjxml'
 vj_filtered_file = basename+'.VJ_filtered.vdjxml'
 size_selected_file = basename + '.size%i-%i' % (min_size,max_size) + '.vdjxml'
+clustered_file = basename+'.clustered.vdjxml'
 
 locus_options = ' '.join([' --locus %s' % locus for locus in loci.split()])
-
-
-
-
-
 
 
 # PIPELINE STARTS HERE
 
 # 0. CONVERSION TO VDJXML
-# 1. SIZE SELECTION
 inhandle = open(input_fasta,'r')
+outhandle = open(join(analysis_dir,raw_vdjxml),'w')
+vdj.pipeline.fasta2vdjxml(inhandle,outhandle)
+inhandle.close()
+outhandle.close()
+
+# 1. SIZE SELECTION
+inhandle = open(join(analysis_dir,raw_vdjxml),'r')
 outhandle = open(join(analysis_dir,size_selected_file),'w')
-# iterate through fasta entries
-for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
-    # convert to ImmuneChain
-    chain = vdj.ImmuneChain(descr=descr,seq=seq)
-    
-    # size select
-    if len(chain) < options.min or len(chain) > options.max:
-        continue
-    
-    print >>outhandle, chain
+vdj.pipeline.size_select(inhandle,outhandle,min_size,max_size)
 inhandle.close()
 outhandle.close()
     
@@ -70,10 +78,11 @@ parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
                                      prefix='<root>',
                                      suffix='</root>')
 
-cmd = 'barcode_id --barcodes %s ' % barcode_file        # 3. BARCODE IDENTIFICATION
+# BARCODE ID, CODING STRAND, ISOTYPE ID, VDJ CLASSIFICATION via LSF
+cmd = 'barcode_id --barcodes %s ' % barcode_fasta       # 3. BARCODE IDENTIFICATION
 cmd += ' | coding_strand' + locus_options               # 4. CODING STRAND
 if 'IGH' in loci:                                       # 5. ISOTYPE ID (heavy chain only)
-    cmd += ' | isotype_id --IGHC %s' % isotype_file
+    cmd += ' | isotype_id --IGHC %s' % isotype_fasta
 cmd += ' | align_vdj' + locus_options                   # 6. VDJ CLASSIFICATION
 
 # submit cmd to LSF for each part
@@ -82,11 +91,11 @@ logfiles = []
 outnames = []
 for part in parts:
     partID = part.split('.')[-1]
-    partoutname = basename+'.prealign.vdjxml.'+partID
+    partoutname = join(analysis_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
     outnames.append(partoutname)
     cmd = 'cat %s | ' + cmd + ' > %s'
     cmd = cmd % (part,partoutname)
-    logfile = join(analysis_dir,log_dir,'prealign.log.')+partID
+    logfile = join(analysis_dir,log_dir,'alignment.log.')+partID
     jobID = lsf.submit_to_LSF('shared_2h',logfile,cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
@@ -100,346 +109,34 @@ outhandle.close()
 # 8. FILTER VJ
 inhandle = open(join(analysis_dir,aligned_file),'r')
 outhandle = open(join(analysis_dir,vj_filtered_file),'w')
-print >>outhandle, "<root>"
-for chain in vdj.parse_VDJXML(inhandle):
-    if hasattr(chain,'v') and hasattr(chain,'j'):
-        print >>outhandle, chain
-print >>outhandle, "</root>"
-inhandle.close()
+vdj.pipeline.filter_VJ(inhandle,outhandle)inhandle.close()
 outhandle.close()
 
-
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-
-
-
-This is analysis of 454 data generated from the second vaccination experiment
-from the second individual. I believe this data comes from Ido.
-
-The raw data is located at
-    vdj-ome/raw-seq-data/454/raw_20100927_flu2/
-with the relevant files
-    RD_analysis/*GAC*.fna
-
-I am concatenating these files into a single FASTA file located here
-    vdj-ome/stable-data/raw_flu2_20100927/
-using this command:
-    cat *GAC*.fna > ~/research/church/vdj-ome/stable-data/raw_flu2_20100927/heavy_chains.flu2.20100927.fasta
-from the directory
-    vdj-ome/raw-seq-data/454/raw_20100927_flu2/RD_analysis/
-The file is called:
-    heavy_chains.flu2.20100927.fasta
-
-The initial read length histograms are generated in this script:
-    runstats.py
-The output is:
-        Number of reads: 912388
-        Shortest read: 40 bp
-        Longest read: 600 bp
-along with two figures which show a very tight peak at ~455 bp.
-
-The figure suggests size cutoffs of 395 to 520 bp.
-
-1. fasta2vdjxml.py
-2. size_select.py
-
-    First I convert the fasta file to vdjxml, and,
-
-    Size select the reads based on the readlen hist, 395-520,
-
-    (from /home/ul2/vdj-ome/stable-data/raw_flu2_20100927):
-    python ~/code/vdj/bin/fasta2vdjxml.py heavy_chains.flu2.20100927.fasta | python ~/code/vdj/bin/size_select.py --min 395 --max 520 > heavy_chains.flu2.20100927.size395-520.vdjxml
-
-    There are 902805 chains of the selected size in the file.
-
-3. vdjxml2parts.py
-
-    Split vdjxml into small chunks and place in working directory
-
-    mkdir ~/vdj-ome/analysis/flu2_seq_pipeline/data
-    python ~/code/vdj/bin/vdjxml2parts.py --packetsize 10000 --basename ~/vdj-ome/analysis/flu2_seq_pipeline/data/heavy_chains.flu2.20100927.size395-520.vdjxml heavy_chains.flu2.20100927.size395-520.vdjxml
-
-    Change directory to all the parts:
-    cd ~/vdj-ome/analysis/flu2_seq_pipeline/data
-
-4. barcode_id.py
-5. coding_strand.py
-
-    Identify barcodes for each read, and
-
-    Determine whether we have the correct strand or not
-    
-    Ensure the barcode fasta file is correctly referenced.
-
-    for FILE in heavy_chains.flu2.20100927.size395-520.vdjxml.*; do
-        NAME=${FILE%.size*}".prealign.vdjxml."${FILE#*.vdjxml.*}
-        # echo $NAME
-        bsub -qshared_2h -o pre-alignment.log "python ~/code/vdj/bin/barcode_id.py --barcodes ~/vdj-ome/stable-data/barcodes/IDT.454.rapid.MIDs.fasta $FILE | python ~/code/vdj/bin/coding_strand.py --locus IGH > $NAME"
-    done
-
-    # python ~/code/vdj/bin/barcode_id.py --barcodes ~/vdj-ome/stable-data/barcodes/IDT.454.rapid.MIDs.fasta
-    # python ~/code/vdj/bin/coding_strand.py --locus IGH
-
-    Some STATS:
-    # Num of chains
-    cat *prealign* | grep "<ImmuneChain>" | wc -l
-        902805
-
-    # Num with barcodes
-    cat *prealign* | grep "<barcode>" | wc -l
-        882978
-
-    # Num that were reverse-complemented
-    cat *prealign* | grep "revcomp" | wc -l
-        434034
-
-    # Barcode breakdown
-    for NUM in 13 14 15 16 17 18 19 20 21 22; do
-        cat *prealign* | grep "<barcode>RL0$NUM" | wc -l
-    done
-
-        RL013   18255   2.1%
-        RL014   96568   10.9%
-        RL015   88732   10.0%
-        RL016   80088   9.1%
-        RL017   79637   9.0%
-        RL018   97962   11.1%
-        RL019   223744  25.3%
-        RL020   60479   6.8%
-        RL021   73613   8.3%
-        RL022   63900   7.2%
-
-6. align_vdj.py
-
-    for FILE in heavy_chains.flu2.20100927.prealign.vdjxml.*; do
-        NAME=${FILE%.prealign*}".vdjxml."${FILE#*.vdjxml.*}
-        # echo $NAME
-        bsub -qshared_12h -o alignment.log python ~/code/vdj/bin/align_vdj.py --locus IGH $FILE $NAME
-    done
-
-7. cat_vdjxml.py
-    
-    # concat data and dump into parent dir
-    python ~/code/vdj/bin/cat_vdjxml.py heavy_chains.flu2.20100927.vdjxml.* > ../heavy_chains.flu2.20100927.aligned.vdjxml
-
-    cd ..
-
-8. filter_VJ.py
-
-    python ~/code/vdj/bin/filter_VJ.py heavy_chains.flu2.20100927.aligned.vdjxml heavy_chains.flu2.20100927.VJ_filtered.vdjxml
-
-    grep "<ImmuneChain>" heavy_chains.flu2.20100927.VJ_filtered.vdjxml | wc -l
-        749069
-    
-    
-    for NUM in 13 14 15 16 17 18 19 20 21 22; do
-        grep "<barcode>RL0$NUM" heavy_chains.flu2.20100927.VJ_filtered.vdjxml | wc -l
-    done
-
-        RL013   12809     1.7%
-        RL014   84053     11.4%
-        RL015   77583     10.6%
-        RL016   70310     9.6%
-        RL017   69649     9.5%
-        RL018   85832     11.7%
-        RL019   172655    23.5%
-        RL020   47802     6.5%
-        RL021   62478     8.5%
-        RL022   50969     6.9%
-
-9. partition_VJ.py
-
-    mkdir partitions
-    python ~/code/vdj/bin/partition_VJ.py --basename partitions/heavy_chains.flu2.20100927 heavy_chains.flu2.20100927.VJ_filtered.vdjxml
-
-    cd partitions
-
-    # How many chains in each partition?
-    for FILE in heavy_chains.flu2.20100927.*.vdjxml; do
-        grep "<ImmuneChain>" $FILE | wc -l
-    done | sort -n
-
-        partial results:
-        ...
-        14270
-        14383
-        16067
-        16215
-        16817
-        22472
-        31988
-        51680
-
-
-10. cluster_cdr3.py
-
-    for INFILE in heavy_chains.flu2.20100927.*.vdjxml; do
-        VJID=${INFILE#heavy_chains.flu2.20100927.}
-        VJID=${VJID%.vdjxml}
-        OUTFILE=${INFILE%.vdjxml}.clustered.vdjxml
-        # echo $VJID $OUTFILE
-        bsub -qshared_unlimited -o clustering.log python ~/code/vdj/bin/cluster_cdr3.py --cutoff 4.5 --tag $VJID --linkage single $INFILE $OUTFILE
-    done
-
-    ##############################################################################
-    ##############################################################################
-    ##############################################################################
-    ##############################################################################
-    ##############################################################################
-
-    # How long did it take?
-    grep "CPU" clustering.log | sort -n -k4
-        partial results:
-        ...
-        CPU time   :   2476.57 sec.
-        CPU time   :   2537.17 sec.
-        CPU time   :   2897.51 sec.
-        CPU time   :   2958.58 sec.
-        CPU time   :   3086.20 sec.
-        CPU time   :   4735.64 sec.
-        CPU time   :   5885.87 sec.
-        CPU time   :   6538.90 sec.
-        CPU time   :   7931.02 sec.
-        CPU time   :  16996.05 sec.
-        CPU time   :  34048.12 sec.
-        
-        
-11. cat_vdjxml.py
-
-    python ~/code/vdj/bin/cat_vdjxml.py heavy_chains.GMC.20100907.*.clustered.vdjxml > ../heavy_chains.GMC.20100907.clustered.vdjxml
-
-    cd ..
-
-    # How many chains?
-    grep "<ImmuneChain>" heavy_chains.GMC.20100907.clustered.vdjxml | wc -l
-        793698
-
-    # How many unique clones in total?
-    grep "<clone>" heavy_chains.GMC.20100907.clustered.vdjxml | sort | uniq | wc -l
-        401970
-
-    # How many unique junctions in total?
-    grep "<junction>" heavy_chains.GMC.20100907.clustered.vdjxml | sort | uniq | wc -l
-        465771
-
-
-
-
-
-
-
-
-
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-########################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import subprocess
-import sys
-import optparse
-import tempfile
-import os
-
-import vdj
-
-parser = optparse.OptionParser()
-parser.add_option('-q','--queue')
-parser.add_option('-o','--LSFoutput')
-parser.add_option('-p','--packetsize',type='int')
-parser.add_option('-b','--barcodes',dest='barcodes_fasta')
-parser.add_option('-i','--IGHC',dest='ighc_fasta')
-parser.add_option('-m','--min',type='int')
-parser.add_option('-M','--max',type='int')
-(options, args) = parser.parse_args()
-
-if len(args) == 2:
-    inhandle = open(args[0],'r')
-    outhandle = open(args[1],'w')
-else:
-    raise Exception, "Must have an input file and output file."
-
-# temporary directory to dump intermediate files
-tempdir = tempfile.mkdtemp(prefix=args[1]+'.intermediate.',dir='.')
-os.chdir(tempdir)
-
-cmd1 = 'fasta2vdjxml.py'
-cmd2 = 'size_select.py --min %d --max %d' % (options.min,options.max)
-cmd3 = 'vdjxml2parts.py --packetsize %d --basename %s' % (options.packetsize,args[1])
-cmd = ' | '.join([cmd1,cmd2,cmd3])
-p = subprocess.Popen(cmd,shell=True,stdin=inhandle,stdout=subprocess.PIPE)
-parts = [f.strip() for f in p.stdout.readlines()]
-outparts = [part+'.out' for part in parts]
-
-cmd4 = r'"cat %s'
-cmd5 = 'barcode_id.py --barcodes %s' % (options.barcodes_fasta)
-cmd6 = 'positive_strand.py'
-cmd7 = 'isotype_id.py --IGHC %s' % (options.ighc_fasta)
-cmd8 = r'align_vdj.py > %s"'
-cmd = ' | '.join([cmd4,cmd5,cmd6,cmd7,cmd8])
-jobs = []
-for part,outpart in zip(parts,outparts):
-    jobID = vdj.LSF.submit_to_LSF(options.queue,options.LSFoutput,cmd % (part,outpart))
-    jobs.append(jobID)
-vdj.LSF.wait_for_LSF_jobs(jobs)
-
-file_list = ' '.join(outparts)
-subprocess.Popen('cat ' + file_list,shell=True,stdout=outhandle)
+# 9. PARTITION VJ
+inhandle = open(join(analysis_dir,vj_filtered_file),'r')
+partition_files = vdj.pipeline.partition_VJ(inhandle,join(analysis_dir,partition_dir,basename))
+inhandle.close()
+
+# 10. CLUSTER CDR3s
+cmd = 'cluster_cdr3 --cutoff %f --linkage %s' % (clustering_cutoff,clustering_linkage)
+
+# submit LSF
+jobIDs = []
+logfiles = []
+outnames = []
+for partition in partition_files:
+    partitionoutname = partition.split('.')[:-1]+'.clustered.vdjxml'
+    outnames.append(partitionoutname)
+    tag = os.path.splitext(os.path.basename(partition))[0].split('.')[-2]
+    cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
+    cmd = cmd % (partition,tag,partitionoutname)
+    logfile = join(analysis_dir,log_dir,'clustering.')+tag+'.log'
+    jobID = lsf.submit_to_LSF('shared_7d',logfile,cmd)
+    logfiles.append(logfile)
+    jobIDs.append(jobID)
+lsf.wait_for_LSF_jobs(jobIDs,logfiles)
+
+# 11. CONCAT PARTITIONS
+outhandle = open(join(analysis_dir,clustered_file),'w')
+vdj.pipeline.cat_vdjxml(outnames,outhandle)
+outhandle.close()

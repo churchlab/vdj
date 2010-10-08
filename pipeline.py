@@ -75,6 +75,27 @@ def id_isotype(chain,isotypes):
         if iso[0] in chain.seq[-50:]:   # arbitrary cutoff from 3' end
             chain.c = iso[1]
 
+def fasta2vdjxml(inhandle,outhandle):
+    print >>outhandle, "<root>"
+    for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
+        chain = vdj.ImmuneChain(descr=descr,seq=seq)
+        print >>outhandle, chain
+    print >>outhandle, "</root>"
+
+def size_select(inhandle,outhandle,min_size,max_size):
+    print >>outhandle, "<root>"
+    for chain in vdj.parse_VDJXML(inhandle):
+        if len(chain) >= min_size and len(chain) <= max_size:
+            print >>outhandle, chain
+    print >>outhandle, "</root>"
+
+def filter_VJ(inhandle,outhandle):
+    print >>outhandle, "<root>"
+    for chain in vdj.parse_VDJXML(inhandle):
+        if hasattr(chain,'v') and hasattr(chain,'j'):
+            print >>outhandle, chain
+    print >>outhandle, "</root>"
+
 def cat_vdjxml(files,outhandle):
     print >>outhandle, "<root>"
     for f in files:

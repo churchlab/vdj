@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 (options, args) = parser.parse_args()
@@ -18,8 +19,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-print >>outhandle, "<root>"
-for chain in vdj.parse_VDJXML(inhandle):
-    if hasattr(chain,'v') and hasattr(chain,'j'):
-        print >>outhandle, chain
-print >>outhandle, "</root>"
+vdj.pipeline.filter_VJ(inhandle,outhandle)

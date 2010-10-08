@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 parser.add_option('-m','--min',type='int',default=0)
@@ -20,10 +21,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-print >>outhandle, "<root>"
-
-for chain in vdj.parse_VDJXML(inhandle):
-    if len(chain) >= options.min and len(chain) <= options.max:
-        print >>outhandle, chain
-
-print >>outhandle, "</root>"
+vdj.pipeline.size_select(inhandle,outhandle,options.min,options.max):
