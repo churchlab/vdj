@@ -46,9 +46,9 @@ log_dir = 'logs'
 partition_dir = 'partitions'
 
 # make working directories
-os.mkdir(join(analysis_dir,parts_dir),0755)
-os.mkdir(join(analysis_dir,log_dir),0755)
-os.mkdir(join(analysis_dir,partition_dir),0755)
+if not os.path.exists(join(analysis_dir,parts_dir)):     os.mkdir(join(analysis_dir,parts_dir),0755)
+if not os.path.exists(join(analysis_dir,log_dir)):       os.mkdir(join(analysis_dir,log_dir),0755)
+if not os.path.exists(join(analysis_dir,partition_dir)): os.mkdir(join(analysis_dir,partition_dir),0755)
 
 # output files
 raw_vdjxml = basename+'.raw.vdjxml'
