@@ -109,7 +109,8 @@ outhandle.close()
 # 8. FILTER VJ
 inhandle = open(join(analysis_dir,aligned_file),'r')
 outhandle = open(join(analysis_dir,vj_filtered_file),'w')
-vdj.pipeline.filter_VJ(inhandle,outhandle)inhandle.close()
+vdj.pipeline.filter_VJ(inhandle,outhandle)
+inhandle.close()
 outhandle.close()
 
 # 9. PARTITION VJ
