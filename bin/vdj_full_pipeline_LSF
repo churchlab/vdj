@@ -155,7 +155,7 @@ outnames = []
 for partition in partition_files:
     partitionoutname = '.'.join(partition.split('.')[:-1])+'.clustered.vdjxml'
     outnames.append(partitionoutname)
-    tag = os.path.splitext(os.path.basename(partition))[0].split('.')[-2]
+    tag = os.path.splitext(os.path.basename(partition))[0].split('.')[-1]
     curr_cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
     curr_cmd = curr_cmd % (partition,tag,partitionoutname)
     logfile = join(analysis_dir,log_dir,'clustering.')+tag+'.log'
