@@ -74,7 +74,7 @@ outhandle.close()
 inhandle = open(join(analysis_dir,size_selected_file),'r')
 parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
                                      join(analysis_dir,parts_dir,size_selected_file),
-                                     packetsize,
+                                     packet_size,
                                      prefix='<root>',
                                      suffix='</root>')
 
