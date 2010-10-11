@@ -125,4 +125,4 @@ def partition_VJ(inhandle,basename):
     for outhandle in outhandles.itervalues():
         print >>outhandle, "</root>"
     
-    return [outname(basename,vj_id) for vj_id in outhandle.iterkeys()]
+    return [outname(basename,vj_id) for vj_id in outhandles.iterkeys()]
