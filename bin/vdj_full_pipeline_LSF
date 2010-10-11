@@ -60,72 +60,72 @@ clustered_file = basename+'.clustered.vdjxml'
 locus_options = ' '.join([' --locus %s' % locus for locus in loci.split()])
 
 
-# PIPELINE STARTS HERE
-
-# 0. CONVERSION TO VDJXML
-
-sys.stdout.write("Converting FASTA to VDJXML..."); sys.stdout.flush()
-inhandle = open(input_fasta,'r')
-outhandle = open(join(analysis_dir,raw_vdjxml),'w')
-vdj.pipeline.fasta2vdjxml(inhandle,outhandle)
-inhandle.close()
-outhandle.close()
-sys.stdout.write("finished\n"); sys.stdout.flush()
-
-# 1. SIZE SELECTION
-sys.stdout.write("Performing size selection on reads..."); sys.stdout.flush()
-inhandle = open(join(analysis_dir,raw_vdjxml),'r')
-outhandle = open(join(analysis_dir,size_selected_file),'w')
-vdj.pipeline.size_select(inhandle,outhandle,min_size,max_size)
-inhandle.close()
-outhandle.close()
-sys.stdout.write("finished\n"); sys.stdout.flush()
-
-# 2. SPLIT INTO PARTS
-sys.stdout.write("Splitting input into small parts..."); sys.stdout.flush()
-inhandle = open(join(analysis_dir,size_selected_file),'r')
-parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
-                                     join(analysis_dir,parts_dir,size_selected_file),
-                                     packet_size,
-                                     prefix='<root>',
-                                     suffix='</root>')
-sys.stdout.write("finished\n"); sys.stdout.flush()
-
-# BARCODE ID, CODING STRAND, ISOTYPE ID, VDJ CLASSIFICATION via LSF
-sys.stdout.write("Setting up LSF command...\n"); sys.stdout.flush()
-cmd = 'barcode_id --barcodes %s ' % barcode_fasta       # 3. BARCODE IDENTIFICATION
-cmd += ' | coding_strand' + locus_options               # 4. CODING STRAND
-if 'IGH' in loci:                                       # 5. ISOTYPE ID (heavy chain only)
-    cmd += ' | isotype_id --IGHC %s' % isotype_fasta
-cmd += ' | align_vdj' + locus_options                   # 6. VDJ CLASSIFICATION
-
-# submit cmd to LSF for each part
-sys.stdout.write("Submitting jobs to LSF..."); sys.stdout.flush()
-jobIDs = []
-logfiles = []
-outnames = []
-for part in parts:
-    partID = part.split('.')[-1]
-    partoutname = join(analysis_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
-    outnames.append(partoutname)
-    curr_cmd = 'cat %s | ' + cmd + ' > %s'
-    curr_cmd = curr_cmd % (part,partoutname)
-    logfile = join(analysis_dir,log_dir,'alignment.log.')+partID
-    jobID = lsf.submit_to_LSF('shared_2h',logfile,curr_cmd)
-    logfiles.append(logfile)
-    jobIDs.append(jobID)
-sys.stdout.write("finished\n"); sys.stdout.flush()
-
-sys.stdout.write("Waiting for LSF jobs..."); sys.stdout.flush()
-lsf.wait_for_LSF_jobs(jobIDs,logfiles)
-sys.stdout.write("finished\n"); sys.stdout.flush()
-
-# 7. CONCAT PARTS
-sys.stdout.write("Concatenating pieces..."); sys.stdout.flush()
-outhandle = open(join(analysis_dir,aligned_file),'w')
-vdj.pipeline.cat_vdjxml(outnames,outhandle)
-outhandle.close()
-sys.stdout.write("finished\n"); sys.stdout.flush()
+# # PIPELINE STARTS HERE
+# 
+# # 0. CONVERSION TO VDJXML
+# 
+# sys.stdout.write("Converting FASTA to VDJXML..."); sys.stdout.flush()
+# inhandle = open(input_fasta,'r')
+# outhandle = open(join(analysis_dir,raw_vdjxml),'w')
+# vdj.pipeline.fasta2vdjxml(inhandle,outhandle)
+# inhandle.close()
+# outhandle.close()
+# sys.stdout.write("finished\n"); sys.stdout.flush()
+# 
+# # 1. SIZE SELECTION
+# sys.stdout.write("Performing size selection on reads..."); sys.stdout.flush()
+# inhandle = open(join(analysis_dir,raw_vdjxml),'r')
+# outhandle = open(join(analysis_dir,size_selected_file),'w')
+# vdj.pipeline.size_select(inhandle,outhandle,min_size,max_size)
+# inhandle.close()
+# outhandle.close()
+# sys.stdout.write("finished\n"); sys.stdout.flush()
+# 
+# # 2. SPLIT INTO PARTS
+# sys.stdout.write("Splitting input into small parts..."); sys.stdout.flush()
+# inhandle = open(join(analysis_dir,size_selected_file),'r')
+# parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
+#                                      join(analysis_dir,parts_dir,size_selected_file),
+#                                      packet_size,
+#                                      prefix='<root>',
+#                                      suffix='</root>')
+# sys.stdout.write("finished\n"); sys.stdout.flush()
+# 
+# # BARCODE ID, CODING STRAND, ISOTYPE ID, VDJ CLASSIFICATION via LSF
+# sys.stdout.write("Setting up LSF command...\n"); sys.stdout.flush()
+# cmd = 'barcode_id --barcodes %s ' % barcode_fasta       # 3. BARCODE IDENTIFICATION
+# cmd += ' | coding_strand' + locus_options               # 4. CODING STRAND
+# if 'IGH' in loci:                                       # 5. ISOTYPE ID (heavy chain only)
+#     cmd += ' | isotype_id --IGHC %s' % isotype_fasta
+# cmd += ' | align_vdj' + locus_options                   # 6. VDJ CLASSIFICATION
+# 
+# # submit cmd to LSF for each part
+# sys.stdout.write("Submitting jobs to LSF..."); sys.stdout.flush()
+# jobIDs = []
+# logfiles = []
+# outnames = []
+# for part in parts:
+#     partID = part.split('.')[-1]
+#     partoutname = join(analysis_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
+#     outnames.append(partoutname)
+#     curr_cmd = 'cat %s | ' + cmd + ' > %s'
+#     curr_cmd = curr_cmd % (part,partoutname)
+#     logfile = join(analysis_dir,log_dir,'alignment.log.')+partID
+#     jobID = lsf.submit_to_LSF('shared_2h',logfile,curr_cmd)
+#     logfiles.append(logfile)
+#     jobIDs.append(jobID)
+# sys.stdout.write("finished\n"); sys.stdout.flush()
+# 
+# sys.stdout.write("Waiting for LSF jobs..."); sys.stdout.flush()
+# lsf.wait_for_LSF_jobs(jobIDs,logfiles)
+# sys.stdout.write("finished\n"); sys.stdout.flush()
+# 
+# # 7. CONCAT PARTS
+# sys.stdout.write("Concatenating pieces..."); sys.stdout.flush()
+# outhandle = open(join(analysis_dir,aligned_file),'w')
+# vdj.pipeline.cat_vdjxml(outnames,outhandle)
+# outhandle.close()
+# sys.stdout.write("finished\n"); sys.stdout.flush()
 
 # 8. FILTER VJ
 sys.stdout.write("Filtering for chains with VJ alignments..."); sys.stdout.flush()
@@ -156,10 +156,10 @@ for partition in partition_files:
     partitionoutname = partition.split('.')[:-1]+'.clustered.vdjxml'
     outnames.append(partitionoutname)
     tag = os.path.splitext(os.path.basename(partition))[0].split('.')[-2]
-    cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
-    cmd = cmd % (partition,tag,partitionoutname)
+    curr_cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
+    curr_cmd = curr_cmd % (partition,tag,partitionoutname)
     logfile = join(analysis_dir,log_dir,'clustering.')+tag+'.log'
-    jobID = lsf.submit_to_LSF('shared_7d',logfile,cmd)
+    jobID = lsf.submit_to_LSF('shared_7d',logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
 sys.stdout.write("finished\n"); sys.stdout.flush()
