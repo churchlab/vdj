@@ -18,7 +18,7 @@ def iterator2parts(iterator,basename,packetsize,prefix='',suffix=''):
             print >>op, prefix
             parts.append(curr_outname)
 
-        print >>op, chain
+        print >>op, obj
         num_processed += 1
 
         if num_processed == packetsize:
