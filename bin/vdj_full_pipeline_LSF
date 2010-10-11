@@ -108,10 +108,10 @@ for part in parts:
     partID = part.split('.')[-1]
     partoutname = join(analysis_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
     outnames.append(partoutname)
-    cmd = 'cat %s | ' + cmd + ' > %s'
-    cmd = cmd % (part,partoutname)
+    curr_cmd = 'cat %s | ' + cmd + ' > %s'
+    curr_cmd = curr_cmd % (part,partoutname)
     logfile = join(analysis_dir,log_dir,'alignment.log.')+partID
-    jobID = lsf.submit_to_LSF('shared_2h',logfile,cmd)
+    jobID = lsf.submit_to_LSF('shared_2h',logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
 sys.stdout.write("finished\n"); sys.stdout.flush()
