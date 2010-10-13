@@ -113,7 +113,7 @@ for part in parts:
     curr_cmd = 'cat %s | ' + cmd + ' > %s'
     curr_cmd = curr_cmd % (part,partoutname)
     logfile = join(work_dir,log_dir,'alignment.log.')+partID
-    jobID = lsf.submit_to_LSF('shared_2h',logfile,curr_cmd)
+    jobID = lsf.submit_to_LSF(short_queue,logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
 sys.stdout.write("finished\n"); sys.stdout.flush()
@@ -161,7 +161,7 @@ for partition in partition_files:
     curr_cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
     curr_cmd = curr_cmd % (partition,tag,partitionoutname)
     logfile = join(work_dir,log_dir,'clustering.')+tag+'.log'
-    jobID = lsf.submit_to_LSF('shared_7d',logfile,curr_cmd)
+    jobID = lsf.submit_to_LSF(long_queue,logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
 sys.stdout.write("finished\n"); sys.stdout.flush()

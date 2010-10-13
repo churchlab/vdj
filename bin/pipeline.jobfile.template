@@ -14,6 +14,9 @@ isotype_fasta =    # isotype identifiers
 analysis_dir =     # full path; base directory for results
 work_dir =         # full path; directory to put intermediate files in (can be same as analysis_dir)
 
+# LSF parameters
+short_queue = 'normal_serial'
+long_queue  = 'long_serial'
 
 # analysis parameters
 min_size = 
