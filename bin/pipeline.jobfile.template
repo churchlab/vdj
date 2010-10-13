@@ -6,12 +6,13 @@ basename =
 vdj_package_dir = 
 
 # input files (full paths)
-input_fasta   =      # the initial fasta data
+input_fasta   =    # the initial fasta data
 barcode_fasta =    # barcode identifiers
 isotype_fasta =    # isotype identifiers
 
 # working directories
-analysis_dir =     # full path; base directory for everythin
+analysis_dir =     # full path; base directory for results
+work_dir =         # full path; directory to put intermediate files in (can be same as analysis_dir)
 
 
 # analysis parameters

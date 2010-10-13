@@ -46,9 +46,11 @@ log_dir = 'logs'
 partition_dir = 'partitions'
 
 # make working directories
-if not os.path.exists(join(analysis_dir,parts_dir)):     os.mkdir(join(analysis_dir,parts_dir),0755)
-if not os.path.exists(join(analysis_dir,log_dir)):       os.mkdir(join(analysis_dir,log_dir),0755)
-if not os.path.exists(join(analysis_dir,partition_dir)): os.mkdir(join(analysis_dir,partition_dir),0755)
+if not os.path.exists(analysis_dir):                 os.mkdir(analysis_dir,0755)
+if not os.path.exists(work_dir):                     os.mkdir(work_dir,0755)
+if not os.path.exists(join(work_dir,parts_dir)):     os.mkdir(join(work_dir,parts_dir),0755)
+if not os.path.exists(join(work_dir,log_dir)):       os.mkdir(join(work_dir,log_dir),0755)
+if not os.path.exists(join(work_dir,partition_dir)): os.mkdir(join(work_dir,partition_dir),0755)
 
 # output files
 raw_vdjxml = basename+'.raw.vdjxml'
@@ -85,7 +87,7 @@ sys.stdout.write("finished\n"); sys.stdout.flush()
 sys.stdout.write("Splitting input into small parts..."); sys.stdout.flush()
 inhandle = open(join(analysis_dir,size_selected_file),'r')
 parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
-                                     join(analysis_dir,parts_dir,size_selected_file),
+                                     join(work_dir,parts_dir,size_selected_file),
                                      packet_size,
                                      prefix='<root>',
                                      suffix='</root>')
@@ -106,11 +108,11 @@ logfiles = []
 outnames = []
 for part in parts:
     partID = part.split('.')[-1]
-    partoutname = join(analysis_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
+    partoutname = join(work_dir,parts_dir,basename)+'.aligned.vdjxml.'+partID
     outnames.append(partoutname)
     curr_cmd = 'cat %s | ' + cmd + ' > %s'
     curr_cmd = curr_cmd % (part,partoutname)
-    logfile = join(analysis_dir,log_dir,'alignment.log.')+partID
+    logfile = join(work_dir,log_dir,'alignment.log.')+partID
     jobID = lsf.submit_to_LSF('shared_2h',logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
@@ -139,7 +141,7 @@ sys.stdout.write("finished\n"); sys.stdout.flush()
 # 9. PARTITION VJ
 sys.stdout.write("Partitioning data by VJ alignment..."); sys.stdout.flush()
 inhandle = open(join(analysis_dir,vj_filtered_file),'r')
-partition_files = vdj.pipeline.partition_VJ(inhandle,join(analysis_dir,partition_dir,basename))
+partition_files = vdj.pipeline.partition_VJ(inhandle,join(work_dir,partition_dir,basename))
 inhandle.close()
 sys.stdout.write("finished\n"); sys.stdout.flush()
 
@@ -158,7 +160,7 @@ for partition in partition_files:
     tag = os.path.splitext(os.path.basename(partition))[0].split('.')[-1]
     curr_cmd = 'cat %s | ' + cmd + ' --tag %s' + ' > %s'
     curr_cmd = curr_cmd % (partition,tag,partitionoutname)
-    logfile = join(analysis_dir,log_dir,'clustering.')+tag+'.log'
+    logfile = join(work_dir,log_dir,'clustering.')+tag+'.log'
     jobID = lsf.submit_to_LSF('shared_7d',logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
