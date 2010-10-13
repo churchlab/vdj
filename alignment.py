@@ -7,7 +7,7 @@ import seqtools
 
 import vdj
 import refseq
-import sequtils
+import seqtools
 import alignmentcore
 
 warnings.simplefilter('always')
@@ -471,7 +471,7 @@ class vdj_aligner(object):
     def seqdict2revcompseqdict(seqdict):
         revcompdict = {}
         for item in seqdict.iteritems():
-            revcompdict[item[0]] = sequtils.reverse_complement(item[1])
+            revcompdict[item[0]] = seqtools.reverse_complement(item[1])
         return revcompdict
 
 
