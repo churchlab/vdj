@@ -111,7 +111,7 @@ print 'Barcode breakdown in VJ filtered set:'
 for (bc,count) in barcode_counts.iteritems():
     print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode*100.)
 
-partitions = glob.glob(join(work_dir,partition_dir,'clustering*log*'))
+partitions = glob.glob(join(work_dir,log_dir,'clustering*log*'))
 num_partitions = len(partitions)
 print "\nClustering split into %d partitions.\n" % num_partitions
 
