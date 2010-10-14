@@ -62,7 +62,7 @@ for line in ip:
 ip.close()
 print 'Number of reads in size range(%d-%d):\n\t%s\n' % (min_size,max_size,num_size_selected)
 
-print 'Barcoding, coding strand, isotype ID, VDJ alignment split into packets of %d reads.' % packet_size
+print 'Barcoding, coding strand, isotype ID, VDJ alignment split into packets of %d reads.\n' % packet_size
 p = subprocess.Popen('cat %s | grep CPU' % join(work_dir,log_dir,'alignment*log*'),shell=True,stdout=subprocess.PIPE)
 cpu_times = []
 for line in p.stdout:
@@ -84,11 +84,11 @@ for line in ip:
         bc = line.strip().lstrip('<barcode>').rstrip('</barcode>')
         barcode_counts[bc] = barcode_counts.get(bc,0) + 1
 ip.close()
-print 'Number of chains that were reverse-complemented:\n\t%d' % num_revcomp
-print 'Number of chains with barcode:\n\t%d' % num_barcode
+print 'Number of chains that were reverse-complemented:\n\t%d\n' % num_revcomp
+print 'Number of chains with barcode:\n\t%d\n' % num_barcode
 print 'Barcode breakdown:'
 for (bc,count) in barcode_counts.iteritems():
-    print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode)
+    print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode*100.)
 
 num_vj_filtered = 0
 ip = open(join(analysis_dir,vj_filtered_file),'r')
@@ -96,7 +96,7 @@ for line in ip:
     if '<ImmuneChain>' in line:
         num_vj_filtered += 1
 ip.close()
-print '\nNumber of chains after filtering for VJ alignment:\n\t%d' % num_vj_filtered
+print '\nNumber of chains after filtering for VJ alignment:\n\t%d\n' % num_vj_filtered
 
 num_barcode = 0
 barcode_counts = {}
@@ -109,10 +109,12 @@ for line in ip:
 ip.close()
 print 'Barcode breakdown in VJ filtered set:'
 for (bc,count) in barcode_counts.iteritems():
-    print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode)
+    print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode*100.)
 
+partitions = glob.glob(join(work_dir,partition_dir,'clustering*log*'))
 num_partitions = len(partitions)
-print "Clustering split into %d partitions." % num_partitions
+print "\nClustering split into %d partitions.\n" % num_partitions
+
 p = subprocess.Popen('cat %s | grep CPU' % join(work_dir,log_dir,'clustering*log*'),shell=True,stdout=subprocess.PIPE)
 cpu_times = []
 for line in p.stdout:
@@ -122,9 +124,6 @@ cpu_times.sort()
 print '\tShortest CPU times:\n\t\t%f s\n\t\t%f s\n\t\t%f s' % tuple(cpu_times[:3])
 print '\tLongest CPU times:\n\t\t%f s\n\t\t%f s\n\t\t%f s\n' % tuple(cpu_times[-3:])
 
-
-
-partitions = glob.glob(join(work_dir,partition_dir,'clustering*log*'))
 partition_sizes = []
 for partition in partitions:
     num_chains_partition = 0
