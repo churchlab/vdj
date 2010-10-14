@@ -134,7 +134,7 @@ for partition in partitions:
     ip.close()
     partition_sizes.append(num_chains_partition)
 partition_sizes.sort()
-print 'Largest partition sizes:\n\t%d\n\t%d\n\t%d' % tuple(partition_sizes[-3:])
+print 'Largest partition sizes:\n\t%d\n\t%d\n\t%d\n' % tuple(partition_sizes[-3:])
 
 uniq_clones = set()
 uniq_junctions = set()
@@ -145,5 +145,5 @@ for line in ip:
     elif '<junction>' in line:
         uniq_junctions.add( line.strip().lstrip('<junction>').rstrip('</junction>') )
 ip.close()
-print 'Number of unique clones:\n\t%d' % len(uniq_clones)
+print 'Number of unique clones:\n\t%d\n' % len(uniq_clones)
 print 'Number of unique junctions:\n\t%d' % len(uniq_junctions)
