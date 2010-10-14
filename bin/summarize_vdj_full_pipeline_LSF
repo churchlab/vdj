@@ -111,7 +111,7 @@ print 'Barcode breakdown in VJ filtered set:'
 for (bc,count) in barcode_counts.iteritems():
     print '\t%-10s %10d %10.1f%%' % (bc,count,float(count)/num_barcode*100.)
 
-partitions = glob.glob(join(work_dir,log_dir,'clustering*log*'))
+partitions = glob.glob(join(work_dir,partition_dir,'*.clustered.vdjxml'))
 num_partitions = len(partitions)
 print "\nClustering split into %d partitions.\n" % num_partitions
 
@@ -134,7 +134,7 @@ for partition in partitions:
     ip.close()
     partition_sizes.append(num_chains_partition)
 partition_sizes.sort()
-print '\nLargest partition sizes:\n\t%d\n\t%d\n\t%d' % tuple(partition_sizes[-3:])
+print 'Largest partition sizes:\n\t%d\n\t%d\n\t%d' % tuple(partition_sizes[-3:])
 
 uniq_clones = set()
 uniq_junctions = set()
