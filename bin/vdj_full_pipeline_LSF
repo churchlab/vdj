@@ -24,26 +24,33 @@ jobfile = args[0]
 
 # process jobfile for input parameters
 # defines the following variables:
-    # basename        # unique base identifier for data
-    # vdj_package_dir # directory to find scripts.  will be added to shell PATH
-    # input_fasta     # the initial fasta data
-    # barcode_fasta   # barcode identifiers
-    # isotype_fasta   # isotype identifiers
-    # analysis_dir    # full path; base directory for everything
-    # min_size        # min size selection
-    # max_size        # max size selection
-    # packet_size     # packet size for alignment jobs
-    # loci            # the loci to use for VDJ aln
+    # basename               # unique base identifier for data
+    # vdj_package_dir        # directory to find scripts.  will be added to shell PATH
+    # input_fasta            # the initial fasta data
+    # barcode_fasta          # barcode identifiers
+    # isotype_fasta          # isotype identifiers
+    # analysis_dir           # full path; base directory for final products
+    # work_dir               # full path; base directory for intermediate parts and logs
+    # min_size               # min size selection
+    # max_size               # max size selection
+    # packet_size            # packet size for alignment jobs
+    # loci                   # the loci to use for VDJ aln
+    # raw_vdjxml             # derived file stored in analysis_dir
+    # aligned_file           # derived file stored in analysis_dir
+    # vj_filtered_file       # derived file stored in analysis_dir
+    # size_selected_file     # derived file stored in analysis_dir
+    # clustered_file         # derived file stored in analysis_dir
+    # parts_dir              # derived intermediate work directories (rel. to work_dir)
+    # log_dir                # derived intermediate work directories (rel. to work_dir)
+    # partition_dir          # derived intermediate work directories (rel. to work_dir)
+
 
 execfile(jobfile)
 
 # add script directory to path
 os.environ['PATH'] = join(vdj_package_dir,'bin') + ':' + os.environ['PATH']
 
-# working directories
-parts_dir = 'parts'
-log_dir = 'logs'
-partition_dir = 'partitions'
+
 
 # make working directories
 if not os.path.exists(analysis_dir):                 os.mkdir(analysis_dir,0755)
@@ -51,13 +58,6 @@ if not os.path.exists(work_dir):                     os.mkdir(work_dir,0755)
 if not os.path.exists(join(work_dir,parts_dir)):     os.mkdir(join(work_dir,parts_dir),0755)
 if not os.path.exists(join(work_dir,log_dir)):       os.mkdir(join(work_dir,log_dir),0755)
 if not os.path.exists(join(work_dir,partition_dir)): os.mkdir(join(work_dir,partition_dir),0755)
-
-# output files
-raw_vdjxml = basename+'.raw.vdjxml'
-aligned_file = basename+'.aligned.vdjxml'
-vj_filtered_file = basename+'.VJ_filtered.vdjxml'
-size_selected_file = basename + '.size%i-%i' % (min_size,max_size) + '.vdjxml'
-clustered_file = basename+'.clustered.vdjxml'
 
 locus_options = ' '.join([' --locus %s' % locus for locus in loci.split()])
 
