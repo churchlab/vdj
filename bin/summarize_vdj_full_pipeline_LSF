@@ -82,7 +82,7 @@ for line in ip:
     elif '<barcode>' in line:
         num_barcode += 1
         bc = line.strip().lstrip('<barcode>').rstrip('</barcode>')
-        barcode_counts.set_default(bc,0) = barcode_counts.get(bc,0) + 1
+        barcode_counts[bc] = barcode_counts.get(bc,0) + 1
 ip.close()
 print 'Number of chains that were reverse-complemented:\n\t%d' % num_revcomp
 print 'Number of chains with barcode:\n\t%d' % num_barcode
@@ -105,7 +105,7 @@ for line in ip:
     if '<barcode>' in line:
         num_barcode += 1
         bc = line.strip().lstrip('<barcode>').rstrip('</barcode>')
-        barcode_counts.set_default(bc,0) = barcode_counts.get(bc,0) + 1
+        barcode_counts[bc] = barcode_counts.get(bc,0) + 1
 ip.close()
 print 'Barcode breakdown in VJ filtered set:'
 for (bc,count) in barcode_counts.iteritems():
