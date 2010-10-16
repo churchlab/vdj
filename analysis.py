@@ -8,6 +8,27 @@ import matplotlib.pyplot as plt
 
 import vdj
 
+def vdjxml2countdict(inhandle,features):
+    counts = dict()
+    uniq_feature_values = dict([(f,set()) for f in features])
+    for chain in vdj.parse_VDJXML(inhandle):
+        curr_count_dict = counts
+        try:
+            for feature in features[:-1]: # descend into nested dictionaries (but leave the last one)
+                uniq_feature_values[feature].add( chain.__getattribute__(feature) )
+                curr_count_dict = curr_count_dict.setdefault(chain.__getattribute__(feature),dict())
+            feature = features[-1]  # process last level dict
+            uniq_feature_values[feature].add( chain.__getattribute__(feature) )
+            curr_count_dict[chain.__getattribute__(feature)] = curr_count_dict.get(chain.__getattribute__(feature),0) + 1
+        except AttributeError:  # chain is missing current feature; abandon it
+            continue
+    return (uniq_feature_values,counts)
+
+def countdict2matrix(features,feature_values,countdict):
+    # feature_values is a dict where keys are the features and the values are
+    # the list of specific values I should process for that feature.
+    matrix = np.zeros()
+
 def barcode_clone_counts(inhandle):
     """Return count dict from vdjxml file with counts[barcode][clone]"""
     counts = dict()
