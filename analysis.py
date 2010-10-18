@@ -22,12 +22,37 @@ def vdjxml2countdict(inhandle,features):
             curr_count_dict[chain.__getattribute__(feature)] = curr_count_dict.get(chain.__getattribute__(feature),0) + 1
         except AttributeError:  # chain is missing current feature; abandon it
             continue
+    for f,feature_values in uniq_feature_values.iteritems():
+        uniq_feature_values[f] = list(uniq_feature_values[f])
     return (uniq_feature_values,counts)
 
 def countdict2matrix(features,feature_values,countdict):
     # feature_values is a dict where keys are the features and the values are
     # the list of specific values I should process for that feature.
-    matrix = np.zeros()
+    def product(*sequences):    # iterator cartesian products
+        if sequences:
+            for x in sequences[0]:
+                for y in product(*sequences[1:]):
+                    yield (x,) + y
+        else:
+            yield ()
+    
+    dim = tuple([len(feature_values[f]) for f in features])
+    matrix = np.zeros(dim,dtype=np.int)
+    
+    for posvals in product( *[list(enumerate(feature_values[f])) for f in features] ):
+        (pos,vals) = zip(*posvals)
+        count = countdict
+        for val in vals:
+            try:
+                count = count[val]
+            except KeyError:
+                count = 0
+                break
+        matrix[pos] = count
+    
+    return matrix
+    
 
 def barcode_clone_counts(inhandle):
     """Return count dict from vdjxml file with counts[barcode][clone]"""
