@@ -157,184 +157,193 @@ def filter_parse_VDJXML(inputfile,predicate):
     return vdjxmlparser.parse(inputfile)
 
 
-# ============
-# = Counting =
-# ============
 
-def counts_VJ(inputfile):
-    if isinstance(inputfile,types.StringTypes):
-        ip = open(inputfile,'r')
-    elif isinstance(inputfile,file):
-        ip = inputfile
-    
-    counts = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list)) )
-    for chain in parseVDJXML(ip):
-        counts[refseq.IGHV_idx[chain.v],refseq.IGHJ_idx[chain.j]] += 1
-    
-    if isinstance(inputfile,types.StringTypes):
-        ip.close()
-    
-    return counts
+# ==========================================================
+# ==========================================================
+# = DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED =
+# ==========================================================
+# = DEPRECATED DEPRECATED DEPRECATED DEPRECATED DEPRECATED =
+# ==========================================================
+# ==========================================================
 
-
-def counts_VDJ(rep):
-    cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHD_list),len(refseq.IGHJ_list)) )
-    for chain in rep.chains:
-        cn[refseq.IGHV_idx[chain.v],refseq.IGHD_idx[chain.d],refseq.IGHJ_idx[chain.j]] += 1
-    return cn
-
-
-def reshape_counts_VDJ_2D(counts):
-    return counts.reshape(len(refseq.IGHV_list),len(refseq.IGHD_list)*len(refseq.IGHJ_list))
-
-
-def count_dict_clone_idxs(clone_idxs,reference_clones=None):
-    """Takes a dictionary of cluster names mapped to a sequence of indices into an ImmuneChain list.
-    
-    Returns an np array of the same length as reference_clones with the counts of each
-    cluster in reference_clones.
-    
-    The need for reference_clones is due to the fact that splitting a given repertoire
-    may result in some parts not observing any of a given clone, so there needs to be a common way
-    to compare two clone sets.
-    
-    If reference_clones is left out, then the set of clones present in clone_idxs is used.
-    
-    """
-    if reference_clones == None:
-        reference_clones = clone_idxs.keys()
-    counts = np.zeros(len(reference_clones))
-    for (i,name) in enumerate(reference_clones):
-        counts[i] = len(clone_idxs.get(name,[]))
-    return counts
-
-
-def count_dict_clone_counts(clone_counts,reference_clones=None):
-    if reference_clones == None:
-        reference_clones = clone_counts.keys()
-    counts = np.zeros(len(reference_clones))
-    for (i,name) in enumerate(reference_clones):
-        counts[i] = clone_counts.get(name,0)
-    return counts
-
-
-# =================================
-# = Retrieving tags and filtering =
-# =================================
-
-def get_tag_with_prefix(chain,prefix):
-    for tag in chain.tags:
-        if tag.startswith(prefix):
-            return tag
-    raise ValueError, "Tag that starts with " + prefix + " not found."
-
-
-def get_clone(chain):
-    return get_tag_with_prefix(chain,'clone')
-
-
-def get_barcode(chain):
-    try:
-        return get_tag_with_prefix(chain,'barcode')
-    except ValueError:
-        return ''
-
-
-def filter_tags_and(tags,inhandle,outhandle):
-    if isinstance(tags,types.StringTypes): tags = [tags]
-    tags = set(tags)
-    for chain in parse_VDJXML(inhandle):
-        if tags <= chain.all_tags:    # test that everything in tags is in all_tags
-            print >>outhandle, chain
-
-
-def filter_tags_or(tags,inhandle,outhandle):
-    if isinstance(tags,types.StringTypes): tags = [tags]
-    tags = set(tags)
-    empty_set = set()
-    for chain in parse_VDJXML(inhandle):
-        if tags & chain.all_tags != empty_set:    # test that tags and all_tags share something
-            print >>outhandle, chain
-
-
-def is_full_VJ(chain):
-    if (chain.v in refseq.IGHV_seqs.keys()) and (chain.j in refseq.IGHJ_seqs.keys()):
-        return True
-    else:
-        return False
-
-
-def get_clone_idxs(inhandle):
-    clusters = {}
-    i = 0
-    for chain in parse_VDJXML(inhandle):
-        try: clusters[get_clone(chain)] += [i]
-        except KeyError: clusters[get_clone(chain)] = [i]
-        i += 1
-    return clusters
-
-
-def get_clone_counts(inhandle):
-    clusters = {}
-    for chain in parse_VDJXML(inhandle):
-        try: clusters[get_clone(chain)] += 1
-        except KeyError: clusters[get_clone(chain)] = 1
-    return clusters
-
-
-# ======================
-# = Pipeline functions =
-# ======================
-
-def vdjxml2fasta(inhandle,outhandle):
-    for chain in parse_VDJXML(inhandle):
-        print >>outhandle, '>'+chain.descr
-        print >>outhandle, chain.seq
-
-
-# for generating identifiers from VJ combos
-def vj_id(v_seg,j_seg):
-    return seqtools.cleanup_id(v_seg)+'_'+seqtools.cleanup_id(j_seg)
-
-
-def split_vdjxml_into_VJ_parts(inhandle,outname):
-    parts = []
-    vj_ids = []
-    outhandles = {}
-    
-    # open output files for all VJ combos
-    i = 0
-    for v_seg in refseq.IGHV_seqs.keys():
-        for j_seg in refseq.IGHJ_seqs.keys():
-            curr_outname = outname + '.' + str(i)
-            curr_vj_id = vj_id(v_seg,j_seg)
-            parts.append(curr_outname)
-            vj_ids.append(curr_vj_id)
-            outhandles[curr_vj_id] = open(curr_outname,'w')
-            i += 1
-    
-    for chain in parse_VDJXML(inhandle):
-        curr_vj_id = vj_id(chain.v,chain.j)
-        print >>outhandles[curr_vj_id], chain
-    
-    for handle in outhandles.itervalues():
-        handle.close()
-    
-    return (parts,vj_ids)
-
-
-def parse_VDJXML_parts(parts):
-    for part in parts:
-        for chain in parse_VDJXML(part):
-            yield chain
-
-
-def wait_for_subprocesses(process_list,interval=30):
-    finished = False
-    while not finished:
-        finished = True
-        time.sleep(interval)
-        for p in process_list:
-            if p.poll() == None:
-                finished = False
-                break
+# # ============
+# # = Counting =
+# # ============
+# 
+# def counts_VJ(inputfile):
+#     if isinstance(inputfile,types.StringTypes):
+#         ip = open(inputfile,'r')
+#     elif isinstance(inputfile,file):
+#         ip = inputfile
+#     
+#     counts = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHJ_list)) )
+#     for chain in parseVDJXML(ip):
+#         counts[refseq.IGHV_idx[chain.v],refseq.IGHJ_idx[chain.j]] += 1
+#     
+#     if isinstance(inputfile,types.StringTypes):
+#         ip.close()
+#     
+#     return counts
+# 
+# 
+# def counts_VDJ(rep):
+#     cn = np.zeros( (len(refseq.IGHV_list),len(refseq.IGHD_list),len(refseq.IGHJ_list)) )
+#     for chain in rep.chains:
+#         cn[refseq.IGHV_idx[chain.v],refseq.IGHD_idx[chain.d],refseq.IGHJ_idx[chain.j]] += 1
+#     return cn
+# 
+# 
+# def reshape_counts_VDJ_2D(counts):
+#     return counts.reshape(len(refseq.IGHV_list),len(refseq.IGHD_list)*len(refseq.IGHJ_list))
+# 
+# 
+# def count_dict_clone_idxs(clone_idxs,reference_clones=None):
+#     """Takes a dictionary of cluster names mapped to a sequence of indices into an ImmuneChain list.
+#     
+#     Returns an np array of the same length as reference_clones with the counts of each
+#     cluster in reference_clones.
+#     
+#     The need for reference_clones is due to the fact that splitting a given repertoire
+#     may result in some parts not observing any of a given clone, so there needs to be a common way
+#     to compare two clone sets.
+#     
+#     If reference_clones is left out, then the set of clones present in clone_idxs is used.
+#     
+#     """
+#     if reference_clones == None:
+#         reference_clones = clone_idxs.keys()
+#     counts = np.zeros(len(reference_clones))
+#     for (i,name) in enumerate(reference_clones):
+#         counts[i] = len(clone_idxs.get(name,[]))
+#     return counts
+# 
+# 
+# def count_dict_clone_counts(clone_counts,reference_clones=None):
+#     if reference_clones == None:
+#         reference_clones = clone_counts.keys()
+#     counts = np.zeros(len(reference_clones))
+#     for (i,name) in enumerate(reference_clones):
+#         counts[i] = clone_counts.get(name,0)
+#     return counts
+# 
+# 
+# # =================================
+# # = Retrieving tags and filtering =
+# # =================================
+# 
+# def get_tag_with_prefix(chain,prefix):
+#     for tag in chain.tags:
+#         if tag.startswith(prefix):
+#             return tag
+#     raise ValueError, "Tag that starts with " + prefix + " not found."
+# 
+# 
+# def get_clone(chain):
+#     return get_tag_with_prefix(chain,'clone')
+# 
+# 
+# def get_barcode(chain):
+#     try:
+#         return get_tag_with_prefix(chain,'barcode')
+#     except ValueError:
+#         return ''
+# 
+# 
+# def filter_tags_and(tags,inhandle,outhandle):
+#     if isinstance(tags,types.StringTypes): tags = [tags]
+#     tags = set(tags)
+#     for chain in parse_VDJXML(inhandle):
+#         if tags <= chain.all_tags:    # test that everything in tags is in all_tags
+#             print >>outhandle, chain
+# 
+# 
+# def filter_tags_or(tags,inhandle,outhandle):
+#     if isinstance(tags,types.StringTypes): tags = [tags]
+#     tags = set(tags)
+#     empty_set = set()
+#     for chain in parse_VDJXML(inhandle):
+#         if tags & chain.all_tags != empty_set:    # test that tags and all_tags share something
+#             print >>outhandle, chain
+# 
+# 
+# def is_full_VJ(chain):
+#     if (chain.v in refseq.IGHV_seqs.keys()) and (chain.j in refseq.IGHJ_seqs.keys()):
+#         return True
+#     else:
+#         return False
+# 
+# 
+# def get_clone_idxs(inhandle):
+#     clusters = {}
+#     i = 0
+#     for chain in parse_VDJXML(inhandle):
+#         try: clusters[get_clone(chain)] += [i]
+#         except KeyError: clusters[get_clone(chain)] = [i]
+#         i += 1
+#     return clusters
+# 
+# 
+# def get_clone_counts(inhandle):
+#     clusters = {}
+#     for chain in parse_VDJXML(inhandle):
+#         try: clusters[get_clone(chain)] += 1
+#         except KeyError: clusters[get_clone(chain)] = 1
+#     return clusters
+# 
+# 
+# # ======================
+# # = Pipeline functions =
+# # ======================
+# 
+# def vdjxml2fasta(inhandle,outhandle):
+#     for chain in parse_VDJXML(inhandle):
+#         print >>outhandle, '>'+chain.descr
+#         print >>outhandle, chain.seq
+# 
+# 
+# # for generating identifiers from VJ combos
+# def vj_id(v_seg,j_seg):
+#     return seqtools.cleanup_id(v_seg)+'_'+seqtools.cleanup_id(j_seg)
+# 
+# 
+# def split_vdjxml_into_VJ_parts(inhandle,outname):
+#     parts = []
+#     vj_ids = []
+#     outhandles = {}
+#     
+#     # open output files for all VJ combos
+#     i = 0
+#     for v_seg in refseq.IGHV_seqs.keys():
+#         for j_seg in refseq.IGHJ_seqs.keys():
+#             curr_outname = outname + '.' + str(i)
+#             curr_vj_id = vj_id(v_seg,j_seg)
+#             parts.append(curr_outname)
+#             vj_ids.append(curr_vj_id)
+#             outhandles[curr_vj_id] = open(curr_outname,'w')
+#             i += 1
+#     
+#     for chain in parse_VDJXML(inhandle):
+#         curr_vj_id = vj_id(chain.v,chain.j)
+#         print >>outhandles[curr_vj_id], chain
+#     
+#     for handle in outhandles.itervalues():
+#         handle.close()
+#     
+#     return (parts,vj_ids)
+# 
+# 
+# def parse_VDJXML_parts(parts):
+#     for part in parts:
+#         for chain in parse_VDJXML(part):
+#             yield chain
+# 
+# 
+# def wait_for_subprocesses(process_list,interval=30):
+#     finished = False
+#     while not finished:
+#         finished = True
+#         time.sleep(interval)
+#         for p in process_list:
+#             if p.poll() == None:
+#                 finished = False
+#                 break
