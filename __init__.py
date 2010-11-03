@@ -54,6 +54,18 @@ class ImmuneChain(object):
         pass
     cdr3 = property(fget=get_cdr3,fset=set_cdr3)
     
+    def get_vj(self):
+        return '|'.join([self.v,self.j])
+    def set_vj(self):
+        pass
+    vj = property(fget=get_vj,fset=set_vj)
+    
+    def get_vdj(self):
+        return '|'.join([self.v,self.d,self.j])
+    def set_vdj(self):
+        pass
+    vdj = property(fget=get_vdj,fset=set_vdj)
+    
     def add_tags(self,tagset):
         if isinstance(tagset,types.StringTypes): tagset = [tagset]
         self.tags.update(tagset)
