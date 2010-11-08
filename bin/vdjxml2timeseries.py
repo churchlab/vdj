@@ -45,4 +45,4 @@ countmatrix = countmatrix[:,timesort]  # sort in increasing times
 # write time series data to file
 print >>outhandle, '#times ' + ' '.join(map(str,times))
 for (feature_value,timeseries) in zip(uniq_feature_values[options.quantify],countmatrix):
-    print >>outhandle, ' '.join([feature_value]+timeseries)
+    print >>outhandle, ' '.join([feature_value]+list(timeseries))
