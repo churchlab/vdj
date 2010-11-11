@@ -82,6 +82,10 @@ def fasta2vdjxml(inhandle,outhandle):
         print >>outhandle, chain
     print >>outhandle, "</root>"
 
+def vdjxml2fasta(inhandle,outhandle):
+    for chain in vdj.parse_VDJXML(inhandle):
+        print >>outhandle, ">%s\n%s" % (chain.descr,chain.seq)
+
 def size_select(inhandle,outhandle,min_size,max_size):
     print >>outhandle, "<root>"
     for chain in vdj.parse_VDJXML(inhandle):

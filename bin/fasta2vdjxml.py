@@ -6,6 +6,7 @@ import optparse
 import seqtools
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 (options, args) = parser.parse_args()
@@ -20,4 +21,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.pipeline.fasta2vdjxml(inhandle,outhandle):
+vdj.pipeline.fasta2vdjxml(inhandle,outhandle)

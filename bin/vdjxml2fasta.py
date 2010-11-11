@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 (options, args) = parser.parse_args()
@@ -18,4 +19,4 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.vdjxml2fasta(inhandle,outhandle)
+vdj.pipeline.vdjxml2fasta(inhandle,outhandle)

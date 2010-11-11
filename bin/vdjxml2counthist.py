@@ -12,7 +12,7 @@ import vdj.analysis
 
 option_parser = optparse.OptionParser()
 option_parser.add_option('-s','--samples')
-option_parser.add_option('-q','--quantify',choices=['clone','junction','v','j'])
+option_parser.add_option('-q','--quantify',choices=['clone','junction','v','j','vj','vdj'])
 (options,args) = option_parser.parse_args()
 
 if len(args) == 1:
