@@ -4,13 +4,10 @@ import optparse
 import sys
 
 import numpy as np
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.collections
 
 import vdj
 import vdj.analysis
+import timeseries
 
 option_parser = optparse.OptionParser()
 option_parser.add_option('-t','--times')
@@ -43,6 +40,4 @@ countmatrix = vdj.analysis.countdict2matrix(features,uniq_feature_values,countdi
 countmatrix = countmatrix[:,timesort]  # sort in increasing times
 
 # write time series data to file
-print >>outhandle, '#times ' + ' '.join(map(str,times))
-for (feature_value,timeseries) in zip(uniq_feature_values[options.quantify],countmatrix):
-    print >>outhandle, ' '.join(map(str,[feature_value]+list(timeseries)))
+timeseries.write_timeseries(outhandle,uniq_feature_values[options.quantify],times,countmatrix)
