@@ -33,7 +33,7 @@ elif len(args) == 0:
 p = subprocess.Popen('cat %s | grep "<ImmuneChain>" | wc -l' % args[0],shell=True,stdout=subprocess.PIPE)
 total_chains = int(p.stdout.read().strip())
 
-import pdb
+print >>outhandle, "<root>"
 
 # check if subsampling should include the entire file
 if options.num >= total_chains:
@@ -42,11 +42,13 @@ if options.num >= total_chains:
         print >>outhandle, chain
 else:
     # choose a random set of indices to select for the output file
-    random.seed()
+    # random.seed()
     idxs = sorted(random.sample(xrange(total_chains),options.num))
     for (i,chain) in enumerate(vdj.parse_VDJXML(inhandle)):
-        if i == 93629:
-            pdb.set_trace()
+        if len(idxs) == 0:
+            break
         if i == idxs[0]:
             print >>outhandle, chain
             idxs.pop(0)
+
+print >>outhandle, "</root>"

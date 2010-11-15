@@ -40,4 +40,4 @@ countmatrix = vdj.analysis.countdict2matrix(features,uniq_feature_values,countdi
 countmatrix = countmatrix[:,timesort]  # sort in increasing times
 
 # write time series data to file
-timeseries.write_timeseries(outhandle,labels=uniq_feature_values[options.quantify],times=times,matrix=countmatrix)
+timeseries.write_timeseries(outhandle,labels=uniq_feature_values[options.quantify],sums=countmatrix.sum(axis=0),times=times,matrix=countmatrix)
