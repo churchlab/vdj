@@ -13,6 +13,7 @@ import vdj.analysis
 option_parser = optparse.OptionParser()
 option_parser.add_option('-s','--samples')
 option_parser.add_option('-q','--quantify',choices=['clone','junction','v','j','vj','vdj'])
+option_parser.add_option('-f','--freq',action='store_true')
 (options,args) = option_parser.parse_args()
 
 if len(args) == 1:
@@ -57,13 +58,16 @@ ax.yaxis.set_ticks_position('left')
 for (i,(barcode,label)) in enumerate(sampledict.iteritems()):
     num_chains = sum(countdict[barcode].values())
     sizes = np.arange(1,max_size+1)
-    freqs = np.float_(sizes) / num_chains
     (hist,garbage) = np.histogram(countdict[barcode].values(),bins=sizes)
     idxs = hist > 0
-    ax.plot(freqs[idxs],hist[idxs],marker=markers[i],linestyle='None',color=colors_10[i],markeredgewidth=0,markersize=4,clip_on=False,label=label)
+    if options.freq == True:
+        freqs = np.float_(sizes) / num_chains
+        ax.plot(freqs[idxs],hist[idxs],marker=markers[i],linestyle='None',color=colors_10[i],markeredgewidth=0,markersize=4,clip_on=False,label=label)
+    else:
+        ax.plot(sizes[idxs],hist[idxs],marker=markers[i],linestyle='None',color=colors_10[i],markeredgewidth=0,markersize=4,clip_on=False,label=label)
 ax.set_xscale('log')
 ax.set_yscale('log')
-ax.set_xlabel(options.quantify+' frequency')
+ax.set_xlabel(options.quantify+(' frequency' if options.freq else ' counts'))
 ax.set_ylabel('number')
 leg = ax.legend(loc=3,numpoints=1,prop=mpl.font_manager.FontProperties(size='small'))
 leg.get_frame().set_visible(False)
