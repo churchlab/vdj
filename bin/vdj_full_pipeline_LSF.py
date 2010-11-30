@@ -95,11 +95,11 @@ sys.stdout.write("finished\n"); sys.stdout.flush()
 
 # BARCODE ID, CODING STRAND, ISOTYPE ID, VDJ CLASSIFICATION via LSF
 sys.stdout.write("Setting up LSF command...\n"); sys.stdout.flush()
-cmd = 'barcode_id --barcodes %s ' % barcode_fasta       # 3. BARCODE IDENTIFICATION
-cmd += ' | coding_strand' + locus_options               # 4. CODING STRAND
+cmd = 'barcode_id.py --barcodes %s ' % barcode_fasta       # 3. BARCODE IDENTIFICATION
+cmd += ' | coding_strand.py' + locus_options               # 4. CODING STRAND
 if 'IGH' in loci:                                       # 5. ISOTYPE ID (heavy chain only)
-    cmd += ' | isotype_id --IGHC %s' % isotype_fasta
-cmd += ' | align_vdj' + locus_options                   # 6. VDJ CLASSIFICATION
+    cmd += ' | isotype_id.py --IGHC %s' % isotype_fasta
+cmd += ' | align_vdj.py' + locus_options                   # 6. VDJ CLASSIFICATION
 
 # submit cmd to LSF for each part
 sys.stdout.write("Submitting jobs to LSF..."); sys.stdout.flush()
@@ -147,7 +147,7 @@ sys.stdout.write("finished\n"); sys.stdout.flush()
 
 # 10. CLUSTER CDR3s
 sys.stdout.write("Setting up clustering jobs...\n"); sys.stdout.flush()
-cmd = 'cluster_cdr3 --cutoff %f --linkage %s' % (clustering_cutoff,clustering_linkage)
+cmd = 'cluster_cdr3.py --cutoff %f --linkage %s' % (clustering_cutoff,clustering_linkage)
 
 # submit LSF
 sys.stdout.write("Submitting clustering jobs to LSF..."); sys.stdout.flush()
