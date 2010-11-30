@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-"""vdjxml_sample_without_replacement.py
+"""sample_vdjxml_without_replacement.py
 
 Subsample an input vdjxml stream. Sample without replacement. If the sampling
 level is larger than the number of chains in the file, it simply copies the
@@ -42,7 +42,7 @@ if options.num >= total_chains:
         print >>outhandle, chain
 else:
     # choose a random set of indices to select for the output file
-    # random.seed()
+    random.seed()
     idxs = sorted(random.sample(xrange(total_chains),options.num))
     for (i,chain) in enumerate(vdj.parse_VDJXML(inhandle)):
         if len(idxs) == 0:
