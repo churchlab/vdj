@@ -37,7 +37,7 @@ for (i,chain) in enumerate(vdj.parse_VDJXML(inhandle)):
     if len(idxs) == 0:
         break
     if i == idxs[0]:
-        while i == idxs[0]:
+        while len(idxs) > 0 and i == idxs[0]:
             print >>outhandle, chain
             idxs.pop(0)
 
