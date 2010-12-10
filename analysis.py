@@ -1,6 +1,3 @@
-import types
-import itertools
-
 import numpy as np
 from numpy import ma
 import scipy as sp
@@ -9,62 +6,46 @@ import scipy.special
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import pyutils
 import vdj
 
-
-def dict_descend(object):
-    if isinstance(object,types.DictType):
-        for val in object.itervalues():
-            return dict_descend(val)
-    else:
-        return object
+def vdjxml2countdict(inhandle,features,count='read'):
+    counts = dict()
+    
 
 
-import types
-
-def dict_descend(obj):
-    # import pdb
-    # pdb.set_trace()
-    if isinstance(obj,types.DictType):
-        for val1 in obj.itervalues():
-            for val2 in dict_descend(val1):
-                yield val2
-    else:
-        yield obj
-
-
-# def vdjxml2countdict(inhandle,features,count='read'):
-#     counts = dict()
-#     uniq_feature_values = dict([(f,set()) for f in features])
-#     for chain in vdj.parse_VDJXML(inhandle):
-#         curr_count_dict = counts
-#         try:
-#             for feature in features[:-1]: # descend into nested dictionaries (but leave the last one)
-#                 uniq_feature_values[feature].add( chain.__getattribute__(feature) )
-#                 curr_count_dict = curr_count_dict.setdefault(chain.__getattribute__(feature),dict())
-#             feature = features[-1]  # process last level dict
-#             uniq_feature_values[feature].add( chain.__getattribute__(feature) )
-#             if count == 'read':
-#                 curr_count_dict[chain.__getattribute__(feature)] = curr_count_dict.get(chain.__getattribute__(feature),0) + 1
-#             elif count == 'junction' or count == 'clone':
-#                 curr_count_dict.setdefault(chain.__getattribute__(feature),set()).add(chain.__getattribute__(count))
-#             else:
-#                 raise ValueError, "count must be 'read', 'junction', or 'clone'"
-#         except AttributeError:  # chain is missing current feature; abandon it
-#             continue
-#     # for junction or clone (lineage) counting, must convert the sets to numbers
-#     if count == 'junction' or count == 'clone':
-#         for obj in counts.itervalues():
-#             
-#         
-#         
-#         for feature_list in itertools.product(*[uniq_feature_values[f] for f in features]):
-#             for 
-#             
-#         
-#     for f,feature_values in uniq_feature_values.iteritems():
-#         uniq_feature_values[f] = list(uniq_feature_values[f])
-#     return (uniq_feature_values,counts)
+def vdjxml2countdict(inhandle,features,count='read'):
+    counts = dict()
+    uniq_feature_values = dict([(f,set()) for f in features])
+    for chain in vdj.parse_VDJXML(inhandle):
+        curr_count_dict = counts
+        try:
+            for feature in features[:-1]: # descend into nested dictionaries (but leave the last one)
+                uniq_feature_values[feature].add( chain.__getattribute__(feature) )
+                curr_count_dict = curr_count_dict.setdefault(chain.__getattribute__(feature),dict())
+            feature = features[-1]  # process last level dict
+            uniq_feature_values[feature].add( chain.__getattribute__(feature) )
+            if count == 'read':
+                curr_count_dict[chain.__getattribute__(feature)] = curr_count_dict.get(chain.__getattribute__(feature),0) + 1
+            elif count == 'junction' or count == 'clone':
+                curr_count_dict.setdefault(chain.__getattribute__(feature),set()).add(chain.__getattribute__(count))
+            else:
+                raise ValueError, "count must be 'read', 'junction', or 'clone'"
+        except AttributeError:  # chain is missing current feature; abandon it
+            continue
+    # for junction or clone (lineage) counting, must convert the sets to numbers
+    if count == 'junction' or count == 'clone':
+        for obj in counts.itervalues():
+            
+        
+        
+        for feature_list in itertools.product(*[uniq_feature_values[f] for f in features]):
+            for 
+            
+        
+    for f,feature_values in uniq_feature_values.iteritems():
+        uniq_feature_values[f] = list(uniq_feature_values[f])
+    return (uniq_feature_values,counts)
 
 def countdict2matrix(features,feature_values,countdict):
     # feature_values is a dict where keys are the features and the values are
