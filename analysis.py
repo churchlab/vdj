@@ -10,41 +10,32 @@ import pyutils
 import vdj
 
 def vdjxml2countdict(inhandle,features,count='read'):
-    counts = dict()
-    
-
-
-def vdjxml2countdict(inhandle,features,count='read'):
-    counts = dict()
+    counts = pyutils.nesteddict()
     uniq_feature_values = dict([(f,set()) for f in features])
     for chain in vdj.parse_VDJXML(inhandle):
-        curr_count_dict = counts
-        try:
-            for feature in features[:-1]: # descend into nested dictionaries (but leave the last one)
-                uniq_feature_values[feature].add( chain.__getattribute__(feature) )
-                curr_count_dict = curr_count_dict.setdefault(chain.__getattribute__(feature),dict())
-            feature = features[-1]  # process last level dict
-            uniq_feature_values[feature].add( chain.__getattribute__(feature) )
-            if count == 'read':
-                curr_count_dict[chain.__getattribute__(feature)] = curr_count_dict.get(chain.__getattribute__(feature),0) + 1
-            elif count == 'junction' or count == 'clone':
-                curr_count_dict.setdefault(chain.__getattribute__(feature),set()).add(chain.__getattribute__(count))
-            else:
-                raise ValueError, "count must be 'read', 'junction', or 'clone'"
-        except AttributeError:  # chain is missing current feature; abandon it
+        try:    # get the feature tuple
+            feature_list = [chain.__getattribute__(f) for f in features]
+            for (feature,value) in zip(features,feature_list): uniq_feature_values[feature].add(value)
+        except AttributeError:  # chain is missing a feature; abandon it
             continue
-    # for junction or clone (lineage) counting, must convert the sets to numbers
-    if count == 'junction' or count == 'clone':
-        for obj in counts.itervalues():
-            
         
+        # update the dictionary
+        if count == 'read':
+            counts.nested_increment(feature_list)
+        elif count in ['junction','clone']:
+            counts.nested_add(feature_list,chain.__getattribute__(count))
+        else:
+            raise ValueError, "'count' must be 'read', 'junction', or 'clone'"
         
-        for feature_list in itertools.product(*[uniq_feature_values[f] for f in features]):
-            for 
-            
-        
-    for f,feature_values in uniq_feature_values.iteritems():
-        uniq_feature_values[f] = list(uniq_feature_values[f])
+        # if counting clones/junctions, convert sets to numbers
+        if count in ['junction','clone']:
+            for tup in counts.walk():
+                (keylist,val) = (tup[:-1],tup[-1])
+                counts.nested_assign(keylist,len(val))
+    
+    counts.lock()
+    for feature in features: uniq_feature_values[feature] = list(uniq_feature_values[feature])
+    
     return (uniq_feature_values,counts)
 
 def countdict2matrix(features,feature_values,countdict):
@@ -73,7 +64,6 @@ def countdict2matrix(features,feature_values,countdict):
         matrix[pos] = count
     
     return matrix
-    
 
 def barcode_clone_counts(inhandle):
     """Return count dict from vdjxml file with counts[barcode][clone]"""
