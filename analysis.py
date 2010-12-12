@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 from numpy import ma
 import scipy as sp
@@ -41,18 +43,11 @@ def vdjxml2countdict(inhandle,features,count='read'):
 def countdict2matrix(features,feature_values,countdict):
     # feature_values is a dict where keys are the features and the values are
     # the list of specific values I should process for that feature.
-    def product(*sequences):    # iterator cartesian products
-        if sequences:
-            for x in sequences[0]:
-                for y in product(*sequences[1:]):
-                    yield (x,) + y
-        else:
-            yield ()
     
     dim = tuple([len(feature_values[f]) for f in features])
     matrix = np.zeros(dim,dtype=np.int)
     
-    for posvals in product( *[list(enumerate(feature_values[f])) for f in features] ):
+    for posvals in itertools.product( *[list(enumerate(feature_values[f])) for f in features] ):
         (pos,vals) = zip(*posvals)
         count = countdict
         for val in vals:
