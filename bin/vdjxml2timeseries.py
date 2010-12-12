@@ -12,6 +12,7 @@ import timeseries
 option_parser = optparse.OptionParser()
 option_parser.add_option('-t','--times')
 option_parser.add_option('-q','--quantify',choices=['clone','junction','v','j','vj','vdj'])
+option_parser.add_option('-c','--count',choices=['read','clone','junction'],default='read')
 (options,args) = option_parser.parse_args()
 
 if len(args) == 2:
@@ -32,7 +33,7 @@ ip.close()
 
 # compute counts
 features = [options.quantify,'barcode']
-(uniq_feature_values,countdict) = vdj.analysis.vdjxml2countdict(inhandle,features)
+(uniq_feature_values,countdict) = vdj.analysis.vdjxml2countdict(inhandle,features,options.count)
 times = np.array([timedict[bc] for bc in uniq_feature_values['barcode']])
 timesort = np.argsort(times)
 times = times[timesort]
