@@ -27,11 +27,11 @@ def vdjxml2countdict(inhandle,features,count='read'):
         else:
             raise ValueError, "'count' must be 'read', 'junction', or 'clone'"
         
-        # if counting clones/junctions, convert sets to numbers
-        if count in ['junction','clone']:
-            for tup in counts.walk():
-                (keylist,val) = (tup[:-1],tup[-1])
-                counts.nested_assign(keylist,len(val))
+    # if counting clones/junctions, convert sets to numbers
+    if count in ['junction','clone']:
+        for tup in counts.walk():
+            (keylist,val) = (tup[:-1],tup[-1])
+            counts.nested_assign(keylist,len(val))
     
     counts.lock()
     for feature in features: uniq_feature_values[feature] = list(uniq_feature_values[feature])
