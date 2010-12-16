@@ -133,10 +133,15 @@ class ParserVDJXML(object):
     def parse(self,inputfile):
         for event, elem in ElementTree.iterparse(inputfile,events=('start','end')):
             if event == 'start':
-                self.start_handler(elem)
+                if elem.tag == 'root':  # to ensure non-incorp of <root> obj in chain
+                    pass
+                else:
+                    self.start_handler(elem)
             elif event == 'end':
                 if elem.tag == 'ImmuneChain':
                     yield self.chain
+                elif elem.tag == 'root':    # to ensure clean exit at end of file
+                    pass
                 else:
                     self.end_handler(elem)
 
