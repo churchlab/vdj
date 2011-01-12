@@ -2,7 +2,10 @@ import types
 import xml.etree.cElementTree as ElementTree
 
 import numpy as np
-import Bio.SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio.Alphabet import NucleotideAlphabet
 
 import seqtools
 
@@ -21,32 +24,69 @@ import seqtools
 # ===================
 
 class ImmuneChain(object):
-    """Data structure to represent an immune chain."""
+    """Data structure to represent an immune chain.
+    
+    The underlying data structure is actually a biopython `SeqRecord` object.
+    This class wraps it in a way that maintains the simple-to-use interface to
+    get at some common annotations. It also knows how to print out it's data
+    into XML or IMGT-flavored INSDC (GenBank/EMBL).
+    
+    Sequences must be nucleotides, not protein.
+    """
     
     def __init__(self,**kw):
         """Initialize ImmuneChain
         
         seq is 5'->3'
         """
-        def kw_init(attrib):
-            if kw.has_key(attrib):
-                self.__setattr__(attrib,kw[attrib])
+        # first we define our underlying SeqRecord object
+        if 'record' in kw:  # init with SeqRecord object
+            self._record = kw['record']
+        else:   # otherwise, initialize manually
+            if 'seq' in kw:
+                seq = Seq(data=kw['seq'],alphabet=NucleotideAlphabet())
+                self._record = Bio.SeqRecord.SeqRecord(seq=seq,id='',name='',description='')
+            else:
+                self._record = Bio.SeqRecord.SeqRecord(seq=Bio.Seq.UnknownSeq(0,alphabet=NucleotideAlphabet()),id='',name='',description='')
         
-        kw_init('seq')
-        kw_init('descr')
-        kw_init('locus')
-        kw_init('v')
-        kw_init('d')
-        kw_init('j')
-        kw_init('c')
-        kw_init('junction')
+        # now we try to populate it with any additional data that is given
+        if kw.has_key('descr'):
+            self._record.id = kw['descr']
+            self._record.name = kw['descr']
+            self._record.description = kw['descr']
+        
+        if kw.has_key('locus'):
+            self._record.annotations['locus'] = kw['locus']
         
         if kw.has_key('tags'):
             tags = kw['tags']
             if isinstance(tags,types.StringTypes): tags = [tags]
-            self.tags = set(tags)
+            tags = list(set(tags))
+            self._record.annotations['tags'] = tags
         else:
-            self.tags = set([])
+            self._record.annotations['tags'] = []
+        
+    def set_annot(name,value):
+        if isinstance(value,types.StringTypes):
+            value = str(value)
+        elif isinstance(value,types.ListType):
+            value = list(value)
+        else:
+            raise TypeError, "value must be string type or list type"
+        self._record.annotations[name] = value
+    
+    self, location=None, type='', location_operator='', strand=None, id='<unknown id>', qualifiers=None, sub_features=None, ref=None, ref_db=None
+    
+    def add_feature(location=None,type='',strand=None,qualifiers=None):
+        feature = SeqFeature(location=location,type=type,strand=strand,qualifiers=qualifiers)
+        self._record.features.append(feature)
+
+
+
+
+
+
+
     
     def get_cdr3(self):
         return len(self.junction)
