@@ -5,7 +5,7 @@ to point to certain resources.
 """
 
 # HACK.  Figure out better way to refer to this directory
-vdj_dir = '/Users/laserson/research/church/code/lib/vdj'
+vdj_dir = '/Users/laserson/code/vdj'
 
 # packaged data dir
 data_dir = 'data'
