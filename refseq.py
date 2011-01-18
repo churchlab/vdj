@@ -4,8 +4,6 @@ import types
 import cPickle as pickle
 
 import params
-import refsequtils
-
 
 # ==============================
 # = First-time initializations =
@@ -14,6 +12,25 @@ import refsequtils
 # does the pickle directory exist?
 if not os.path.exists( os.path.join(params.vdj_dir,params.pickle_dir) ):
     os.mkdir( os.path.join(params.vdj_dir,params.pickle_dir) )
+
+# test if I need to import refsequtils or not
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHD_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBD_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDD_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDJ_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGV_pickle)): import refsequtils
+if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_pickle)): import refsequtils
 
 # test for each gene type pickle file
 if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)): refsequtils.process_IMGT_references(refsequtils.VReferenceEntry,os.path.join(params.vdj_dir,params.data_dir,params.IGHV_fasta),os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle),verbose=True)
@@ -42,16 +59,16 @@ if not os.path.exists(os.path.join(params.vdj_dir,params.pickle_dir,params.TRGJ_
 # = Load reference data =
 # =======================
 
-IGHV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)))
-IGHD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHD_pickle)))
-IGHJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHJ_pickle)))
-IGKV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKV_pickle)))
-IGKJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKJ_pickle)))
-IGLV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLV_pickle)))
-IGLJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLJ_pickle)))
-# TRBV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBV_pickle)))
-# TRBD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBD_pickle)))
-# TRBJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBJ_pickle)))
+# IGHV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHV_pickle)))
+# IGHD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHD_pickle)))
+# IGHJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGHJ_pickle)))
+# IGKV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKV_pickle)))
+# IGKJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGKJ_pickle)))
+# IGLV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLV_pickle)))
+# IGLJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.IGLJ_pickle)))
+TRBV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBV_pickle)))
+TRBD = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBD_pickle)))
+TRBJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRBJ_pickle)))
 # TRAV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAV_pickle)))
 # TRAJ = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRAJ_pickle)))
 # TRDV = pickle.load(open(os.path.join(params.vdj_dir,params.pickle_dir,params.TRDV_pickle)))
@@ -83,13 +100,13 @@ def legacy_data(ref_data):
     except AttributeError:
         return (locus_list,locus_seqs,locus_idx)
 
-(IGHV_list,IGHV_seqs,IGHV_idx,IGHV_offset) = legacy_data(IGHV)
-(IGHD_list,IGHD_seqs,IGHD_idx)             = legacy_data(IGHD)
-(IGHJ_list,IGHJ_seqs,IGHJ_idx,IGHJ_offset) = legacy_data(IGHJ)
-(IGKV_list,IGKV_seqs,IGKV_idx,IGKV_offset) = legacy_data(IGKV)
-(IGKJ_list,IGKJ_seqs,IGKJ_idx,IGKJ_offset) = legacy_data(IGKJ)
-(IGLV_list,IGLV_seqs,IGLV_idx,IGLV_offset) = legacy_data(IGLV)
-(IGLJ_list,IGLJ_seqs,IGLJ_idx,IGLJ_offset) = legacy_data(IGLJ)
+# (IGHV_list,IGHV_seqs,IGHV_idx,IGHV_offset) = legacy_data(IGHV)
+# (IGHD_list,IGHD_seqs,IGHD_idx)             = legacy_data(IGHD)
+# (IGHJ_list,IGHJ_seqs,IGHJ_idx,IGHJ_offset) = legacy_data(IGHJ)
+# (IGKV_list,IGKV_seqs,IGKV_idx,IGKV_offset) = legacy_data(IGKV)
+# (IGKJ_list,IGKJ_seqs,IGKJ_idx,IGKJ_offset) = legacy_data(IGKJ)
+# (IGLV_list,IGLV_seqs,IGLV_idx,IGLV_offset) = legacy_data(IGLV)
+# (IGLJ_list,IGLJ_seqs,IGLJ_idx,IGLJ_offset) = legacy_data(IGLJ)
 # (TRBV_list,TRBV_seqs,TRBV_idx,TRBV_offset) = legacy_data(TRBV)
 # (TRBD_list,TRBD_seqs,TRBD_idx)             = legacy_data(TRBD)
 # (TRBJ_list,TRBJ_seqs,TRBJ_idx,TRBJ_offset) = legacy_data(TRBJ)
