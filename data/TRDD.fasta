@@ -1,6 +1,4 @@
->M23325|TRDD1*01|Homo sapiens|F|D-REGION|54..61|8 nt|1| | | | |8+0=8| | |
-gaaatagt
->M22153|TRDD2*01|Homo sapiens|F|D-REGION|34..42|9 nt|1| | | | |9+0=9| | |
-ccttcctac
->M22152|TRDD3*01|Homo sapiens|F|D-REGION|214..226|13 nt|1| | | | |13+0=13| | |
-actgggggatacg
+>X64900|TRDD1*01|Mus musculus_BALB/c|F|D-REGION|54..62|9 nt|1| | | | |9+0=9| | |
+gtggcatat
+>X64901|TRDD2*01|Mus musculus_BALB/c|F|D-REGION|54..69|16 nt|1| | | | |16+0=16| | |
+atcggagggatacgag

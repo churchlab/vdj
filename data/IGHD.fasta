@@ -1,88 +1,68 @@
->X97051|IGHD1-1*01|Homo sapiens|F|D-REGION|33714..33730|17 nt|1| | | | |17+0=17| | |
-ggtacaactggaacgac
->X13972|IGHD1-14*01|Homo sapiens|ORF|D-REGION|14518..14534|17 nt|1| | | | |17+0=17| | |
-ggtataaccggaaccac
->X97051|IGHD1-20*01|Homo sapiens|F|D-REGION|62015..62031|17 nt|1| | | | |17+0=17| | |
-ggtataactggaacgac
->X97051|IGHD1-26*01|Homo sapiens|F|D-REGION|72169..72188|20 nt|1| | | | |20+0=20| | |
-ggtatagtgggagctactac
->X13972|IGHD1-7*01|Homo sapiens|F|D-REGION|5266..5282|17 nt|1| | | | |17+0=17| | |
-ggtataactggaactac
->X55575|IGHD1/OR15-1a*01|Homo sapiens|ORF|D-REGION|63..79|17 nt|1| | | | |17+0=17| | |
-ggtataactggaacaac
->X55576|IGHD1/OR15-1b*01|Homo sapiens|ORF|D-REGION|63..79|17 nt|1| | | | |17+0=17| | |
-ggtataactggaacaac
->J00234|IGHD2-15*01|Homo sapiens|F|D-REGION|29..59|31 nt|1| | | | |31+0=31| | |
-aggatattgtagtggtggtagctgctactcc
->J00232|IGHD2-2*01|Homo sapiens|F|D-REGION|29..59|31 nt|1| | | | |31+0=31| | |
-aggatattgtagtagtaccagctgctatgcc
->X97051|IGHD2-2*02|Homo sapiens|F|D-REGION|36367..36397|31 nt|1| | | | |31+0=31| | |
-aggatattgtagtagtaccagctgctatacc
->M35648|IGHD2-2*03|Homo sapiens|F|D-REGION|70..100|31 nt|1| | | | |31+0=31| | |
-tggatattgtagtagtaccagctgctatgcc
->J00235|IGHD2-21*01|Homo sapiens|F|D-REGION|29..56|28 nt|1| | | | |28+0=28| | |
-agcatattgtggtggtgattgctattcc
->X97051|IGHD2-21*02|Homo sapiens|F|D-REGION|64644..64671|28 nt|1| | | | |28+0=28| | |
-agcatattgtggtggtgactgctattcc
->X13972|IGHD2-8*01|Homo sapiens|F|D-REGION|7949..7979|31 nt|1| | | | |31+0=31| | |
-aggatattgtactaatggtgtatgctatacc
->J00233|IGHD2-8*02|Homo sapiens|F|D-REGION|29..59|31 nt|1| | | | |31+0=31| | |
-aggatattgtactggtggtgtatgctatacc
->X55577|IGHD2/OR15-2a*01|Homo sapiens|ORF|D-REGION|68..98|31 nt|1| | | | |31+0=31| | |
-agaatattgtaatagtactactttctatgcc
->X55578|IGHD2/OR15-2b*01|Homo sapiens|ORF|D-REGION|68..98|31 nt|1| | | | |31+0=31| | |
-agaatattgtaatagtactactttctatgcc
->X13972|IGHD3-10*01|Homo sapiens|F|D-REGION|10659..10689|31 nt|1| | | | |31+0=31| | |
-gtattactatggttcggggagttattataac
->X93615|IGHD3-10*02|Homo sapiens|F|D-REGION|30..59|30 nt|1| | | | |30+0=30| | |
-gtattactatgttcggggagttattataac
->X93614|IGHD3-16*01|Homo sapiens|F|D-REGION|30..66|37 nt|1| | | | |37+0=37| | |
-gtattatgattacgtttgggggagttatgcttatacc
->X97051|IGHD3-16*02|Homo sapiens|F|D-REGION|57552..57588|37 nt|1| | | | |37+0=37| | |
-gtattatgattacgtttgggggagttatcgttatacc
->X93616|IGHD3-22*01|Homo sapiens|F|D-REGION|30..60|31 nt|1| | | | |31+0=31| | |
-gtattactatgatagtagtggttattactac
->X13972|IGHD3-3*01|Homo sapiens|F|D-REGION|804..834|31 nt|1| | | | |31+0=31| | |
-gtattacgatttttggagtggttattatacc
->X93618|IGHD3-3*02|Homo sapiens|F|D-REGION|30..60|31 nt|1| | | | |31+0=31| | |
-gtattagcatttttggagtggttattatacc
->X13972|IGHD3-9*01|Homo sapiens|F|D-REGION|10475..10505|31 nt|1| | | | |31+0=31| | |
-gtattacgatattttgactggttattataac
->X55579|IGHD3/OR15-3a*01|Homo sapiens|ORF|D-REGION|210..240|31 nt|1| | | | |31+0=31| | |
-gtattatgatttttggactggttattatacc
->X55580|IGHD3/OR15-3b*01|Homo sapiens|ORF|D-REGION|210..240|31 nt|1| | | | |31+0=31| | |
-gtattatgatttttggactggttattatacc
->X13972|IGHD4-11*01|Homo sapiens|ORF|D-REGION|11550..11565|16 nt|1| | | | |16+0=16| | |
-tgactacagtaactac
->X97051|IGHD4-17*01|Homo sapiens|F|D-REGION|58699..58714|16 nt|1| | | | |16+0=16| | |
-tgactacggtgactac
->X97051|IGHD4-23*01|Homo sapiens|ORF|D-REGION|68334..68352|19 nt|1| | | | |19+0=19| | |
-tgactacggtggtaactcc
->X13972|IGHD4-4*01|Homo sapiens|F|D-REGION|1952..1967|16 nt|1| | | | |16+0=16| | |
-tgactacagtaactac
->X55581|IGHD4/OR15-4a*01|Homo sapiens|ORF|D-REGION|83..101|19 nt|1| | | | |19+0=19| | |
-tgactatggtgctaactac
->X55582|IGHD4/OR15-4b*01|Homo sapiens|ORF|D-REGION|82..100|19 nt|1| | | | |19+0=19| | |
-tgactatggtgctaactac
->X13972|IGHD5-12*01|Homo sapiens|F|D-REGION|12506..12528|23 nt|1| | | | |23+0=23| | |
-gtggatatagtggctacgattac
->X97051|IGHD5-18*01|Homo sapiens|F|D-REGION|59661..59680|20 nt|1| | | | |20+0=20| | |
-gtggatacagctatggttac
->X97051|IGHD5-24*01|Homo sapiens|ORF|D-REGION|69300..69319|20 nt|1| | | | |20+0=20| | |
-gtagagatggctacaattac
->X13972|IGHD5-5*01|Homo sapiens|F|D-REGION|2913..2932|20 nt|1| | | | |20+0=20| | |
-gtggatacagctatggttac
->X55583|IGHD5/OR15-5a*01|Homo sapiens|ORF|D-REGION|94..116|23 nt|1| | | | |23+0=23| | |
-gtggatatagtgtctacgattac
->X55584|IGHD5/OR15-5b*01|Homo sapiens|ORF|D-REGION|94..116|23 nt|1| | | | |23+0=23| | |
-gtggatatagtgtctacgattac
->X13972|IGHD6-13*01|Homo sapiens|F|D-REGION|14011..14031|21 nt|1| | | | |21+0=21| | |
-gggtatagcagcagctggtac
->X97051|IGHD6-19*01|Homo sapiens|F|D-REGION|61503..61523|21 nt|1| | | | |21+0=21| | |
-gggtatagcagtggctggtac
->X97051|IGHD6-25*01|Homo sapiens|F|D-REGION|71666..71683|18 nt|1| | | | |18+0=18| | |
-gggtatagcagcggctac
->X13972|IGHD6-6*01|Homo sapiens|F|D-REGION|4762..4779|18 nt|1| | | | |18+0=18| | |
-gagtatagcagctcgtcc
->J00256|IGHD7-27*01|Homo sapiens|F|D-REGION|621..631|11 nt|1| | | | |11+0=11| | |
-ctaactgggga
+>J00434|IGHD1-1*01|Mus musculus_BALB/c|F|D-REGION|48..70|23 nt|1| | | | |23+0=23| | |
+tttattactacggtagtagctac
+>M35332|IGHD1-1*02|Mus musculus_A/J|F|D-REGION|107..129|23 nt|1| | | | |23+0=23| | |
+tttattactatggtggtagctac
+>J00436|IGHD1-2*01|Mus musculus_BALB/c|F|D-REGION|44..60|17 nt|1| | | | |17+0=17| | |
+ttcattactacggctac
+>M60955|IGHD2-1*01|Mus musculus_CB.20|F|D-REGION|137..153|17 nt|1| | | | |17+0=17| | |
+tctactatggtaactac
+>J00438|IGHD2-10*01|Mus musculus_BALB/c|F|D-REGION|48..64|17 nt|1| | | | |17+0=17| | |
+cctactatggtaactac
+>J00439|IGHD2-11*01|Mus musculus_BALB/c|F|D-REGION|48..64|17 nt|1| | | | |17+0=17| | |
+cctagtatggtaactac
+>AF428079|IGHD2-12*01|Mus musculus_MRL/lpr|F|D-REGION|37..62|26 nt|1| | | | |26+0=26| | |
+cctactatagttactatagttacgac
+>AF428080|IGHD2-13*01|Mus musculus_MRL/lpr|F|D-REGION|37..53|17 nt|1| | | | |17+0=17| | |
+tctactatggtgactac
+>AF144976|IGHD2-14*01|Mus musculus_BALB/c|F|D-REGION|245..263|19 nt|2| | | | |19+0=19| | |
+ctactataggtacgacggc
+>J00437|IGHD2-2*01|Mus musculus_BALB/c|F|D-REGION|35..51|17 nt|1| | | | |17+0=17| | |
+tctactatggttacgac
+>J00431|IGHD2-4*01|Mus musculus_BALB/c|F|D-REGION|480..496|17 nt|1| | | | |17+0=17| | |
+tctactatgattacgac
+>M60961|IGHD2-5*01|Mus musculus_CB.20|F|D-REGION|137..153|17 nt|1| | | | |17+0=17| | |
+cctactatagtaactac
+>AC073553|IGHD2-6*01|Mus musculus_C57BL/6J|F|D-REGION|101538..101554|17 nt|1| | | | |17+0=17| | |
+cctactatagtaactac
+>J00435|IGHD2-7*01|Mus musculus_BALB/c|F|D-REGION|48..64|17 nt|1| | | | |17+0=17| | |
+tctactatggttacgac
+>J00432|IGHD2-8*01|Mus musculus_BALB/c|F|D-REGION|39..55|17 nt|1| | | | |17+0=17| | |
+tctactatggtaactac
+>J00433|IGHD2-9*01|Mus musculus_BALB/c|F|D-REGION|32..48|17 nt|1| | | | |17+0=17| | |
+cctactatggttacgac
+>AC073553|IGHD3-1*01|Mus musculus_C57BL/6J|F|D-REGION|37594..37610|17 nt|1| | | | |17+0=17| | |
+cctactatagtaactac
+>M23243|IGHD3-2*01|Mus musculus_BALB/c|F|D-REGION|130..145|16 nt|1| | | | |16+0=16| | |
+agacagctcgggctac
+>AC073553|IGHD3-2*02|Mus musculus_C57BL/6J|F|D-REGION|114694..114709|16 nt|1| | | | |16+0=16| | |
+agacagctcaggctac
+>L32868|IGHD4-1*01|Mus musculus_BALB/c|F|D-REGION|2946..2956|11 nt|1| | | | |11+0=11| | |
+ctaactgggac
+>J00440|IGHD4-1*02|Mus musculus_BALB/c|F|D-REGION|313..322|10 nt|1| | | | |10+0=10| | |
+caactgggac
+>AC073553|IGHD5-1*01|Mus musculus_C57BL/6J|P|D-REGION|36114..36123|10 nt|1| | | | |10+0=10| | |
+gagtacctac
+>AC073553|IGHD5-2*01|Mus musculus_C57BL/6J|ORF|D-REGION|93488..93497|10 nt|1| | | | |10+0=10| | |
+gaatacctac
+>AC073553|IGHD5-3*01|Mus musculus_C57BL/6J|ORF|D-REGION|98153..98162|10 nt|1| | | | |10+0=10| | |
+gaatacctac
+>AC073553|IGHD5-4*01|Mus musculus_C57BL/6J|ORF|D-REGION|102813..102822|10 nt|1| | | | |10+0=10| | |
+gaatacctac
+>AC073553|IGHD5-5*01|Mus musculus_C57BL/6J|ORF|D-REGION|107972..107981|10 nt|1| | | | |10+0=10| | |
+gactacctac
+>AC073553|IGHD5-6*01|Mus musculus_C57BL/6J|ORF|D-REGION|113326..113335|10 nt|1| | | | |10+0=10| | |
+gaatacctac
+>AC073553|IGHD5-7*01|Mus musculus_C57BL/6J|ORF|D-REGION|98371..98399|29 nt|1| | | | |29+0=29| | |
+aggcagctagcctctgcagtgccacaacc
+>AC073553|IGHD5-8*01|Mus musculus_C57BL/6J|ORF|D-REGION|103031..103059|29 nt|1| | | | |29+0=29| | |
+agacagctagcctctgcagtgccacaacc
+>M26508|IGHD6-1*01|Mus musculus_BALB/c|P|D-REGION|440..468|29 nt|1| | | | |29+0=29| | |
+agacagctagcctctgcagtgccacaacc
+>AC073553|IGHD6-1*02|Mus musculus_C57BL/6J|P|D-REGION|82752..82780|29 nt|1| | | | |29+0=29| | |
+aggcagctagcctctgcagtgccacaacc
+>D13198|IGHD6-2*01|Mus musculus_BALB/c|P|D-REGION|7..33|27 nt|1| | | | |27+0=27| | |
+aggcagctagtctctgcagtgccacaa
+>AC073553|IGHD6-2*02|Mus musculus_C57BL/6J|P|D-REGION|88020..88048|29 nt|1| | | | |29+0=29| | |
+aggcagctagtctctgcagtgccacaacc
+>D13199|IGHD6-3*01|Mus musculus_BALB/c|P|D-REGION|384..400|17 nt|1| | | | |17+0=17| | |
+tctatgatggttactac

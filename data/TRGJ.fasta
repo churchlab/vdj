@@ -1,14 +1,12 @@
->M12960|TRGJ1*01|Homo sapiens|F|J-REGION|157..206|50 nt|2| | | | |50+0=50| | |
-gaattattataagaaactctttggcagtggaacaacactggttgtcacag
->M12957|TRGJ1*02|Homo sapiens|F|J-REGION|23..69|47 nt|1| | | | |47+0=47|partial in 5'|rev-compl|
-ttattataagaaactctttggcagtggaacaacacttgttgtcacag
->M12961|TRGJ2*01|Homo sapiens|F|J-REGION|157..206|50 nt|2| | | | |50+0=50| | |
-gaattattataagaaactctttggcagtggaacaacacttgttgtcacag
->M12950|TRGJP*01|Homo sapiens|F|J-REGION|29..90|62 nt|2| | | | |62+0=62| | |
-tgggcaagagttgggcaaaaaaatcaaggtatttggtcccggaacaaagcttatcattac
-ag
->X08084|TRGJP1*01|Homo sapiens|F|J-REGION|29..88|60 nt|3| | | | |60+0=60| | |
-ataccactggttggttcaagatatttgctgaagggactaagctcatagtaacttcacctg
+>M12830|TRGJ1*01|Mus musculus_BALB/c|F|J-REGION|122..181|60 nt|3| | | | |60+0=60| | |
+atagctcaggttttcacaaggtatttgcagaaggaactaagctcatagtaattccctctg
 
->M16016|TRGJP2*01|Homo sapiens|F|J-REGION|29..88|60 nt|3| | | | |60+0=60| | |
-atagtagtgattggatcaagacgtttgcaaaagggactaggctcatagtaacttcgcctg
+>M12829|TRGJ2*01|Mus musculus_BALB/c|F|J-REGION|111..170|60 nt|3| | | | |60+0=60| | |
+atagctcgggctttcacaaggtatttgcagaaggaacaaagctcatagtaattccctccg
+
+>AF037352|TRGJ3*01|Mus musculus|F|J-REGION|80378..80437|60 nt|3| | | | |60+0=60| | |
+atagttgggactttcacaaggtatttgcagaaggaactaagctcatagtaattccttctg
+
+>X05502|TRGJ4*01|Mus musculus|F|J-REGION|36..96|61 nt|1| | | | |61+0=61| | |
+tcaggcacatcatgggtcaagatatttgccaaagggacaaagctcgtagtaattccccca
+g

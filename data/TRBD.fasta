@@ -1,6 +1,4 @@
->K02545|TRBD1*01|Homo sapiens|F|D-REGION|82..93|12 nt|1| | | | |12+0=12| | |
+>X00933|TRBD1*01|Mus musculus_BALB/c|F|D-REGION|156..167|12 nt|1| | | | |12+0=12| | |
 gggacagggggc
->X02987|TRBD2*01|Homo sapiens|F|D-REGION|140..155|16 nt|1| | | | |16+0=16| | |
-gggactagcggggggg
->M14159|TRBD2*02|Homo sapiens|F|D-REGION|569..584|16 nt|1| | | | |16+0=16| | |
-gggactagcgggaggg
+>X00934|TRBD2*01|Mus musculus_BALB/c|F|D-REGION|170..183|14 nt|1| | | | |14+0=14| | |
+gggactgggggggc
