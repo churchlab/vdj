@@ -5,7 +5,7 @@ to point to certain resources.
 """
 
 # HACK.  Figure out better way to refer to this directory
-vdj_dir = '/Users/laserson/research/church/code/lib/vdj'
+vdj_dir = '/Users/laserson/code/vdj'
 
 # packaged data dir
 data_dir = 'data'
@@ -57,9 +57,9 @@ TRGV_pickle = 'TRGV.pickle'
 TRGJ_pickle = 'TRGJ.pickle'
 
 
-# # full IMGT flatfile database dir
-# imgt_dir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
-# ligm_filename = 'imgt.dat'
+# full IMGT flatfile database dir
+imgt_dir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT/IMGT'
+ligm_filename = 'imgt.dat'
 
 # refdatadir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
 # imgtdat = 'imgt.dat'
