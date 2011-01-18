@@ -1,3 +1,4 @@
+import os
 import sys
 import string
 from cStringIO import StringIO
@@ -13,6 +14,9 @@ import seqtools
 import params
 
 identity = string.maketrans('','')
+
+# index IMGT/LIGM-DB
+ligm = SeqIO.index(os.path.join(params.imgt_dir,params.ligm_filename),'imgt')
 
 # ===================
 # = Data structures =
@@ -77,40 +81,46 @@ class ReferenceEntry(object):
         self.frame = int(data[7]) - 1   # note change to python numbering (0-based)
         self.partial = data[13]
     
+    # NOTE: This version of the fn gets the records from a local IMGT/LIGM
     def pull_LIGM_record(self):
-        """Get SeqRecord object for LIGM record from IMGT server"""
-        
-        # NOTE: this can potentially be significantly simplified by accessing the URL
-        # interface to LIGM, through:
-        # http://imgt.cines.fr/cgi-bin/IMGTlect.jv?query=5+numacc
-        # where numacc is the accession number
-        
-        request = urllib2.Request('http://imgt.cines.fr/cgi-bin/IMGTlect.jv?livret=0')
-        # LIGM page
-        response = urllib2.urlopen(request)
-        forms = ClientForm.ParseResponse(response,
-                                         form_parser_class=ClientForm.XHTMLCompatibleFormParser,
-                                         backwards_compat=False)
-        form = forms[1]
-        form['l01p01c02'] = self.accession
-        request2 = form.click()
-        # data format page
-        response2 = urllib2.urlopen(request2)
-        forms2 = ClientForm.ParseResponse(response2,
-                                         form_parser_class=ClientForm.XHTMLCompatibleFormParser,
-                                         backwards_compat=False)
-        form2 = forms2[0]
-        assert( form2.controls[8].attrs['value'] == '2 IMGT flat-file' )
-        form2.controls[8].id = 'flatfile'
-        request3 = form2.click(id='flatfile')
-        # LIGM record results
-        response3 = urllib2.urlopen(request3)
+        """Get SeqRecord object for LIGM record from local LIGM DB"""
+        self.record = ligm[self.accession]
     
-        # ghetto parse of the results.  the text of the LIGM record is in <pre>...</pre> tags
-        rawdata1 = response3.read()
-        rawdata2 = rawdata1.split('<pre>')[1].split('</pre>')[0].lstrip()
-        rawdata3 = StringIO(rawdata2)
-        self.record = SeqIO.read(rawdata3,'imgt')
+    # # NOTE: This version of the function gets records from the IMGT server
+    # def pull_LIGM_record(self):
+    #     """Get SeqRecord object for LIGM record from IMGT server"""
+    #     
+    #     # NOTE: this can potentially be significantly simplified by accessing the URL
+    #     # interface to LIGM, through:
+    #     # http://imgt.cines.fr/cgi-bin/IMGTlect.jv?query=5+numacc
+    #     # where numacc is the accession number
+    #     
+    #     request = urllib2.Request('http://imgt.cines.fr/cgi-bin/IMGTlect.jv?livret=0')
+    #     # LIGM page
+    #     response = urllib2.urlopen(request)
+    #     forms = ClientForm.ParseResponse(response,
+    #                                      form_parser_class=ClientForm.XHTMLCompatibleFormParser,
+    #                                      backwards_compat=False)
+    #     form = forms[1]
+    #     form['l01p01c02'] = self.accession
+    #     request2 = form.click()
+    #     # data format page
+    #     response2 = urllib2.urlopen(request2)
+    #     forms2 = ClientForm.ParseResponse(response2,
+    #                                      form_parser_class=ClientForm.XHTMLCompatibleFormParser,
+    #                                      backwards_compat=False)
+    #     form2 = forms2[0]
+    #     assert( form2.controls[8].attrs['value'] == '2 IMGT flat-file' )
+    #     form2.controls[8].id = 'flatfile'
+    #     request3 = form2.click(id='flatfile')
+    #     # LIGM record results
+    #     response3 = urllib2.urlopen(request3)
+    # 
+    #     # ghetto parse of the results.  the text of the LIGM record is in <pre>...</pre> tags
+    #     rawdata1 = response3.read()
+    #     rawdata2 = rawdata1.split('<pre>')[1].split('</pre>')[0].lstrip()
+    #     rawdata3 = StringIO(rawdata2)
+    #     self.record = SeqIO.read(rawdata3,'imgt')
 
 class VReferenceEntry(ReferenceEntry):
     def __init__(self,**kw):
@@ -182,7 +192,12 @@ def process_IMGT_references(ref_entry_cls,fasta_infilename,pickle_outfilename,ve
         if 'partial' in curr_reference.partial:
             continue
         
-        curr_reference.pull_LIGM_record()
+        try:
+            curr_reference.pull_LIGM_record()
+        except KeyError:
+            warnings.warn("Failed to find record %s in LIGM"%curr_reference.accession)
+            continue
+        
         # Potential problems with finding annotated CDR3 boundary
         try:
             curr_reference.set_CDR3_boundary()
