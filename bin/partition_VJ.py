@@ -18,4 +18,6 @@ elif len(args) == 0:
 
 # NOTE: this script ignores the allele numbers
 
-vdj.pipeline.partition_VJ(inhandle,options.basename)
+partition_files = vdj.pipeline.partition_VJ(inhandle,options.basename)
+for filename in partition_files:
+    print filename
