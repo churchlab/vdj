@@ -51,15 +51,16 @@ class ImmuneChain(object):
         
         # now we try to populate it with any additional data that is given
         if kw.has_key('descr'):
-            self._record.id = kw['descr']
-            self._record.name = kw['descr']
-            self._record.description = kw['descr']
+            descr = kw.pop('descr')
+            self._record.id = descr
+            self._record.name = descr
+            self._record.description = descr
         
         if kw.has_key('locus'):
-            self._record.annotations['locus'] = kw['locus']
+            self._record.annotations['locus'] = kw.pop('locus')
         
         if kw.has_key('tags'):
-            tags = kw['tags']
+            tags = kw.pop('tags')
             if isinstance(tags,types.StringTypes): tags = [tags]
             tags = list(set(tags))
             self._record.annotations['tags'] = tags
@@ -75,10 +76,19 @@ class ImmuneChain(object):
             raise TypeError, "value must be string type or list type"
         self._record.annotations[name] = value
     
-    self, location=None, type='', location_operator='', strand=None, id='<unknown id>', qualifiers=None, sub_features=None, ref=None, ref_db=None
-    
-    def add_feature(location=None,type='',strand=None,qualifiers=None):
+    def add_feature(start=None,end=None,type='',strand=None,qualifiers=None):
+        if start == None and end == None:
+            raise ValueError, "if there is no location, use an annotation"
+        
+        if start != None and end != None:
+            location = FeatureLocation(start,end)
+        elif start != None and end == None:
+            location = FeatureLocation(start,start)
+        elif start == None and end != None:
+            location = FeatureLocation(end,end)
+        
         feature = SeqFeature(location=location,type=type,strand=strand,qualifiers=qualifiers)
+        
         self._record.features.append(feature)
 
 
