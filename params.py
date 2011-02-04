@@ -58,7 +58,7 @@ TRGJ_pickle = 'TRGJ.pickle'
 
 
 # full IMGT flatfile database dir
-imgt_dir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT/IMGT'
+imgt_dir = '/Users/laserson/research/church/vdj-ome/IMGT/IMGT'
 ligm_filename = 'imgt.dat'
 
 # refdatadir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
