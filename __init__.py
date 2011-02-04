@@ -2,7 +2,7 @@ import types
 import xml.etree.cElementTree as ElementTree
 
 import numpy as np
-from Bio.Seq import Seq
+from Bio.Seq import Seq, UnknownSeq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import NucleotideAlphabet
@@ -29,7 +29,7 @@ class ImmuneChain(object):
     The underlying data structure is actually a biopython `SeqRecord` object.
     This class wraps it in a way that maintains the simple-to-use interface to
     get at some common annotations. It also knows how to print out it's data
-    into XML or IMGT-flavored INSDC (GenBank/EMBL).
+    as IMGT-flavored INSDC (GenBank/EMBL).
     
     Sequences must be nucleotides, not protein.
     """
@@ -45,29 +45,40 @@ class ImmuneChain(object):
         else:   # otherwise, initialize manually
             if 'seq' in kw:
                 seq = Seq(data=kw['seq'],alphabet=NucleotideAlphabet())
-                self._record = Bio.SeqRecord.SeqRecord(seq=seq,id='',name='',description='')
+                self._record = SeqRecord(seq=seq,id='',name='',description='')
             else:
-                self._record = Bio.SeqRecord.SeqRecord(seq=Bio.Seq.UnknownSeq(0,alphabet=NucleotideAlphabet()),id='',name='',description='')
+                self._record = SeqRecord(seq=UnknownSeq(0,alphabet=NucleotideAlphabet()),id='',name='',description='')
         
-        # now we try to populate it with any additional data that is given
+        # check for explicit descriptor
         if kw.has_key('descr'):
             descr = kw.pop('descr')
             self._record.id = descr
             self._record.name = descr
             self._record.description = descr
-        
-        if kw.has_key('locus'):
-            self._record.annotations['locus'] = kw.pop('locus')
-        
-        if kw.has_key('tags'):
-            tags = kw.pop('tags')
-            if isinstance(tags,types.StringTypes): tags = [tags]
-            tags = list(set(tags))
-            self._record.annotations['tags'] = tags
-        else:
-            self._record.annotations['tags'] = []
-        
-    def set_annot(name,value):
+    
+    # define some simple interface
+    
+    @property
+    def seq(self):
+        return self._record.seq.tostring()
+    
+    @seq.setter
+    def seq(self,s):
+        self._record.seq = Seq(data=s,alphabet=NucleotideAlphabet())
+    
+    @property
+    def descr(self):
+        return self._record.descr
+    
+    @descr.setter
+    def descr(self,d):
+        self._record.descr = d
+    
+    
+    
+    
+    
+    def set_annot(self,name,value):
         if isinstance(value,types.StringTypes):
             value = str(value)
         elif isinstance(value,types.ListType):
@@ -75,6 +86,17 @@ class ImmuneChain(object):
         else:
             raise TypeError, "value must be string type or list type"
         self._record.annotations[name] = value
+        return self
+    
+    def has_annot(self,name):
+        return name in self._record.annotations
+    
+    def del_annot(self,name)::
+        if self.has_annot(name):
+            self._record.annotations.pop(name)
+        else:
+            raise KeyError, ("%s is not an annotation" % name)
+        return self
     
     def add_feature(start=None,end=None,type='',strand=None,qualifiers=None):
         if start == None and end == None:
@@ -90,25 +112,30 @@ class ImmuneChain(object):
         feature = SeqFeature(location=location,type=type,strand=strand,qualifiers=qualifiers)
         
         self._record.features.append(feature)
-
-
-
-
-
-
-
+        return self
     
-    def get_cdr3(self):
+    def remove_feature():
+        
+    
+    def __str__(self):
+        return self.__repr__()
+    
+    def __repr__(self):
+        return self._record.format('imgt')
+    
+    # interface:
+    
+    @property
+    def cdr3(self):
         return len(self.junction)
-    def set_cdr3(self,value):
-        pass
-    cdr3 = property(fget=get_cdr3,fset=set_cdr3)
     
-    def get_vj(self):
+    @property
+    def v(self):
+        return 
+    
+    @property
+    def vj(self):
         return '|'.join([self.v,self.j])
-    def set_vj(self):
-        pass
-    vj = property(fget=get_vj,fset=set_vj)
     
     def get_vdj(self):
         return '|'.join([self.v,self.d,self.j])
