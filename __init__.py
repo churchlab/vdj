@@ -55,6 +55,11 @@ class ImmuneChain(object):
             self._record.id = descr
             self._record.name = descr
             self._record.description = descr
+        
+        # definte dictionary of features for fast lookup
+        self._features = {}
+        for (i,feature) in enumerate(self_record.features):
+            self._features.setdefault(feature.type,[]).append(i)
     
     # define some simple interface
     
@@ -73,10 +78,6 @@ class ImmuneChain(object):
     @descr.setter
     def descr(self,d):
         self._record.descr = d
-    
-    
-    
-    
     
     def set_annot(self,name,value):
         if isinstance(value,types.StringTypes):
@@ -98,7 +99,7 @@ class ImmuneChain(object):
             raise KeyError, ("%s is not an annotation" % name)
         return self
     
-    def add_feature(start=None,end=None,type='',strand=None,qualifiers=None):
+    def add_feature(self,start=None,end=None,type='',strand=None,qualifiers=None):
         if start == None and end == None:
             raise ValueError, "if there is no location, use an annotation"
         
@@ -112,16 +113,33 @@ class ImmuneChain(object):
         feature = SeqFeature(location=location,type=type,strand=strand,qualifiers=qualifiers)
         
         self._record.features.append(feature)
+        self._features.setdefault(feature.type,[]).append(len(self._record.features) - 1)
         return self
     
-    def remove_feature():
-        
+    def has_feature(self,type):
+        return type in self._features
+    
+    def del_feature(self,type):
+        idxs = self._features.pop(type)
+        idxs.sort(reverse=True)
+        for i in idxs:
+            self._record.features.pop(i)
+        return self
     
     def __str__(self):
         return self.__repr__()
     
     def __repr__(self):
         return self._record.format('imgt')
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     # interface:
     
