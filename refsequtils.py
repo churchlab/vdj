@@ -19,39 +19,55 @@ identity = string.maketrans('','')
 # ===================
 
 class ReferenceEntry(object):
-    """Data structure to hold a reference sequence from IMGT/GENE-DB or
-    IMGT/V-QUEST.
+    """Obj to hold a ref seq from IMGT
     
     Some of the attributes are computed, and some are taken from IMGT.
     
-    accession_coords uses converted python numbering
-    gapped_seq includes IMGT gaps that they provide
-    frame uses python coords: 0 means already in frame.
-                              1 means skip one nt
-                              2 means skip two nts
-    partial will take values of "partial in 5'", "partial in 3'", or "partial in 5' and 3'"
-    depending where the del is.
+    This really just wraps a biopython SeqRecord object with some simpler
+    interface.  It must be initialized with a SeqRecord object ready-to-go
+    
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # 
+        # accession_coords uses converted python numbering
+        # gapped_seq includes IMGT gaps that they provide
+        # frame uses python coords: 0 means already in frame.
+        #                           1 means skip one nt
+        #                           2 means skip two nts
+        # partial will take values of "partial in 5'", "partial in 3'", or "partial in 5' and 3'"
+        # depending where the del is.
     """
     
     def __init__(self,**kw):
-        def kw_init(attrib):
-            if kw.has_key(attrib):
-                self.__setattr__(attrib,kw[attrib])
         
-        kw_init('accession')
-        kw_init('seq')
-        kw_init('gapped_seq')
-        kw_init('description')
-        kw_init('locus')
-        kw_init('gene')
-        kw_init('allele')
-        kw_init('species')
-        kw_init('functional')
-        kw_init('imgt_label')
-        kw_init('accession_coords')
-        kw_init('length')
-        kw_init('frame')
-        kw_init('partial')
+        if 'record' in kw:  # init with SeqRecord object
+            self._record = kw['record']
+        
+                # 
+                # 
+                # 
+                # def kw_init(attrib):
+                #     if kw.has_key(attrib):
+                #         self.__setattr__(attrib,kw[attrib])
+                # 
+                # kw_init('accession')
+                # kw_init('seq')
+                # kw_init('gapped_seq')
+                # kw_init('description')
+                # kw_init('locus')
+                # kw_init('gene')
+                # kw_init('allele')
+                # kw_init('species')
+                # kw_init('functional')
+                # kw_init('imgt_label')
+                # kw_init('accession_coords')
+                # kw_init('length')
+                # kw_init('frame')
+                # kw_init('partial')
     
     def init_from_imgt(self,fasta_header,seq):
         """Initialize object from IMGT fasta header and seq"""
@@ -152,7 +168,30 @@ class JReferenceEntry(ReferenceEntry):
 # = Parsing IMGT =
 # ================
 
-# import pdb
+def parse_IMGT_fasta_header(record):
+    data = record.description.strip().split('|')
+    
+    record.annotations['accession'] = data[0]
+    record.annotations['allele'] = data[1]
+    record.annotations['gene']   = record.annotations['allele'].split('*')[0]
+    record.annotations['locus']  = record.annotations['gene'][0:3]
+    record.annotations['species']    = data[2]
+    record.annotations['functional'] = data[3]
+    record.annotations['imgt_label'] = data[4]
+    record.annotations['raw_start_coord'] = int(data[5].split('.')[0]) - 1  # note conv to pythonic coords
+    record.annotations['raw_end_coord']   = int(data[5].split('.')[-1])
+    record.annotations['frame'] = int(data[7]) - 1   # note change to python numbering (0-based)
+    record.annotations['partial'] = data[13]
+
+def process_IMGT_V_references(fasta_infilename,pickle_outfilename,verbose=False):
+    ip = open(fasta_infilename,'r')
+    for record in SeqIO.parse(ip,'fasta'):
+        parse_IMGT_fasta_header(record)
+        
+
+
+
+
 
 def process_IMGT_references(ref_entry_cls,fasta_infilename,pickle_outfilename,verbose=False):
     """Load references from the IMGT/V-QUEST fasta file refs
