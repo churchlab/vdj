@@ -1,11 +1,11 @@
-__init__.py
-alignment.py
-analysis.py
-clustering.py
-legacy.py
-params.py
-pipeline.py
-plotting.py
-refseq.py
-refsequtils.py
-setup.py
+__init__.py         COMPLETE
+alignment.py        
+analysis.py         
+clustering.py       
+legacy.py           DELETED
+params.py           COMPLETE
+pipeline.py         
+plotting.py         
+refseq.py           
+refsequtils.py      
+setup.py            

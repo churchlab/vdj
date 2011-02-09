@@ -50,8 +50,34 @@ class ImmuneChain(object):
         
         # define a set for uniq tags
         self._tags = set(self._record.annotations.setdefault('tags',[]))
+        
+        # define list of special attribute names. These attributes are all
+        # handled wrt the underlying SeqRecord object object automatically. if i
+        # try to set/get any other attribute, i must catch it to ensure its info
+        # gets encoded in the SeqRecord. this is done in the __setattr__ and
+        # __getattr__ fns
+        self._reserved = [ 'seq',
+                           'descr',
+                           'tags',
+                           'cdr3',
+                           'junction',
+                           'v',
+                           'd',
+                           'j',
+                           'vj',
+                           'vdj' ]
     
     # define some simple interface to biopython internals
+    
+    def __getattr__(self,name):
+        if name not in self._reserved:
+            return self._record.annotations[name]
+        return object.__getattr__(self,name)
+    
+    def __setattr__(self,name,value):
+        if name not in self._reserved:
+            self._record.annotations[name] = value
+        object.__setattr__(self,name,value)
     
     @property
     def seq(self):
@@ -70,8 +96,8 @@ class ImmuneChain(object):
         self._record.descr = d
     
     def set_annot(self,name,value):
-        if name == 'tags':
-            raise ValueError: "'tags' annotation is reserved"
+        if name in self._reserved:
+            raise ValueError: "'%s' annotation is reserved" % name
         
         if isinstance(value,types.StringTypes):
             value = str(value)
@@ -195,6 +221,10 @@ class ImmuneChain(object):
     @property
     def vdj(self):
         return '|'.join([self.v,self.d,self.j])
+    
+    @property
+    def tags(self):
+        return self._tags
     
     def __len__(self):
         return len(self.seq)
