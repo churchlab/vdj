@@ -70,14 +70,20 @@ class ImmuneChain(object):
     # define some simple interface to biopython internals
     
     def __getattr__(self,name):
-        if name not in self._reserved:
-            return self._record.annotations[name]
-        return object.__getattr__(self,name)
+        # This function should only get called if I am looking for an attribute that
+        # didn't already have a setter defined or a default method.  In this case, I
+        # search the annotations dictionary of the underlying SeqRecord to try to find
+        # the information.
+        
+        # if name not in self._reserved:
+        return self._record.annotations[name]
+        # return object.__getattr__(self,name)
     
     def __setattr__(self,name,value):
+        object.__setattr__(self,name,value)         # python object attr setting
         if name not in self._reserved:
-            self._record.annotations[name] = value
-        object.__setattr__(self,name,value)
+            self._record.annotations[name] = value  # reflect attr in SeqRecord annotations
+        
     
     @property
     def seq(self):
