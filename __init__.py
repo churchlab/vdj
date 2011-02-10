@@ -83,7 +83,6 @@ class ImmuneChain(object):
         object.__setattr__(self,name,value)         # python object attr setting
         if name not in self._reserved:
             self._record.annotations[name] = value  # reflect attr in SeqRecord annotations
-        
     
     @property
     def seq(self):
