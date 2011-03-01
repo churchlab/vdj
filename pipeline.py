@@ -106,6 +106,7 @@ def cat_vdjxml(files,outhandle):
         inhandle = open(f,'r')
         for chain in vdj.parse_VDJXML(inhandle):
             print >>outhandle, chain
+        inhandle.close()
     print >>outhandle, "</root>"
 
 def partition_VJ(inhandle,basename):
