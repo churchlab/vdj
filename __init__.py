@@ -6,6 +6,10 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import NucleotideAlphabet
 from Bio import SeqIO
 
+# select which IMGT reference set to load; human by default
+organism = 'human'
+# organism = 'mouse'
+
 # ===================
 # = DATA STRUCTURES =
 # ===================
