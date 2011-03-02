@@ -33,6 +33,8 @@ TRGJ_fasta = 'TRGJ.fasta'
 # that, it will not be recomputed unless it is forced
 
 # persistent data directory
+processed_dir = 'processed'
+
 pickle_dir = 'pickle'
 
 # Relevant LIGM records in pickle format

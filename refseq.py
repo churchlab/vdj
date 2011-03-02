@@ -6,6 +6,45 @@ import cPickle as pickle
 import params
 import refsequtils
 
+# There are two ways to initialize the reference database:
+# 
+#     1.  Reference IMGT set (used for IMGT/V-QUEST)
+#         
+#         The set should be a FASTA file from the V-QUEST set, or formatted
+#         similarly.
+#     
+#     2.  From your own set.  The data should be formatted as IMGT-flavored
+#         INSDC (i.e., Genbank/EMBL).
+#         
+#         The set will trivially just transfer any annotation in the
+#         reference sequences.  This should, minimally, include the IMGT
+#         annotations for the CDR3 (2nd-CYS for V region and J-TRP or
+#         J-PHE for J region).
+# 
+# The package will load the IMGT set by default.  The first time it loads the
+# IMGT set it will save an IMGT-INSDC-type file for each locus.
+# 
+# If you want to load your own set, you can than do so afterwards and it will
+# override the IMGT set.  These are premade.
+
+# ==================
+# = Load IMGT data =
+# ==================
+
+# check if we already processed the IMGT reference data before
+if not os.path.exists( os.path.join(params.vdj_dir,params.processed_dir) ):
+    os.mkdir( os.path.join(params.vdj_dir,params.pickle_dir) )
+
+
+
+def process_imgt_reference_dir( ref_dir ):
+    for reference_file in glob.glob( os.path.join(params.vdj_dir,params.data_dir,'*.fasta') ):
+        
+    
+def process_fasta_reference_dir( ref_dir ):
+    pass
+
+
 
 # ==============================
 # = First-time initializations =
