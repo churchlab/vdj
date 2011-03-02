@@ -9,3 +9,7 @@ plotting.py         DELETED
 refseq.py           COMPLETE
 refsequtils.py      
 setup.py            COMPLETE
+
+
+
+params.py lists the fasta files that contain the list of reference elements, including their informative headers.
