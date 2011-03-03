@@ -6,6 +6,8 @@ import cPickle as pickle
 import params
 import refsequtils
 
+import vdj
+
 # There are two ways to initialize the reference database:
 # 
 #     1.  Reference IMGT set (used for IMGT/V-QUEST)
@@ -32,15 +34,57 @@ import refsequtils
 # ==================
 
 # check if we already processed the IMGT reference data before
-if not os.path.exists( os.path.join(params.vdj_dir,params.processed_dir) ):
-    os.mkdir( os.path.join(params.vdj_dir,params.pickle_dir) )
 
-
-
-def process_imgt_reference_dir( ref_dir ):
-    for reference_file in glob.glob( os.path.join(params.vdj_dir,params.data_dir,'*.fasta') ):
-        
+processed_dir_full_path = os.path.join(params.vdj_dir,params.processed_dir,vdj.organism)
+ref_dir_full_path = os.path.join(params.vdj_dir,params.data_dir)
+if not os.path.exists(processed_dir_full_path):
+    os.mkdir(processed_dir_full_path)
     
+    ligm_index = SeqIO.index( os.path.join(params.imgt_dir,ligm_filename), 'imgt')
+    
+    for reference_file in glob.glob( os.path.join(ref_dir_full_path,'*.fasta') ):
+        for record in SeqIO.parse(reference_file,'fasta'):
+            header_data = parse_imgt_fasta_header(record)
+            imgt_record = ligm_index[header_data['accession']]
+            
+            
+            for (k,v) in header_data:
+                
+    
+    
+    process_imgt_reference_dir(ref_dir_full_path,processed_dir_full_path)
+
+
+def parse_imgt_fasta_header(record):
+    raw_data = record.description.strip().split('|')
+    data = {}
+    data['accession'] = raw_data[0]
+    data['allele'] = raw_data[1]
+    data['locus'] = self.allele[0:4]
+    data['gene'] = self.allele.split('*')[0]
+    data['species'] = raw_data[2]
+    data['functionality'] = raw_data[3]
+    data['imgt_label'] = raw_data[4]
+    data['frame'] = int(raw_data[7]) - 1   # note change to python numbering (0-based)
+    data['partial'] = raw_data[13]
+    return data
+
+
+
+
+group = os.splitext(os.path.basename(reference_file))[0]
+
+
+
+from Bio import SeqIO
+
+            
+        
+        
+
+def process_imgt_reference_fasta( ref_fasta ):
+    
+
 def process_fasta_reference_dir( ref_dir ):
     pass
 

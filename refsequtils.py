@@ -14,6 +14,15 @@ import params
 
 identity = string.maketrans('','')
 
+
+
+def process_imgt_reference_dir( ref_dir, storage_dir ):
+    
+            
+
+
+
+
 # ===================
 # = Data structures =
 # ===================
@@ -44,8 +53,9 @@ class ReferenceEntry(object):
     
     def __init__(self,**kw):
         
-        if 'record' in kw:  # init with SeqRecord object
+        if 'record' in kw:  # init with imgt-format SeqRecord object
             self._record = kw['record']
+        
         
                 # 
                 # 
