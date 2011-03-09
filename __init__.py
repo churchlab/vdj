@@ -6,8 +6,6 @@ from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import NucleotideAlphabet
 from Bio import SeqIO
 
-from SeqRecordLite import SeqRecordLite
-
 # select which IMGT reference set to load; human by default
 organism = 'human'
 # organism = 'mouse'
@@ -16,62 +14,63 @@ organism = 'human'
 # = DATA STRUCTURES =
 # ===================
 
-class ImmuneChain(SeqRecordLite):
+class ImmuneChain(SeqRecord):
+    def __init__(self, *args, **kw):
+        if isinstance(args[0],SeqRecord):
+            # if initializing with SeqRecord, then manually transfer the data
+            # based on the initializer for SeqRecord (http://goo.gl/X95Zf)
+            record = args[0]
+            SeqRecord.__init__(self, seq, id=record.id, name=record.name,
+                     description=record.description, dbxrefs=record.dbxrefs,
+                     features=record.features, annotations=record.annotations,
+                     letter_annotations=record.letter_annotations)
+        else:
+            # assume I'm initializing just like a regular SeqRecord:
+            SeqRecord.__init__(*args,**kw)
+        
+        # Finally, I perform any problem-specific additional initializations
+        # here.
+        pass
+
+
+
+
+
+
+class ImmuneChain(SeqRecord):
     """Data structure to represent an immune chain.
     
-    The underlying data structure is actually a biopython `SeqRecord` object.
-    This class wraps it in a way that maintains the simple-to-use interface to
-    get at some common annotations. 
-    
-    Sequences must be nucleotides, not protein.
+    It extends a biopython SeqRecord object with some simpler interface for
+    common analyses.
     """
     
-    def __init__(self,**kw):
+    def __init__(self, *args, **kw):
         """Initialize ImmuneChain
         
-        seq is 5'->3'
+        This is performed either with a prebuilt SeqRecord object or as a
+        native SeqRecord object.
         """
-        # first we define our underlying SeqRecord object
-        if 'record' in kw:  # init with SeqRecord object
-            SeqRecordLite.__init__(self,kw['record'])
-        else:   # otherwise, initialize manually
-            if 'seq' in kw:
-                seq = Seq(data=kw['seq'],alphabet=NucleotideAlphabet())
-                record = SeqRecord(seq=seq,id='',name='',description='')
-                SeqRecordLite.__init__(self,record)
-            else:
-                SeqRecordLite.__init__(self)
-        
-        # check for explicit descriptor
-        if kw.has_key('descr'):
-            descr = kw.pop('descr')
-            self._record.id = descr
-            self._record.name = descr
-            self._record.description = descr
+        if isinstance(args[0],SeqRecord):
+            self.init_with_SeqRecord(args[0])
+        elif kw.has_key('record'):
+            self.init_with_SeqRecord(kw['record'])
+        else:
+            SeqRecord.__init__(self,*args,**kw)
         
         # define a set for uniq tags
-        self._tags = set(self._record.annotations.setdefault('tags',[]))
+        self._tags = set(self.annotations.setdefault('tags',[]))
+        
+        # precompute hash on features to performance
+        self._features = {}
+        for (i,feature) in enumerate(self.features):
+            self._features.setdefault(feature.type,[]).append(i)
     
-    
-    # define some simple interface to biopython internals
-    
-    @property
-    def seq(self):
-        return self._record.seq.tostring()
-    
-    @seq.setter
-    def seq(self,s):
-        self._record.seq = Seq(data=s,alphabet=NucleotideAlphabet())
-    
-    @property
-    def descr(self):
-        return self._record.descr
-    
-    @descr.setter
-    def descr(self,d):
-        self._record.id = d
-        self._record.name = d
-        self._record.description = d
+    def init_with_SeqRecord(self,record):
+        SeqRecord.__init__(self, seq=record.seq, id=record.id,
+                            name=record.name, description=record.description,
+                            dbxrefs=record.dbxrefs, features=record.features,
+                            annotations=record.annotations,
+                            letter_annotations=record.letter_annotations)
     
     
     # define interface to tags object
@@ -86,7 +85,7 @@ class ImmuneChain(SeqRecordLite):
         
         tags = set(tags)
         self._tags.update(tags)
-        self._record.annotations['tags'] = list(self._tags)
+        self.annotations['tags'] = list(self._tags)
         
         return self
     
@@ -116,7 +115,7 @@ class ImmuneChain(SeqRecordLite):
         for tag in tags:
             self._tags.remove(tag)
         
-        self._record.annotations['tags'] = list(self._tags)
+        self.annotations['tags'] = list(self._tags)
         return self
     
     def del_tag(self,tag):
@@ -127,7 +126,7 @@ class ImmuneChain(SeqRecordLite):
     
     @property
     def junction(self):
-        return self._record.features[self._features['CDR3-IMGT'][0]].extract(self._record.seq.tostring())
+        return self.features[self._features['CDR3-IMGT'][0]].extract(self._record.seq.tostring())
     
     @property
     def cdr3(self):
@@ -135,15 +134,15 @@ class ImmuneChain(SeqRecordLite):
     
     @property
     def v(self):
-        return self._record.features[self._features['V-REGION'][0]].qualifiers['allele']
+        return self.features[self._features['V-REGION'][0]].qualifiers['allele']
     
     @property
     def d(self):
-        return self._record.features[self._features['D-REGION'][0]].qualifiers['allele']
+        return self.features[self._features['D-REGION'][0]].qualifiers['allele']
     
     @property
     def j(self):
-        return self._record.features[self._features['J-REGION'][0]].qualifiers['allele']
+        return self.features[self._features['J-REGION'][0]].qualifiers['allele']
     
     @property
     def vj(self):
@@ -160,7 +159,7 @@ class ImmuneChain(SeqRecordLite):
         return self.__repr__()
     
     def __repr__(self):
-        return self._record.format('imgt')
+        return self.format('imgt')
 
 # ================
 # = INPUT/OUTPUT =
