@@ -15,29 +15,6 @@ organism = 'human'
 # ===================
 
 class ImmuneChain(SeqRecord):
-    def __init__(self, *args, **kw):
-        if isinstance(args[0],SeqRecord):
-            # if initializing with SeqRecord, then manually transfer the data
-            # based on the initializer for SeqRecord (http://goo.gl/X95Zf)
-            record = args[0]
-            SeqRecord.__init__(self, seq, id=record.id, name=record.name,
-                     description=record.description, dbxrefs=record.dbxrefs,
-                     features=record.features, annotations=record.annotations,
-                     letter_annotations=record.letter_annotations)
-        else:
-            # assume I'm initializing just like a regular SeqRecord:
-            SeqRecord.__init__(*args,**kw)
-        
-        # Finally, I perform any problem-specific additional initializations
-        # here.
-        pass
-
-
-
-
-
-
-class ImmuneChain(SeqRecord):
     """Data structure to represent an immune chain.
     
     It extends a biopython SeqRecord object with some simpler interface for
@@ -50,27 +27,31 @@ class ImmuneChain(SeqRecord):
         This is performed either with a prebuilt SeqRecord object or as a
         native SeqRecord object.
         """
-        if isinstance(args[0],SeqRecord):
+        if isinstance(args[0],SeqRecord):   # pre-build SeqRecord
             self.init_with_SeqRecord(args[0])
-        elif kw.has_key('record'):
+        elif kw.has_key('record'):          # pre-built SeqRecord
             self.init_with_SeqRecord(kw['record'])
-        else:
+        else:   # native SeqRecord init
             SeqRecord.__init__(self,*args,**kw)
         
         # define a set for uniq tags
         self._tags = set(self.annotations.setdefault('tags',[]))
         
-        # precompute hash on features to performance
-        self._features = {}
-        for (i,feature) in enumerate(self.features):
-            self._features.setdefault(feature.type,[]).append(i)
+        # precompute hash on features for performance
+        self.update_feature_dict()
     
     def init_with_SeqRecord(self,record):
+        # Initialize self using existing SeqRecord object
         SeqRecord.__init__(self, seq=record.seq, id=record.id,
                             name=record.name, description=record.description,
                             dbxrefs=record.dbxrefs, features=record.features,
                             annotations=record.annotations,
                             letter_annotations=record.letter_annotations)
+    
+    def update_feature_dict(self):
+        self._features = {}
+        for (i,feature) in enumerate(self.features):
+            self._features.setdefault(feature.type,[]).append(i)
     
     
     # define interface to tags object
@@ -165,7 +146,7 @@ class ImmuneChain(SeqRecord):
 # = INPUT/OUTPUT =
 # ================
 
-def parse_VDJXML(inputfile):
+def parse_imgt(inputfile):
     """Parser for VDJXML
     
     Really just a wrapper around SeqIO
@@ -173,7 +154,7 @@ def parse_VDJXML(inputfile):
     for record in SeqIO.parse(inputfile,'imgt'):
         yield ImmuneChain(record)
 
-def filter_parse_VDJXML(inputfile,predicate):
+def filter_parse_imgt(inputfile,predicate):
     """Parser that takes a predicate function"""
     for record in SeqIO.parse(inputfile,'imgt'):
         chain = ImmuneChain(record)
