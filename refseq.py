@@ -35,41 +35,55 @@ import vdj
 
 # check if we already processed the IMGT reference data before
 
-processed_dir_full_path = os.path.join(params.vdj_dir,params.processed_dir,vdj.organism)
 ref_dir_full_path = os.path.join(params.vdj_dir,params.data_dir)
+ligm_index = None   # LIGM not loaded by default
+
+# figure out which files to process
+
+processed_dir_full_path = os.path.join(params.vdj_dir,params.processed_dir,vdj.organism)
 if not os.path.exists(processed_dir_full_path):
     os.mkdir(processed_dir_full_path)
-    
-    ligm_index = SeqIO.index( os.path.join(params.imgt_dir,ligm_filename), 'imgt')
-    
-    for reference_file in glob.glob( os.path.join(ref_dir_full_path,'*.fasta') ):
-        for record in SeqIO.parse(reference_file,'fasta'):
-            header_data = parse_imgt_fasta_header(record)
-            imgt_record = ligm_index[header_data['accession']]
-            
-            
-            for (k,v) in header_data:
-                pass
-    
-    
-    process_imgt_reference_dir(ref_dir_full_path,processed_dir_full_path)
 
+reference_files = glob.glob( os.path.join(ref_dir_full_path,'*.fasta') )
+processed_files = glob.glob( os.path.join(processed_dir_full_path,'*.imgt') )
+
+get_group = lambda f: os.path.splitext(os.path.basename(f))[0]
+loci_to_process = set(map(get_group,reference_files)) - set(map(get_group,processed_files))
+files_to_process = filter(lambda f: get_group(f) in loci_to_process,reference_files)
+
+# process those files
+
+for reference_fasta in files_to_process:
+    if ligm_index == None: ligm_index = SeqIO.index( os.path.join(params.imgt_dir,ligm_filename), 'imgt')
+    group = get_group(reference_file)
+    reference_imgt = os.path.join(processed_dir_full_path,group+'.imgt')
+    
+    reference_records = []
+    for record in SeqIO.parse(reference_fasta,'fasta'):
+        header_data = parse_imgt_fasta_header(record)
+        imgt_record = ligm_index[header_data['accession']]
+        
+        # prune down to the V-REGION annotated in V-QUEST fasta file
+        reference_record = imgt_record[header_data['coords'][0]:header_data['coords'][1]]
+        reference_records.append(reference_record)
 
 def parse_imgt_fasta_header(record):
     raw_data = record.description.strip().split('|')
     data = {}
     data['accession'] = raw_data[0]
     data['allele'] = raw_data[1]
-    data['locus'] = data['allele'][0:4]
+    data['group'] = data['allele'][0:4]
     data['gene'] = data['allele'].split('*')[0]
     data['species'] = raw_data[2]
     data['functionality'] = raw_data[3]
     data['imgt_label'] = raw_data[4]
     data['frame'] = int(raw_data[7]) - 1   # note change to python numbering (0-based)
     data['partial'] = raw_data[13]
+    raw_coords_start = int(raw_data[5].split('.')[0])
+    raw_coords_end   = int(raw_data[5].split('.')[-1])
+    coords = (raw_coords_start - 1,raw_coords_end)    # note the conversion to python coord system
+    data['coords'] = coords
     return data
-
-
 
 
 group = os.splitext(os.path.basename(reference_file))[0]
