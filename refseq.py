@@ -4,7 +4,7 @@ import types
 import cPickle as pickle
 
 import params
-import refsequtils
+# import refsequtils
 
 import vdj
 
@@ -49,7 +49,7 @@ if not os.path.exists(processed_dir_full_path):
             
             
             for (k,v) in header_data:
-                
+                pass
     
     
     process_imgt_reference_dir(ref_dir_full_path,processed_dir_full_path)
@@ -60,8 +60,8 @@ def parse_imgt_fasta_header(record):
     data = {}
     data['accession'] = raw_data[0]
     data['allele'] = raw_data[1]
-    data['locus'] = self.allele[0:4]
-    data['gene'] = self.allele.split('*')[0]
+    data['locus'] = data['allele'][0:4]
+    data['gene'] = data['allele'].split('*')[0]
     data['species'] = raw_data[2]
     data['functionality'] = raw_data[3]
     data['imgt_label'] = raw_data[4]
@@ -83,7 +83,7 @@ from Bio import SeqIO
         
 
 def process_imgt_reference_fasta( ref_fasta ):
-    
+    pass
 
 def process_fasta_reference_dir( ref_dir ):
     pass
