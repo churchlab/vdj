@@ -37,26 +37,23 @@ class vdj_aligner(object):
         # set reference sequences (locus) and generate hashes from ref data
         self.locus = kw['locus']
         
-        self.refV_seqs = refseq.__getattribute__(self.locus+'V_seqs')
-        self.Vseqlistkeys = vdj_aligner.seqdict2kmers( self.refV_seqs, self.seedpatterns )
+        self.refV = refseq.__getattribute__(self.locus+'V')
+        self.Vseqlistkeys = vdj_aligner.seqdict2kmers( self.refV, self.seedpatterns )
         
-        self.refJ_seqs = refseq.__getattribute__(self.locus+'J_seqs')
-        self.Jseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ_seqs, self.seedpatterns )
+        self.refJ = refseq.__getattribute__(self.locus+'J')
+        self.Jseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ, self.seedpatterns )
         
         try:    # this locus may not have D segments
-            self.refD_seqs = refseq.__getattribute__(self.locus+'D_seqs')
-            self.Dseqlistkeysmini = vdj_aligner.seqdict2kmers( self.refD_seqs, self.miniseedpatterns )
+            self.refD = refseq.__getattribute__(self.locus+'D')
+            self.Dseqlistkeysmini = vdj_aligner.seqdict2kmers( self.refD, self.miniseedpatterns )
         except AttributeError:
             pass
         
-        self.refV_offset = refseq.__getattribute__(self.locus+'V_offset')
-        self.refJ_offset = refseq.__getattribute__(self.locus+'J_offset')
-        
         # Generate reference data for positive sequence ID
-        posVseqlistkeys = vdj_aligner.seqdict2kmers( self.refV_seqs, [self.patternPos] )
-        posJseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ_seqs, [self.patternPos] )
-        negVseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refV_seqs), [self.patternPos] )
-        negJseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refJ_seqs), [self.patternPos] )
+        posVseqlistkeys = vdj_aligner.seqdict2kmers( self.refV, [self.patternPos] )
+        posJseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ, [self.patternPos] )
+        negVseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refV), [self.patternPos] )
+        negJseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refJ), [self.patternPos] )
         
         # collect possible keys
         posset = set([])
@@ -80,17 +77,15 @@ class vdj_aligner(object):
     
     
     def Valign_chain(self,chain,verbose=False):
-        query = chain.seq
-        
         # compute hashes from query seq
-        querykeys = vdj_aligner.seq2kmers(query,self.seedpatterns)
+        querykeys = vdj_aligner.seq2kmers(chain,self.seedpatterns)
         
         # for each reference V segment and each pattern, how many shared k-mers are there?
         Vscores_hash = vdj_aligner.hashscore(self.Vseqlistkeys,querykeys)
         
         # get numCrudeVCandidates highest scores in Vscores and store their names in descending order
-        goodVseglist = sorted(self.refV_seqs.keys(),key=lambda k: Vscores_hash[k],reverse=True)[0:self.numCrudeVCandidates]
-        goodVsegdict = dict([(seg,self.refV_seqs[seg]) for seg in goodVseglist])
+        goodVseglist = sorted(self.refV.keys(),key=lambda k: Vscores_hash[k],reverse=True)[0:self.numCrudeVCandidates]
+        goodVsegdict = dict([(seg,self.refV[seg]) for seg in goodVseglist])
         
         # Needleman-Wunsch of V segment
         (bestVseg,bestVscore,bestVscoremat,bestVtracemat) = vdj_aligner.bestalignNW(goodVsegdict,query,self.minVscore)
@@ -331,6 +326,24 @@ class vdj_aligner(object):
     
     
     @staticmethod
+    def ungapped_coord_correspondence(aln_from, aln_to):
+        if len(aln_from) != len(aln_to):
+            raise ValueError, "from and to strings must be same length"
+        
+        coord_from = 0
+        coord_to = 0
+        for coord_gapped in range(len(aln_from)+1):
+            mapping.setdefault(coord_from,[]).append(coord_to)
+            if aln_from[coord_gapped-1:coord_gapped+1] == '--':
+                coord_to += 1
+            elif 
+            mapping.setdefault(coord_from,[]).append(coord_to)
+            coord_from += 1
+            coord_to += 1
+        return mapping
+    
+    
+    @staticmethod
     def pruneVregion( alnref, alnrefcoords, alnquery, alnquerycoords, offset ):
         """Prune V region out of query sequence based on alignment.
         
@@ -385,7 +398,9 @@ class vdj_aligner(object):
     
     @staticmethod
     def construct_alignment(seq1,seq2,scoremat,tracemat):
-        """Construct alignment of ref segment to query from score and trace matrices."""
+        """Construct alignment of ref segment to query from score and trace
+        matrices.
+        """
         nrows,ncols = scoremat.shape
         
         # do some error checking
@@ -409,12 +424,8 @@ class vdj_aligner(object):
             row = np.argmax( scoremat[:,ncols-1] )
         
         # if row is coord in matrix, row-1 is coord in seq (b/c of init conditions)
-        
-        aln1 = seq1[row-1]
-        aln2 = seq2[col-1]
-        
-        aln1end = row
-        aln2end = col
+        aln1 = seq1[row-1:] + '-'*(ncols-col-1)
+        aln2 = seq2[col-1:] + '-'*(nrows-row-1)
         
         while (row-1 > 0) and (col-1 > 0):
             # compute direction of moves
@@ -437,11 +448,10 @@ class vdj_aligner(object):
             else:
                 raise Exception, "Trace matrix contained jump of greater than one row/col."
         
-        aln1start = row-1
-        aln2start = col-1
+        aln1 = seq1[:row-1]+ '-'*(col-1) + aln1
+        aln2 = seq2[:col-1]+ '-'*(row-1) + aln2
         
-        # the coords refer to coords in the sequence (pythonic)
-        return aln1, (aln1start,aln1end), aln2, (aln2start,aln2end)
+        return aln1, aln2
     
     
     @staticmethod

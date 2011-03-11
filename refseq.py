@@ -65,7 +65,10 @@ for reference_fasta in files_to_process:
         
         # prune down to the V-REGION annotated in V-QUEST fasta file
         reference_record = imgt_record[header_data['coords'][0]:header_data['coords'][1]]
+        reference_record.annotations['allele'] = header_data['allele']
         reference_records.append(reference_record)
+    
+    SeqIO.write(reference_records,reference_imgt,'imgt')
 
 def parse_imgt_fasta_header(record):
     raw_data = record.description.strip().split('|')
@@ -85,22 +88,57 @@ def parse_imgt_fasta_header(record):
     data['coords'] = coords
     return data
 
+# load the reference data (as dict: key=allele, value=SeqRecord of reference)
+IGHV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGHV.imgt'),'imgt')])
+IGHD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGHD.imgt'),'imgt')])
+IGHJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGHJ.imgt'),'imgt')])
+IGKV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGKV.imgt'),'imgt')])
+IGKJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGKJ.imgt'),'imgt')])
+IGLV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGLV.imgt'),'imgt')])
+IGLJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'IGLJ.imgt'),'imgt')])
+TRBV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRBV.imgt'),'imgt')])
+TRBD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRBD.imgt'),'imgt')])
+TRBJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRBJ.imgt'),'imgt')])
+TRAV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRAV.imgt'),'imgt')])
+TRAJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRAJ.imgt'),'imgt')])
+TRDV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRDV.imgt'),'imgt')])
+TRDD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRDD.imgt'),'imgt')])
+TRDJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRDJ.imgt'),'imgt')])
+TRGV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRGV.imgt'),'imgt')])
+TRGJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir_full_path,'TRGJ.imgt'),'imgt')])
 
-group = os.splitext(os.path.basename(reference_file))[0]
 
 
 
-from Bio import SeqIO
 
-            
-        
-        
 
-def process_imgt_reference_fasta( ref_fasta ):
-    pass
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
+# *************************************************************************
 
-def process_fasta_reference_dir( ref_dir ):
-    pass
+
+
 
 
 
