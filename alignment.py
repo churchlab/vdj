@@ -326,20 +326,29 @@ class vdj_aligner(object):
     
     
     @staticmethod
-    def ungapped_coord_correspondence(aln_from, aln_to):
+    def ungapped_coord_mapping(aln_from, aln_to):
         if len(aln_from) != len(aln_to):
             raise ValueError, "from and to strings must be same length"
         
         coord_from = 0
         coord_to = 0
-        for coord_gapped in range(len(aln_from)+1):
-            mapping.setdefault(coord_from,[]).append(coord_to)
+        mapping = {}
+        for coord_gapped in range(len(aln_from)):
+            
             if aln_from[coord_gapped-1:coord_gapped+1] == '--':
                 coord_to += 1
-            elif 
+                continue
+            
             mapping.setdefault(coord_from,[]).append(coord_to)
-            coord_from += 1
-            coord_to += 1
+            
+            if aln_from[coord_gapped] != '-':
+                coord_from += 1
+            
+            if aln_to[coord_gapped] != '-':
+                coord_to += 1
+        
+        mapping.setdefault(coord_from,[]).append(coord_to)
+        
         return mapping
     
     

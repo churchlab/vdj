@@ -33,4 +33,3 @@ Things to update in `alignment.py`:
 *   seqdict2revcompseqdict
 *   seq2kmers
 *   bestalignNW
-
