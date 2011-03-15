@@ -2,6 +2,7 @@ import warnings
 import copy
 
 import numpy as np
+from Bio.SeqRecord import SeqRecord
 
 import seqtools
 
@@ -38,22 +39,25 @@ class vdj_aligner(object):
         self.locus = kw['locus']
         
         self.refV = refseq.__getattribute__(self.locus+'V')
-        self.Vseqlistkeys = vdj_aligner.seqdict2kmers( self.refV, self.seedpatterns )
+        refV_seqs = dict([(key,record.seq.tostring()) for record in self.refV])
+        self.Vseqlistkeys = vdj_aligner.seqdict2kmers( refV_seqs, self.seedpatterns )
         
         self.refJ = refseq.__getattribute__(self.locus+'J')
-        self.Jseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ, self.seedpatterns )
+        refJ_seqs = dict([(key,record.seq.tostring()) for record in self.refJ])
+        self.Jseqlistkeys = vdj_aligner.seqdict2kmers( refJ_seqs, self.seedpatterns )
         
         try:    # this locus may not have D segments
             self.refD = refseq.__getattribute__(self.locus+'D')
-            self.Dseqlistkeysmini = vdj_aligner.seqdict2kmers( self.refD, self.miniseedpatterns )
+            refD_seqs = dict([(key,record.seq.tostring()) for record in self.refD])
+            self.Dseqlistkeysmini = vdj_aligner.seqdict2kmers( refD_seqs, self.miniseedpatterns )
         except AttributeError:
             pass
         
         # Generate reference data for positive sequence ID
-        posVseqlistkeys = vdj_aligner.seqdict2kmers( self.refV, [self.patternPos] )
-        posJseqlistkeys = vdj_aligner.seqdict2kmers( self.refJ, [self.patternPos] )
-        negVseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refV), [self.patternPos] )
-        negJseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(self.refJ), [self.patternPos] )
+        posVseqlistkeys = vdj_aligner.seqdict2kmers( refV_seqs, [self.patternPos] )
+        posJseqlistkeys = vdj_aligner.seqdict2kmers( refJ_seqs, [self.patternPos] )
+        negVseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(refV_seqs), [self.patternPos] )
+        negJseqlistkeys = vdj_aligner.seqdict2kmers( vdj_aligner.seqdict2revcompseqdict(refJ_seqs), [self.patternPos] )
         
         # collect possible keys
         posset = set([])
@@ -78,28 +82,25 @@ class vdj_aligner(object):
     
     def Valign_chain(self,chain,verbose=False):
         # compute hashes from query seq
-        querykeys = vdj_aligner.seq2kmers(chain,self.seedpatterns)
+        querykeys = vdj_aligner.seq2kmers(chain.seq.tostring(),self.seedpatterns)
         
         # for each reference V segment and each pattern, how many shared k-mers are there?
         Vscores_hash = vdj_aligner.hashscore(self.Vseqlistkeys,querykeys)
         
         # get numCrudeVCandidates highest scores in Vscores and store their names in descending order
         goodVseglist = sorted(self.refV.keys(),key=lambda k: Vscores_hash[k],reverse=True)[0:self.numCrudeVCandidates]
-        goodVsegdict = dict([(seg,self.refV[seg]) for seg in goodVseglist])
+        goodVsegdict = dict([(seg,self.refV[seg].seq.tostring()) for seg in goodVseglist])
         
         # Needleman-Wunsch of V segment
-        (bestVseg,bestVscore,bestVscoremat,bestVtracemat) = vdj_aligner.bestalignNW(goodVsegdict,query,self.minVscore)
+        (bestVseg,bestVscore,bestVscoremat,bestVtracemat) = vdj_aligner.bestalignNW(goodVsegdict,chain.seq.tostring(),self.minVscore)
         
         # if successful alignment
         if bestVseg is not None:
-            chain.v = bestVseg
-            
-            # find CDR3 boundary
-            # construct alignment
-            Valnref,Valnrefcoords,Valnquery,Valnquerycoords = vdj_aligner.construct_alignment( self.refV_seqs[bestVseg], query, bestVscoremat, bestVtracemat )
-            
-            # find CDR3 boundary
-            chain.v_end_idx = vdj_aligner.pruneVregion( Valnref, Valnrefcoords, Valnquery, Valnquerycoords, self.refV_offset[bestVseg] )
+            # copy features from ref to query
+            Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
+            coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
+            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping)
+            chain.update_feature_dict()
         
         return bestVscore
     
@@ -107,9 +108,10 @@ class vdj_aligner(object):
     def Jalign_chain(self,chain,verbose=False):
         # try pruning off V region for J alignment
         try:
-            query = chain.seq[chain.v_end_idx:]
+            second_cys = chain.__getattribute__('2nd-CYS')
+            query = chain.seq.tostring()[second_cys.location.end.position:]
         except AttributeError:
-            query = chain.seq
+            query = chain.seq.tostring()
         
         # compute hashes from query seq
         querykeys = vdj_aligner.seq2kmers(query,self.seedpatterns)
@@ -118,26 +120,19 @@ class vdj_aligner(object):
         Jscores_hash = vdj_aligner.hashscore(self.Jseqlistkeys,querykeys)
         
         # get numCrudeJCandidates highest scores in Jscores and store their names in descending order
-        goodJseglist = sorted(self.refJ_seqs.keys(),key=lambda k: Jscores_hash[k],reverse=True)[0:self.numCrudeJCandidates]
-        goodJsegdict = dict([(seg,self.refJ_seqs[seg]) for seg in goodJseglist])
+        goodJseglist = sorted(self.refJ.keys(),key=lambda k: Jscores_hash[k],reverse=True)[0:self.numCrudeJCandidates]
+        goodJsegdict = dict([(seg,self.refJ[seg].seq.tostring()) for seg in goodJseglist])
         
         # Needleman-Wunsch of J segment
         (bestJseg,bestJscore,bestJscoremat,bestJtracemat) = vdj_aligner.bestalignNW(goodJsegdict,query,self.minJscore)
         
         # if successful alignment
         if bestJseg is not None:
-            chain.j = bestJseg
-            
-            # find CDR3 boundary
-            # construct alignment
-            Jalnref,Jalnrefcoords,Jalnquery,Jalnquerycoords = vdj_aligner.construct_alignment( self.refJ_seqs[bestJseg], query, bestJscoremat, bestJtracemat )
-            
-            # find CDR3 boundary
-            j_start_offset = vdj_aligner.pruneJregion( Jalnref, Jalnrefcoords, Jalnquery, Jalnquerycoords, self.refJ_offset[bestJseg] )
-            try:
-                chain.j_start_idx = chain.v_end_idx + j_start_offset
-            except AttributeError:
-                chain.j_start_idx = j_start_offset
+            # copy features from ref to query
+            Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
+            coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
+            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, offset=second_cys)
+            chain.update_feature_dict()
         
         return bestJscore
     
@@ -155,15 +150,16 @@ class vdj_aligner(object):
         Dscores_hash = vdj_aligner.hashscore(self.Dseqlistkeysmini,querykeys)
         
         # get numCrudeJCandidates highest scores in Jscores and store their names in descending order
-        goodDseglist = sorted(self.refD_seqs.keys(),key=lambda k: Dscores_hash[k],reverse=True)[0:self.numCrudeDCandidates]
-        goodDsegdict = dict([(seg,self.refD_seqs[seg]) for seg in goodDseglist])
+        goodDseglist = sorted(self.refD.keys(),key=lambda k: Dscores_hash[k],reverse=True)[0:self.numCrudeDCandidates]
+        goodDsegdict = dict([(seg,self.refD[seg].seq.tostring()) for seg in goodDseglist])
         
         # Needleman-Wunsch of J segment
         (bestDseg,bestDscore,bestDscoremat,bestDtracemat) = vdj_aligner.bestalignSW(goodDsegdict,query,self.minDscore)
         
         # if successful alignment
         if bestDseg is not None:
-            chain.d = bestDseg
+            # TEMPORARY SOLUTION
+            chain.annotations['D-REGION'] = bestDseg
         
         return bestDscore
     
@@ -179,27 +175,18 @@ class vdj_aligner(object):
         
         scores['j'] = self.Jalign_chain(chain,verbose)
         
-        # only process junction if V and J successful
-        if hasattr(chain,'v') and hasattr(chain,'j'):
-            chain.junction = chain.seq[chain.v_end_idx:chain.j_start_idx]
-            
-            # only align D if I am in a locus that has D chains
-            if self.locus in ['IGH','TRB','TRD']:
-                scores['d'] = self.Dalign_chain(chain,verbose)
+        # only process junction if V and J successful and in a locus
+        # that has D chains
+        if chain.v and chain.j and self.locus in ['IGH','TRB','TRD']:
+            scores['d'] = self.Dalign_chain(chain,verbose)
         
         return scores
     
     
-    def align_seq(self,seq,verbose=False):
-        chain = vdj.ImmuneChain(descr='sequence',seq=seq)
-        self.align_chain(chain,verbose)
-        return chain
-    
-    
     def coding_chain(self,chain,verbose=False):
-        strand = self.seq2coding(chain.seq)
+        strand = self.seq2coding(chain.seq.tostring())
         if strand == -1:
-            chain.seq = seqtools.reverse_complement(chain.seq)
+            chain.seq = chain.seq.reverse_complement()
             chain.add_tag('revcomp')
         chain.add_tag('coding')
     
@@ -350,59 +337,6 @@ class vdj_aligner(object):
         mapping.setdefault(coord_from,[]).append(coord_to)
         
         return mapping
-    
-    
-    @staticmethod
-    def pruneVregion( alnref, alnrefcoords, alnquery, alnquerycoords, offset ):
-        """Prune V region out of query sequence based on alignment.
-        
-        Given ref and query alignments of V region, refID, and the original
-        query sequence, return a sequence with the V region cut out, leaving
-        the 2nd-CYS.  Also needs query alignment coords.
-        
-        """
-        # FR3end = self.refV_offset[refID] - alnrefcoords[0]        # first candidate position  
-        FR3end = offset - alnrefcoords[0]        # first candidate position  
-        refgaps = alnref[:FR3end].count('-')    # count gaps up to putative CYS pos
-        seengaps = 0
-        while refgaps > 0:     # iteratively find all gaps up to the CYS
-            seengaps += refgaps
-            FR3end   += refgaps     # adjust if for gaps in ref alignment
-            refgaps   = alnref[:FR3end].count('-') - seengaps   # any add'l gaps?
-        
-        querygaps = alnquery[:FR3end].count('-')
-        
-        # v_end_idx = idx of start of aln of query + distance into aln - # of gaps
-        v_end_idx = alnquerycoords[0] + FR3end - querygaps
-        
-        return v_end_idx
-    
-    
-    @staticmethod
-    def pruneJregion( alnref, alnrefcoords, alnquery, alnquerycoords, offset ):
-        """Prune J region out of query sequence based on alignment.
-        
-        Given ref and query alignments of J region, refID, and the original
-        query sequence, return a sequence with the J region cut out, leaving
-        the J-TRP.  Also needs query alignment coords.
-        
-        """
-        # FR4start = self.refJ_offset[refID] - alnrefcoords[0]  # first candidate position of J-TRP start
-        FR4start = offset - alnrefcoords[0]  # first candidate position of J-TRP start
-        refgaps = alnref[:FR4start].count('-')  # count gaps up to putative TRP pos
-        seengaps = 0
-        while refgaps > 0:     # iteratively find all gaps up to the TRP
-            seengaps += refgaps
-            FR4start += refgaps     # adjust for gaps in ref alignment
-            refgaps   = alnref[:FR4start].count('-') - seengaps # any add'l gaps?
-        
-        querygaps = alnquery[:FR4start].count('-')
-        
-        # j_start_offset = idx of start of aln of query + distance into aln - # of gaps
-        # note: j_start_offset is from the pruned query seq
-        j_start_offset = alnquerycoords[0] + FR4start - querygaps
-        
-        return j_start_offset
     
     
     @staticmethod

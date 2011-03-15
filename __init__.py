@@ -54,6 +54,24 @@ class ImmuneChain(SeqRecord):
             self._features.setdefault(feature.type,[]).append(i)
     
     
+    def __getattr__(self,name):
+        """Look for attributes in annotations and features."""
+        # only called if attribute wasn't found in normal place
+        # in theory, this should be hidden if there is a native
+        # attribute in a SeqRecord object
+        try:
+            return self.annotations[name]
+        except KeyError:
+            pass
+        
+        try:
+            return self.features[self._features[name][0]]
+        except KeyError:
+            pass
+        
+        raise AttributeError, "couldn't find %s" % name
+    
+    
     # define interface to tags object
     
     def add_tags(self,tags):

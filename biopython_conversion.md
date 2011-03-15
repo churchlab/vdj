@@ -29,7 +29,20 @@ Things to update in `alignment.py`:
 *   refD_seqs
 *   refV_offset
 *   refJ_offset
-*   seqdict2kmers
-*   seqdict2revcompseqdict
-*   seq2kmers
-*   bestalignNW
+*   seqdict2kmers   COMPLETE
+*   seqdict2revcompseqdict  COMPLETE
+*   seq2kmers   COMPLETE
+*   bestalignNW COMPLETE
+*   bestalignSW COMPLETE
+*   construct_alignment COMPLETE
+*   Valign_chain    COMPLETE
+*   Jalign_chain    COMPLETE
+
+*   `vdj_aligner_combined`
+
+Clean up imports
+
+
+
+a = '------agtcacggatcg'
+b = '------agtc--ggatcg'
