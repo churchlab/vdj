@@ -5,82 +5,37 @@ to point to certain resources.
 """
 
 import os
+import warnings
 
-ip = open(os.path.expanduser('~/.vdjconfig'),'r')
-for line in ip:
-    if line.startswith('#'): continue
-    data = line.split()
-    if data[0] == 'vdj_dir':
-        vdj_dir = data[1]
-ip.close()
+warnings.simplefilter('always')
+
+def parse_config_file(path=os.path.expanduser('~/.vdjconfig')):
+    config_data = {}
+    ip = open(path,'r')
+    for line in ip:
+        if line.startswith('#') or line.strip() == '': continue
+        data = map(lambda s: s.strip(),line.split('\t'))
+        config_data[data[0]] = data[1]
+    ip.close()
+    return config_data
+
+config_data = parse_config_file()
+
+# locate some directories
 try:
-    vdj_dir
-except NameError:
-    print "Could not successfully set vdj_dir.  Is .vdjconfig present?"
+    vdj_dir = config_data['vdj_dir']
+except KeyError:
+    print "Could not successfully set vdj_dir.  Does ~/.vdjconfig exist?"
     raise
 
-# packaged data dir
+try:
+    imgt_dir = config_data['imgt_dir']
+except KeyError:
+    warning.warn("Could not find imgt_dir in .vdjconfig. May cause problems loading refseq.")
+
+# define some other directories and variables
 data_dir = 'data'
-IGHV_fasta = 'IGHV.fasta'
-IGHD_fasta = 'IGHD.fasta'
-IGHJ_fasta = 'IGHJ.fasta'
-IGKV_fasta = 'IGKV.fasta'
-IGKJ_fasta = 'IGKJ.fasta'
-IGLV_fasta = 'IGLV.fasta'
-IGLJ_fasta = 'IGLJ.fasta'
-TRBV_fasta = 'TRBV.fasta'
-TRBD_fasta = 'TRBD.fasta'
-TRBJ_fasta = 'TRBJ.fasta'
-TRAV_fasta = 'TRAV.fasta'
-TRAJ_fasta = 'TRAJ.fasta'
-TRDV_fasta = 'TRDV.fasta'
-TRDD_fasta = 'TRDD.fasta'
-TRDJ_fasta = 'TRDJ.fasta'
-TRGV_fasta = 'TRGV.fasta'
-TRGJ_fasta = 'TRGJ.fasta'
-
-
-# The following directory and files will not be packaged with vdj
-# but will be computed the first time refseq is imported.  After
-# that, it will not be recomputed unless it is forced
-
-# persistent data directory
 processed_dir = 'processed'
 
-pickle_dir = 'pickle'
-
-# Relevant LIGM records in pickle format
-# If the file exists, refseq will not try to recompute it
-# unless it's forced
-IGHV_pickle = 'IGHV.pickle'
-IGHD_pickle = 'IGHD.pickle'
-IGHJ_pickle = 'IGHJ.pickle'
-IGKV_pickle = 'IGKV.pickle'
-IGKJ_pickle = 'IGKJ.pickle'
-IGLV_pickle = 'IGLV.pickle'
-IGLJ_pickle = 'IGLJ.pickle'
-TRBV_pickle = 'TRBV.pickle'
-TRBD_pickle = 'TRBD.pickle'
-TRBJ_pickle = 'TRBJ.pickle'
-TRAV_pickle = 'TRAV.pickle'
-TRAJ_pickle = 'TRAJ.pickle'
-TRDV_pickle = 'TRDV.pickle'
-TRDD_pickle = 'TRDD.pickle'
-TRDJ_pickle = 'TRDJ.pickle'
-TRGV_pickle = 'TRGV.pickle'
-TRGJ_pickle = 'TRGJ.pickle'
-
-
-# # full IMGT flatfile database dir
-# imgt_dir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
-# ligm_filename = 'imgt.dat'
-
-# refdatadir = '/Users/laserson/research/church/vdj-ome/ref-data/IMGT'
-# imgtdat = 'imgt.dat'
-# imgtfasta = 'imgt.fasta'
-# imgtvseq = 'vdj_ref.fasta'
-# imgtrefseqfasta = 'imgtrefseq.fasta'
-# imgtspecfasta  = 'imgtspec.fasta'
-# imgtspecvdjxml = 'imgtspec.vdjxml'
-# imgtrefseqFR3endcoords = 'imgtrefseqFR3endcoords.dat'
-# imgtrefseqJTRPstartcoords = 'imgtrefseqJTRPstartcoords.dat'
+# define organism of refseq data
+organism = 'human'

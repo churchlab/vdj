@@ -1,2 +1,5 @@
 # directory where vdj package lives
-vdj_dir /Users/laserson/code/vdj
+vdj_dir	/Users/laserson/code/vdj
+
+# directory where IMGT's LIGM flat file lives (imgt.dat)
+imgt_dir	/Users/laserson/research/church/vdj-ome/ref-data/IMGT/IMGT

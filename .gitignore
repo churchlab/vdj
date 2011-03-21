@@ -7,4 +7,5 @@
 *~
 build/
 pickle/
+processed/
 .DS_Store

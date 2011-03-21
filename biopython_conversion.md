@@ -10,6 +10,8 @@ refseq.py           COMPLETE
 refsequtils.py      DELETED
 setup.py            COMPLETE
 
+Clean up imports
+
 The process for refseq init is this:
 
 1.  `params.py` lists the fasta files that contain the list of reference
@@ -40,9 +42,12 @@ Things to update in `alignment.py`:
 
 *   `vdj_aligner_combined`
 
-Clean up imports
-
-
-
 a = '------agtcacggatcg'
 b = '------agtc--ggatcg'
+
+`__init__.py`, `params.py`, `refseq.py` appear to be in finished shape.
+However, I ran into an issue I didn't anticipate: it appears that biopython
+loads the annotations dictionary in a very particular way for INSDC formats,
+and obliterates any user-defined annotations when writing to an INSDC format.
+This is a nonstarter for my file format, so I will have to figure out a
+workaround.

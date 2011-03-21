@@ -1,5 +1,7 @@
 # functions for pipeline operations
 
+import warnings
+
 import vdj
 import vdj.clustering
 import seqtools
