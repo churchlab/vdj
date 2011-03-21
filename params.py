@@ -4,8 +4,20 @@ Define directory and file names that must be manually modified
 to point to certain resources.
 """
 
-# HACK.  Figure out better way to refer to this directory
-vdj_dir = '/Users/laserson/research/church/code/lib/vdj'
+import os
+
+ip = open(os.path.expanduser('~/.vdjconfig'),'r')
+for line in ip:
+    if line.startswith('#'): continue
+    data = line.split()
+    if data[0] == 'vdj_dir':
+        vdj_dir = data[1]
+ip.close()
+try:
+    vdj_dir
+except NameError:
+    print "Could not successfully set vdj_dir.  Is .vdjconfig present?"
+    raise
 
 # packaged data dir
 data_dir = 'data'

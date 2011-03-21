@@ -1,9 +1,13 @@
-scipy, numpy, and matplotlib are all used in the analysis tools and for figure generation.
+scipy, numpy, and matplotlib are all used in the analysis tools and for figure
+generation.
 
-To "install", python setup.py build, and then copy the .so files from build/lib.
-whatever to the main vdj directory
+To "install", python setup.py build, and then copy the .so files from
+build/lib. whatever to the main vdj directory
 
-or sudo python setup.py install to put into pthon tree
+Also, you must copy vdjconfig to be .vdjconfig in your home directory. Adjust
+the path to point to the correct directory.
+
+or sudo python setup.py install to put into python tree
 
 params.py must be updated upon install to point to the proper places
 
