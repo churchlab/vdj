@@ -52,10 +52,10 @@ def id_barcode(chain,barcodes):
     # barcodes assumed to be single length
     barcode_len = len(barcodes.keys()[0])
     try:
-        curr_barcode = barcodes[chain.seq[:barcode_len].upper()]
+        curr_barcode = barcodes[chain.seq.tostring()[:barcode_len].upper()]
     except KeyError:    # barcode not found; chain unchanged
         return    # chain remains unchanged
-    chain.seq = chain.seq[barcode_len:] # prune off barcode from seq
+    chain.__init__(chain[barcode_len:])
     chain.barcode = curr_barcode
 
 def load_isotypes(isotype_file):
@@ -73,40 +73,26 @@ def id_isotype(chain,isotypes):
     
     for iso in isotypes.iteritems():
         if iso[0] in chain.seq[-50:]:   # arbitrary cutoff from 3' end
-            chain.c = iso[1]
+            chain.annotations['c'] = iso[1]
 
-def fasta2vdjxml(inhandle,outhandle):
-    print >>outhandle, "<root>"
-    for (descr,seq) in seqtools.FastaIterator(inhandle,lambda d: d.split()[0]):
-        chain = vdj.ImmuneChain(descr=descr,seq=seq)
+def fasta2imgt(inhandle,outhandle):
+    for seq in SeqIO.parse(inhandle,'fasta'):
+        chain = vdj.ImmuneChain(seq)
         print >>outhandle, chain
-    print >>outhandle, "</root>"
 
-def vdjxml2fasta(inhandle,outhandle):
-    for chain in vdj.parse_VDJXML(inhandle):
-        print >>outhandle, ">%s\n%s" % (chain.descr,chain.seq)
+def imgt2fasta(inhandle,outhandle):
+    for chain in vdj.parse_imgt(inhandle):
+        outhandle.write( chain.format('fasta') )
 
 def size_select(inhandle,outhandle,min_size,max_size):
-    print >>outhandle, "<root>"
-    for chain in vdj.parse_VDJXML(inhandle):
+    for chain in vdj.parse_imgt(inhandle):
         if len(chain) >= min_size and len(chain) <= max_size:
             print >>outhandle, chain
-    print >>outhandle, "</root>"
 
 def filter_VJ(inhandle,outhandle):
-    print >>outhandle, "<root>"
-    for chain in vdj.parse_VDJXML(inhandle):
-        if hasattr(chain,'v') and hasattr(chain,'j'):
+    for chain in vdj.parse_imgt(inhandle):
+        if chain.v and chain.j:
             print >>outhandle, chain
-    print >>outhandle, "</root>"
-
-def cat_vdjxml(files,outhandle):
-    print >>outhandle, "<root>"
-    for f in files:
-        inhandle = open(f,'r')
-        for chain in vdj.parse_VDJXML(inhandle):
-            print >>outhandle, chain
-    print >>outhandle, "</root>"
 
 def partition_VJ(inhandle,basename):
     # ignores allele numbers
@@ -117,16 +103,15 @@ def partition_VJ(inhandle,basename):
         return "%s.%s.vdjxml" % (basename,vj_id)
     
     outhandles = {}
-    for chain in vdj.parse_VDJXML(inhandle):
+    for chain in vdj.parse_imgt(inhandle):
         curr_vj_id = vj_id_no_allele(chain)
         try:
             print >>outhandles[curr_vj_id], chain
         except KeyError:
             outhandles[curr_vj_id] = open( outname(basename,curr_vj_id), 'w' )
-            print >>outhandles[curr_vj_id], "<root>"
             print >>outhandles[curr_vj_id], chain
     
     for outhandle in outhandles.itervalues():
-        print >>outhandle, "</root>"
+        outhandle.close()
     
     return [outname(basename,vj_id) for vj_id in outhandles.iterkeys()]

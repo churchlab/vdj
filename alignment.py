@@ -454,31 +454,17 @@ class vdj_aligner_combined(object):
         alignments = sorted(filter(lambda a: hasattr(a[0],'v'),alignments),key=lambda a:a[1]['v'],reverse=True)
         if len(alignments) > 0:
             bestchain = alignments[0][0]
-            if hasattr(bestchain,'v'):
-                chain.v = bestchain.v
-                chain.v_end_idx = bestchain.v_end_idx
-            if hasattr(bestchain,'j'):
-                chain.j = bestchain.j
-                chain.j_start_idx = bestchain.j_start_idx
-            if hasattr(bestchain,'junction'):
-                chain.junction = bestchain.junction
-            if hasattr(bestchain,'d'):
-                chain.d = bestchain.d
+            chain.__init__(bestchain)
             return alignments[0][1]     # NOTE: I only return the scores upon successful aln
     
-    def align_seq(self,seq,verbose=False):
-        chain = vdj.ImmuneChain(descr='sequence',seq=seq)
-        self.align_chain(chain,verbose)
-        return chain
-    
-    def coding_chain(self,chain):
-        strand = self.seq2coding(chain.seq)
+    def coding_chain(self,chain,verbose=False):
+        strand = self.seq2coding(chain.seq.tostring())
         if strand == -1:
-            chain.seq = seqtools.reverse_complement(chain.seq)
+            chain.seq = chain.seq.reverse_complement()
             chain.add_tag('revcomp')
         chain.add_tag('coding')
     
-    def seq2coding(self,seq):
+    def seq2coding(self,seq):        
         seqkeys = vdj_aligner.seq2kmers(seq,[self.patternPos])
         seqwords = seqkeys[self.patternPos]
         strandid = 1

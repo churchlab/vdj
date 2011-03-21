@@ -1,9 +1,6 @@
 import types
 
-from Bio.Seq import Seq, UnknownSeq
 from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import SeqFeature, FeatureLocation
-from Bio.Alphabet import NucleotideAlphabet
 from Bio import SeqIO
 
 # select which IMGT reference set to load; human by default
@@ -27,7 +24,7 @@ class ImmuneChain(SeqRecord):
         This is performed either with a prebuilt SeqRecord object or as a
         native SeqRecord object.
         """
-        if isinstance(args[0],SeqRecord):   # pre-build SeqRecord
+        if len(args) > 0 and isinstance(args[0],SeqRecord):   # pre-built SeqRecord
             self.init_with_SeqRecord(args[0])
         elif kw.has_key('record'):          # pre-built SeqRecord
             self.init_with_SeqRecord(kw['record'])
@@ -167,7 +164,7 @@ class ImmuneChain(SeqRecord):
 def parse_imgt(inputfile):
     """Parser for VDJXML
     
-    Really just a wrapper around SeqIO
+    Really just a wrapper around SeqIO that upgrades SeqRecord to ImmuneChain
     """
     for record in SeqIO.parse(inputfile,'imgt'):
         yield ImmuneChain(record)

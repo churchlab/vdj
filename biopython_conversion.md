@@ -1,13 +1,13 @@
 __init__.py         COMPLETE
-alignment.py        
+alignment.py        COMPLETE
 analysis.py         COMPLETE
 clustering.py       COMPLETE
 legacy.py           DELETED
 params.py           COMPLETE
-pipeline.py         
+pipeline.py         COMPLETE
 plotting.py         DELETED
 refseq.py           COMPLETE
-refsequtils.py      
+refsequtils.py      DELETED
 setup.py            COMPLETE
 
 The process for refseq init is this:

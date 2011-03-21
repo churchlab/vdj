@@ -139,6 +139,43 @@ TRGJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(proce
 
 
 
+# def pull_LIGM_record(self):
+#     """Get SeqRecord object for LIGM record from IMGT server"""
+#     
+#     # NOTE: this can potentially be significantly simplified by accessing the URL
+#     # interface to LIGM, through:
+#     # http://imgt.cines.fr/cgi-bin/IMGTlect.jv?query=5+numacc
+#     # where numacc is the accession number
+#     
+#     request = urllib2.Request('http://imgt.cines.fr/cgi-bin/IMGTlect.jv?livret=0')
+#     # LIGM page
+#     response = urllib2.urlopen(request)
+#     forms = ClientForm.ParseResponse(response,
+#                                      form_parser_class=ClientForm.XHTMLCompatibleFormParser,
+#                                      backwards_compat=False)
+#     form = forms[1]
+#     form['l01p01c02'] = self.accession
+#     request2 = form.click()
+#     # data format page
+#     response2 = urllib2.urlopen(request2)
+#     forms2 = ClientForm.ParseResponse(response2,
+#                                      form_parser_class=ClientForm.XHTMLCompatibleFormParser,
+#                                      backwards_compat=False)
+#     form2 = forms2[0]
+#     assert( form2.controls[8].attrs['value'] == '2 IMGT flat-file' )
+#     form2.controls[8].id = 'flatfile'
+#     request3 = form2.click(id='flatfile')
+#     # LIGM record results
+#     response3 = urllib2.urlopen(request3)
+# 
+#     # ghetto parse of the results.  the text of the LIGM record is in <pre>...</pre> tags
+#     rawdata1 = response3.read()
+#     rawdata2 = rawdata1.split('<pre>')[1].split('</pre>')[0].lstrip()
+#     rawdata3 = StringIO(rawdata2)
+#     self.record = SeqIO.read(rawdata3,'imgt')
+
+
+
 
 
 
