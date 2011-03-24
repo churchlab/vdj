@@ -131,7 +131,7 @@ tggtatcagcaaaaaccagggaaagcccctaagctcctgatctatgctgca.........
 ............tccactttgcaaagtggggtccca...tcaaggttcagcggcagtgga
 ......tctgggacagaattcactctcacaatcagcagcctgcagcctgaagattttgca
 acttattactgtcaacagcttaatagttaccctcc
->Y14865|IGKV1-NL1*01|Homo sapiens|F|V-REGION| |287 nt|1| | | | |287+48=335| | |
+>Y14865|IGKV1-NL1*01|Homo sapiens|F|V-REGION|351..637|287 nt|1| | | | |287+48=335| | |
 gacatccagatgacccagtctccatcctccctgtctgcatctgtaggagacagagtcacc
 atcacttgccgggcgagtcagggcatt..................agcaattctttagcc
 tggtatcagcagaaaccagggaaagcccctaagctcctgctctatgctgca.........
@@ -201,6 +201,13 @@ tggtatcagcagaaaccagggaaagcacctaagttcctgacctatagggca.........
 ............tccagtttgcagagggcgatgcca...tctcagttcagtggcagcgga
 ......tatggaagagatttcactctcaccgtcagcagcctgcagcctgaagattttgca
 acttattaatgtcaacaagagagcattttccctcc
+>AC018696|IGKV1/OR2-118*01|Homo sapiens|P|V-REGION|110726..111012|287 nt|1| | | | |287+48=335| |rev-compl|
+gacatccagatgacccagtctccatcctccctgtctgcatctgtaggagacagagtcacc
+atcacttgccgggcgagtcagggcatt..................agcaataatttaaat
+tggtatcagcagaaaccagggaaaactcctaagctcctgatctatgctgca.........
+............tccagtctgcaaagtgggattccc...tctcggttcagtgacagtgga
+......tctggggcagattacactctcaccatccgcagcctgcagcctgaagattttgca
+aattattactgtcaacagagtgacagtacccctcc
 >X05102|IGKV1/OR2-3*01|Homo sapiens|P|V-REGION|790..1076|287 nt|1| | | | |287+48=335| | |
 gacatccagatgacccagcctccatcctccctgtctgcatctgtaggagacagagtcacc
 gtctcttgccaggctagtcaaagcatt..................tacaactatttaaat
@@ -404,6 +411,13 @@ tgttacctgcagaagccagggcagtctccacagctcctgatctatacgctt.........
 ............tcctatcgggcctctggagtccca...gacaggttcagtgacagtggg
 ......tcaggcactgatttcacactgaaaatcagcagggtggaggctgaggatgttgga
 gtttattactgcatgcaacgtatagagtttccttc
+>AC092683|IGKV2/OR2-7D*01|Homo sapiens|P|V-REGION|103645..103948|304 nt|1| | | | |304+33=337| | |
+gacattctgttgacccagactccactctccctgtccatcacccccggagagccggcctcc
+atctcctgcaggtctagtcgcagcctcctgcatagt...aatggaaacacctatttacat
+tggtagctgcagaagccaggccagcctccacagtgtctaatctgcaaggtt.........
+............tctaaccggttttctggggtccca...gacaggttcagtggcagtggg
+......tcgggcattgatttcacactgaaaatcagcccggtggaggctgcggatgttggg
+gtttatattactgcatgcaagctacacactggtcccc
 >M20707|IGKV2/OR22-4*01|Homo sapiens|P|V-REGION|641..945|302 nt|1| | | | |302+30=332| | |
 gacattgtgatgacccagactccactctccctgcctgtcactcctggagagccagcctcc
 atctcctgcagatctagtgagagcctcttggatactgatgatgaatacacctatttgaat
