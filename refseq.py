@@ -2,6 +2,7 @@ import os
 import sys
 import types
 import glob
+import warnings
 
 from Bio import SeqIO
 
@@ -49,6 +50,17 @@ def parse_imgt_fasta_header(record):
     data['coords'] = coords
     return data
 
+def get_X_REGION_feature(record,X):
+    for feature in record.features:
+        if feature.type == ('%s-REGION'%X):
+            return feature
+
+def get_any_X_REGION_feature(record):
+    for feature in record.features:
+        if feature.type in ['V-REGION','D-REGION','J-REGION']:
+            return feature
+
+
 ref_dir = os.path.join(params.vdj_dir,params.data_dir)
 ligm_index = None   # LIGM not loaded by default
 
@@ -72,34 +84,55 @@ for reference_fasta in files_to_process:
     
     reference_records = []
     for record in SeqIO.parse(reference_fasta,'fasta'):
-        header_data = parse_imgt_fasta_header(record)
+        #DEBUG
+        # print record.id; sys.stdout.flush()
+        # if record.id == 'M62379|TRBV2*02|Homo':
+        #     import pdb
+        #     pdb.set_trace()
+        
+        try:
+            header_data = parse_imgt_fasta_header(record)
+        except ValueError, e:
+            print >>sys.stderr, "Problem with parsing fasta header\n%s\n%s" % (record.description,e)
+            continue
+        
         imgt_record = ligm_index[header_data['accession']]
         
         # prune down to the V-REGION annotated in V-QUEST fasta file
         reference_record = imgt_record[header_data['coords'][0]:header_data['coords'][1]]
-        reference_record.annotations['allele'] = header_data['allele']
+        reference_feature = get_X_REGION_feature(reference_record,group[-1])
+        if reference_feature == None:
+            print >>sys.stderr, "Couldn't find a %s-REGION feature in %s when clipped to fasta coords.  Skipping." % (group[-1],reference_record.id)
+            continue
+        if not reference_feature.qualifiers.has_key('allele'):
+            warnings.warn("Reference record %s's %s is missing an `allele` qualifier; it (%s) was added manually." % (reference_record.id,reference_feature.type,header_data['allele']))
+            reference_feature.qualifiers['allele'] = [header_data['allele']]
+        elif reference_feature.qualifiers['allele'][0] != header_data['allele']:
+            warnings.warn("Reference record %s's %s is annotated %s while the corres. fasta header annotates it as %s.  I picked the LIGM version." % (reference_record.id,reference_feature.type,reference_feature.qualifiers['allele'][0],header_data['allele']))
         reference_records.append(reference_record)
     
     SeqIO.write(reference_records,reference_imgt,'imgt')
 
+get_allele = lambda record: get_any_X_REGION_feature(record).qualifiers['allele'][0]
+
 # load the reference data (as dict: key=allele, value=SeqRecord of reference)
-IGHV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHV.imgt'),'imgt')])
-IGHD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHD.imgt'),'imgt')])
-IGHJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHJ.imgt'),'imgt')])
-IGKV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGKV.imgt'),'imgt')])
-IGKJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGKJ.imgt'),'imgt')])
-IGLV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGLV.imgt'),'imgt')])
-IGLJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'IGLJ.imgt'),'imgt')])
-TRBV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBV.imgt'),'imgt')])
-TRBD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBD.imgt'),'imgt')])
-TRBJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBJ.imgt'),'imgt')])
-TRAV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRAV.imgt'),'imgt')])
-TRAJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRAJ.imgt'),'imgt')])
-TRDV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDV.imgt'),'imgt')])
-TRDD = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDD.imgt'),'imgt')])
-TRDJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDJ.imgt'),'imgt')])
-TRGV = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRGV.imgt'),'imgt')])
-TRGJ = dict([(r.annotations['allele'],r) for r in SeqIO.parse(os.path.join(processed_dir,'TRGJ.imgt'),'imgt')])
+IGHV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHV.imgt'),'imgt')])
+IGHD = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHD.imgt'),'imgt')])
+IGHJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGHJ.imgt'),'imgt')])
+IGKV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGKV.imgt'),'imgt')])
+IGKJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGKJ.imgt'),'imgt')])
+IGLV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGLV.imgt'),'imgt')])
+IGLJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'IGLJ.imgt'),'imgt')])
+TRBV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBV.imgt'),'imgt')])
+TRBD = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBD.imgt'),'imgt')])
+TRBJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRBJ.imgt'),'imgt')])
+TRAV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRAV.imgt'),'imgt')])
+TRAJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRAJ.imgt'),'imgt')])
+TRDV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDV.imgt'),'imgt')])
+TRDD = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDD.imgt'),'imgt')])
+TRDJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRDJ.imgt'),'imgt')])
+TRGV = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRGV.imgt'),'imgt')])
+TRGJ = dict([(get_allele(r),r) for r in SeqIO.parse(os.path.join(processed_dir,'TRGJ.imgt'),'imgt')])
 
 
 # ****************************************************************************

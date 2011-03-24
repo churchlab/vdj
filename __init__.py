@@ -3,10 +3,6 @@ import types
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
-# select which IMGT reference set to load; human by default
-organism = 'human'
-# organism = 'mouse'
-
 # ===================
 # = DATA STRUCTURES =
 # ===================
@@ -36,6 +32,10 @@ class ImmuneChain(SeqRecord):
         
         # precompute hash on features for performance
         self.update_feature_dict()
+        
+        # load `source` feature qualifiers into annotations and delete `source`
+        # feature, if it exists
+        self.process_source_feature()
     
     def init_with_SeqRecord(self,record):
         # Initialize self using existing SeqRecord object
@@ -49,6 +49,14 @@ class ImmuneChain(SeqRecord):
         self._features = {}
         for (i,feature) in enumerate(self.features):
             self._features.setdefault(feature.type,[]).append(i)
+    
+    def process_source_feature(self):
+        if 'source' in self._features:
+            if len(self._features['source']) > 1:
+                raise ValueError, "Found more than one `source` feature in %s" % self.id
+            self.annotations.update( self.features[self._features['source'][0]].qualifiers )
+            self.features.pop(self._features['source'][0])
+            self._features.pop('source')
     
     
     def __getattr__(self,name):
@@ -147,6 +155,21 @@ class ImmuneChain(SeqRecord):
     @property
     def vdj(self):
         return '|'.join([self.v,self.d,self.j])
+    
+    def format(*args,**kw):
+        """Format SeqRecord using any supported format.
+        
+        The only reason for redefining this is the hack related to storing
+        user-defined annotations in a source feature.
+        """
+        if 'source' in self._features:
+            raise ValueError, "`source` features are reserved in ImmuneChain objects for annotations"
+        
+        feature = SeqFeature( type='source',
+                              location=FeatureLocation(0,len(self)),
+                              qualifiers=self.annotations )
+        self.features.append(feature)
+        return SeqRecord.format(*args,**kw)
     
     def __len__(self):
         return len(self.seq)
