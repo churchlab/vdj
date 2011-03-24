@@ -54,6 +54,10 @@ directory:
 The data currently residing in this directory is the result of downloading the
 files on 22 March 2011.
 
+The IMGT database itself can be downloaded with:
+
+    wget ftp://ftp.cines.fr/IMGT/IMGT.zip
+
 
 
 

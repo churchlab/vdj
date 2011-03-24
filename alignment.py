@@ -39,16 +39,16 @@ class vdj_aligner(object):
         self.locus = kw['locus']
         
         self.refV = refseq.__getattribute__(self.locus+'V')
-        refV_seqs = dict([(key,record.seq.tostring()) for record in self.refV])
+        refV_seqs = dict([(allele,record.seq.tostring()) for (allele,record) in self.refV.iteritems()])
         self.Vseqlistkeys = vdj_aligner.seqdict2kmers( refV_seqs, self.seedpatterns )
         
         self.refJ = refseq.__getattribute__(self.locus+'J')
-        refJ_seqs = dict([(key,record.seq.tostring()) for record in self.refJ])
+        refJ_seqs = dict([(allele,record.seq.tostring()) for (allele,record) in self.refJ.iteritems()])
         self.Jseqlistkeys = vdj_aligner.seqdict2kmers( refJ_seqs, self.seedpatterns )
         
         try:    # this locus may not have D segments
             self.refD = refseq.__getattribute__(self.locus+'D')
-            refD_seqs = dict([(key,record.seq.tostring()) for record in self.refD])
+            refD_seqs = dict([(allele,record.seq.tostring()) for (allele,record) in self.refD.iteritems()])
             self.Dseqlistkeysmini = vdj_aligner.seqdict2kmers( refD_seqs, self.miniseedpatterns )
         except AttributeError:
             pass
@@ -131,7 +131,7 @@ class vdj_aligner(object):
             # copy features from ref to query
             Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
-            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, offset=second_cys)
+            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys)
             chain.update_feature_dict()
         
         return bestJscore
@@ -167,7 +167,7 @@ class vdj_aligner(object):
     def align_chain(self,chain,verbose=False):
         
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
-            warnings.warn('chain %s may not be the correct strand' % chain.descr)
+            warnings.warn('chain %s may not be the correct strand' % chain.id)
         
         scores = {}
         

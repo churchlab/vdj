@@ -1,7 +1,8 @@
 import types
 
-from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 # ===================
 # = DATA STRUCTURES =
@@ -156,7 +157,7 @@ class ImmuneChain(SeqRecord):
     def vdj(self):
         return '|'.join([self.v,self.d,self.j])
     
-    def format(*args,**kw):
+    def format(self,*args,**kw):
         """Format SeqRecord using any supported format.
         
         The only reason for redefining this is the hack related to storing
@@ -169,7 +170,7 @@ class ImmuneChain(SeqRecord):
                               location=FeatureLocation(0,len(self)),
                               qualifiers=self.annotations )
         self.features.append(feature)
-        return SeqRecord.format(*args,**kw)
+        return SeqRecord.format(self,*args,**kw)
     
     def __len__(self):
         return len(self.seq)
