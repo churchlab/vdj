@@ -22,9 +22,9 @@ class ImmuneChain(SeqRecord):
         native SeqRecord object.
         """
         if len(args) > 0 and isinstance(args[0],SeqRecord):   # pre-built SeqRecord
-            self.init_with_SeqRecord(args[0])
+            self._init_with_SeqRecord(args[0])
         elif kw.has_key('record'):          # pre-built SeqRecord
-            self.init_with_SeqRecord(kw['record'])
+            self._init_with_SeqRecord(kw['record'])
         else:   # native SeqRecord init
             SeqRecord.__init__(self,*args,**kw)
         
@@ -32,13 +32,13 @@ class ImmuneChain(SeqRecord):
         self._tags = set(self.annotations.setdefault('tags',[]))
         
         # precompute hash on features for performance
-        self.update_feature_dict()
+        self._update_feature_dict()
         
         # load `source` feature qualifiers into annotations and delete `source`
         # feature, if it exists
-        self.process_source_feature()
+        self._process_source_feature()
     
-    def init_with_SeqRecord(self,record):
+    def _init_with_SeqRecord(self,record):
         # Initialize self using existing SeqRecord object
         SeqRecord.__init__(self, seq=record.seq, id=record.id,
                             name=record.name, description=record.description,
@@ -46,12 +46,12 @@ class ImmuneChain(SeqRecord):
                             annotations=record.annotations,
                             letter_annotations=record.letter_annotations)
     
-    def update_feature_dict(self):
+    def _update_feature_dict(self):
         self._features = {}
         for (i,feature) in enumerate(self.features):
             self._features.setdefault(feature.type,[]).append(i)
     
-    def process_source_feature(self):
+    def _process_source_feature(self):
         if 'source' in self._features:
             if len(self._features['source']) > 1:
                 raise ValueError, "Found more than one `source` feature in %s" % self.id
@@ -60,11 +60,13 @@ class ImmuneChain(SeqRecord):
             self._features.pop('source')
     
     
-    def __getattr__(self,name):
+    def __getattribute__(self,name):
         """Look for attributes in annotations and features."""
-        # only called if attribute wasn't found in normal place
-        # in theory, this should be hidden if there is a native
-        # attribute in a SeqRecord object
+        try:
+            return object.__getattribute__(self,name)
+        except AttributeError:
+            pass
+        
         try:
             return self.annotations[name]
         except KeyError:
@@ -131,7 +133,7 @@ class ImmuneChain(SeqRecord):
     
     @property
     def junction(self):
-        return self.features[self._features['CDR3-IMGT'][0]].extract(self._record.seq.tostring())
+        return self.features[self._features['CDR3-IMGT'][0]].extract(self.seq.tostring())
     
     @property
     def cdr3(self):
@@ -163,13 +165,17 @@ class ImmuneChain(SeqRecord):
         The only reason for redefining this is the hack related to storing
         user-defined annotations in a source feature.
         """
-        if 'source' in self._features:
-            raise ValueError, "`source` features are reserved in ImmuneChain objects for annotations"
+        self._update_feature_dict()
         
-        feature = SeqFeature( type='source',
-                              location=FeatureLocation(0,len(self)),
-                              qualifiers=self.annotations )
-        self.features.append(feature)
+        if 'source' in self._features:
+            assert( len(self._features['source']) == 1 )
+            feature = self.features[ self._features['source'][0] ]
+            feature.qualifiers.update(self.annotations)
+        else:
+            feature = SeqFeature( type='source',
+                                  location=FeatureLocation(0,len(self)),
+                                  qualifiers=self.annotations )
+            self.features.append(feature)
         return SeqRecord.format(self,*args,**kw)
     
     def __len__(self):

@@ -100,7 +100,7 @@ class vdj_aligner(object):
             Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
             seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping)
-            chain.update_feature_dict()
+            chain._update_feature_dict()
         
         return bestVscore
     
@@ -109,9 +109,11 @@ class vdj_aligner(object):
         # try pruning off V region for J alignment
         try:
             second_cys = chain.__getattribute__('2nd-CYS')
-            query = chain.seq.tostring()[second_cys.location.end.position:]
+            second_cys_offset = second_cys.location.end.position
+            query = chain.seq.tostring()[second_cys_offset:]
         except AttributeError:
             query = chain.seq.tostring()
+            second_cys_offset = 0
         
         # compute hashes from query seq
         querykeys = vdj_aligner.seq2kmers(query,self.seedpatterns)
@@ -131,8 +133,8 @@ class vdj_aligner(object):
             # copy features from ref to query
             Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
-            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys)
-            chain.update_feature_dict()
+            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset)
+            chain._update_feature_dict()
         
         return bestJscore
     
@@ -165,6 +167,10 @@ class vdj_aligner(object):
     
     
     def align_chain(self,chain,verbose=False):
+        
+        # DEBUG
+        import pdb
+        pdb.set_trace()
         
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.id)
