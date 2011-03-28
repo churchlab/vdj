@@ -141,15 +141,16 @@ class ImmuneChain(SeqRecord):
     
     @property
     def v(self):
-        return self.features[self._features['V-REGION'][0]].qualifiers['allele']
+        return self.features[self._features['V-REGION'][0]].qualifiers['allele'][0]
     
     @property
     def d(self):
-        return self.features[self._features['D-REGION'][0]].qualifiers['allele']
+        # return self.features[self._features['D-REGION'][0]].qualifiers['allele']
+        return self.annotations['D-REGION']
     
     @property
     def j(self):
-        return self.features[self._features['J-REGION'][0]].qualifiers['allele']
+        return self.features[self._features['J-REGION'][0]].qualifiers['allele'][0]
     
     @property
     def vj(self):

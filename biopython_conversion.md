@@ -45,9 +45,27 @@ Things to update in `alignment.py`:
 a = '------agtcacggatcg'
 b = '------agtc--ggatcg'
 
+
+* * *
 `__init__.py`, `params.py`, `refseq.py` appear to be in finished shape.
 However, I ran into an issue I didn't anticipate: it appears that biopython
 loads the annotations dictionary in a very particular way for INSDC formats,
 and obliterates any user-defined annotations when writing to an INSDC format.
 This is a nonstarter for my file format, so I will have to figure out a
-workaround.
+workaround. FIXED.
+* * *
+
+import vdj
+import vdj.alignment
+from Bio import SeqIO
+from Bio.Alphabet import generic_dna
+iter = SeqIO.parse('heavy_chains.HIV.20101014.aligned.reannotated.fasta','fasta',generic_dna)
+record = iter.next()
+chain = vdj.ImmuneChain(record)
+aligner = vdj.alignment.igh_aligner()
+aligner.Valign_chain(chain)
+reload(vdj)
+reload(vdj.alignment)
+aligner = vdj.alignment.igh_aligner()
+aligner.Valign_chain(chain)
+

@@ -3,6 +3,7 @@ import copy
 
 import numpy as np
 from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 import seqtools
 
@@ -100,7 +101,13 @@ class vdj_aligner(object):
             Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
             seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping)
+            
+            # perform some curating; esp, CDR3-IMGT is annotated in V
+            # references, though it's not complete. I will recreate that
+            # annotation manually.
             chain._update_feature_dict()
+            chain.features.pop(chain._features['CDR3-IMGT'][0])
+            chain._features.pop('CDR3-IMGT')
         
         return bestVscore
     
@@ -169,8 +176,8 @@ class vdj_aligner(object):
     def align_chain(self,chain,verbose=False):
         
         # DEBUG
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.id)
@@ -181,10 +188,20 @@ class vdj_aligner(object):
         
         scores['j'] = self.Jalign_chain(chain,verbose)
         
-        # only process junction if V and J successful and in a locus
-        # that has D chains
-        if chain.v and chain.j and self.locus in ['IGH','TRB','TRD']:
-            scores['d'] = self.Dalign_chain(chain,verbose)
+        # manually annotate CD3-IMGT, only if V and J alns are successful
+        if chain.v and chain.j:
+            cdr3_start = chain.__getattribute__('2nd-CYS').location.end.position
+            try:
+                cdr3_end = chain.__getattribute__('J-PHE').location.start.position
+            except AttributeError:
+                cdr3_end = chain.__getattribute__('J-TRP').location.start.position
+            cdr3_feature = SeqFeature(location=FeatureLocation(cdr3_start,cdr3_end),type='CDR3-IMGT',strand=1)
+            chain.features.append(cdr3_feature)
+            chain._update_feature_dict()
+            
+            # if I am in a locus with D segments, try aligning that as well
+            if self.locus in ['IGH','TRB','TRD']:
+                scores['d'] = self.Dalign_chain(chain,verbose)
         
         return scores
     
