@@ -106,8 +106,11 @@ class vdj_aligner(object):
             # references, though it's not complete. I will recreate that
             # annotation manually.
             chain._update_feature_dict()
-            chain.features.pop(chain._features['CDR3-IMGT'][0])
-            chain._features.pop('CDR3-IMGT')
+            try:    # some reference entries do not have CDR3 annotations
+                chain.features.pop(chain._features['CDR3-IMGT'][0])
+                chain._features.pop('CDR3-IMGT')
+            except KeyError:
+                pass
         
         return bestVscore
     
@@ -176,6 +179,20 @@ class vdj_aligner(object):
     def align_chain(self,chain,verbose=False):
         
         # DEBUG
+        # import vdj
+        # import vdj.alignment
+        # from Bio import SeqIO
+        # from Bio.Alphabet import generic_dna
+        # iter = SeqIO.parse('smallset.fasta','fasta',generic_dna)
+        # iter = SeqIO.parse('donor12_cd8_memory_raw_reads.fasta','fasta',generic_dna)
+        # aligner = vdj.alignment.igh_aligner()
+        # aligner = vdj.alignment.trb_aligner()
+        # a = iter.next()
+        # a = vdj.ImmuneChain(a)
+        # aligner.coding_chain(a)
+        # aligner.align_chain(a)
+        # print a
+        # 
         # import pdb
         # pdb.set_trace()
         
@@ -189,19 +206,22 @@ class vdj_aligner(object):
         scores['j'] = self.Jalign_chain(chain,verbose)
         
         # manually annotate CD3-IMGT, only if V and J alns are successful
-        if chain.v and chain.j:
-            cdr3_start = chain.__getattribute__('2nd-CYS').location.end.position
-            try:
-                cdr3_end = chain.__getattribute__('J-PHE').location.start.position
-            except AttributeError:
-                cdr3_end = chain.__getattribute__('J-TRP').location.start.position
-            cdr3_feature = SeqFeature(location=FeatureLocation(cdr3_start,cdr3_end),type='CDR3-IMGT',strand=1)
-            chain.features.append(cdr3_feature)
-            chain._update_feature_dict()
-            
-            # if I am in a locus with D segments, try aligning that as well
-            if self.locus in ['IGH','TRB','TRD']:
-                scores['d'] = self.Dalign_chain(chain,verbose)
+        try:
+            if chain.v and chain.j:
+                cdr3_start = chain.__getattribute__('2nd-CYS').location.end.position
+                try:
+                    cdr3_end = chain.__getattribute__('J-PHE').location.start.position
+                except AttributeError:
+                    cdr3_end = chain.__getattribute__('J-TRP').location.start.position
+                cdr3_feature = SeqFeature(location=FeatureLocation(cdr3_start,cdr3_end),type='CDR3-IMGT',strand=1)
+                chain.features.append(cdr3_feature)
+                chain._update_feature_dict()
+                
+                # if I am in a locus with D segments, try aligning that as well
+                if self.locus in ['IGH','TRB','TRD']:
+                    scores['d'] = self.Dalign_chain(chain,verbose)
+        except KeyError:    # chain.v or chain.j raised an error
+            pass
         
         return scores
     
@@ -382,12 +402,14 @@ class vdj_aligner(object):
         }
         
         # compute col where alignment should start
-        if nrows <= ncols:
-            col = np.argmax( scoremat[nrows-1,:] )
-            row = nrows-1
-        else:
-            col = ncols-1
-            row = np.argmax( scoremat[:,ncols-1] )
+        # if nrows <= ncols:
+        #     col = np.argmax( scoremat[nrows-1,:] )
+        #     row = nrows-1
+        # else:
+        #     col = ncols-1
+        #     row = np.argmax( scoremat[:,ncols-1] )
+        col = np.argmax( scoremat[nrows-1,:] )
+        row = nrows-1
         
         # if row is coord in matrix, row-1 is coord in seq (b/c of init conditions)
         aln1 = seq1[row-1:] + '-'*(ncols-col-1)
@@ -429,10 +451,11 @@ class vdj_aligner(object):
         """
         nrows,ncols = scorematrix.shape
         
-        if nrows <= ncols:
-            return np.max( scorematrix[nrows-1,:] )
-        else:
-            return np.max( scorematrix[:,ncols-1] )
+        # if nrows <= ncols:
+        #     return np.max( scorematrix[nrows-1,:] )
+        # else:
+        #     return np.max( scorematrix[:,ncols-1] )
+        return np.max( scorematrix[nrows-1,:] )
     
     
     @staticmethod
