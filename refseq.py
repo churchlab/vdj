@@ -60,6 +60,18 @@ def get_any_X_REGION_feature(record):
         if feature.type in ['V-REGION','D-REGION','J-REGION']:
             return feature
 
+def has_CYS(record):
+    for feature in record.features:
+        if feature.type == '2nd-CYS':
+            return True
+    return False
+
+def has_TRP_PHE(record):
+    for feature in record.features:
+        if feature.type in ['J-TRP','J-PHE']:
+            return True
+    return False
+
 
 ref_dir = os.path.join(params.vdj_dir,params.data_dir)
 ligm_index = None   # LIGM not loaded by default
@@ -109,6 +121,13 @@ for reference_fasta in files_to_process:
             reference_feature.qualifiers['allele'] = [header_data['allele']]
         elif reference_feature.qualifiers['allele'][0] != header_data['allele']:
             warnings.warn("Reference record %s's %s is annotated %s while the corres. fasta header annotates it as %s.  I picked the LIGM version." % (reference_record.id,reference_feature.type,reference_feature.qualifiers['allele'][0],header_data['allele']))
+        
+        # ensure that reference sequence has either 2nd-CYS, J-TRP, or J_PHE
+        if group[-1] == 'V' and not has_CYS(reference_record):
+            continue
+        elif group[-1] == 'J' and not has_TRP_PHE(reference_record):
+            continue
+        
         reference_records.append(reference_record)
     
     SeqIO.write(reference_records,reference_imgt,'imgt')
