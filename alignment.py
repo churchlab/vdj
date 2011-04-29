@@ -111,6 +111,11 @@ class vdj_aligner(object):
                 chain._features.pop('CDR3-IMGT')
             except KeyError:
                 pass
+            
+            # update codon_start of V-REGION anchored to the CDR3 2nd-CYS
+            cys = chain.features[ chain._features['2nd-CYS'][0] ]
+            v_reg = chain.features[ chain._features['V-REGION'][0] ]
+            v_reg.qualifiers['codon_start'] = cys.location.start.position % 3 + 1
         
         return bestVscore
     
