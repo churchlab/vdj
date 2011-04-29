@@ -28,15 +28,15 @@ class ImmuneChain(SeqRecord):
         else:   # native SeqRecord init
             SeqRecord.__init__(self,*args,**kw)
         
-        # define a set for uniq tags
-        self._tags = set(self.annotations.setdefault('tags',[]))
-        
         # precompute hash on features for performance
         self._update_feature_dict()
         
         # load `source` feature qualifiers into annotations and delete `source`
         # feature, if it exists
         self._process_source_feature()
+        
+        # define a set for uniq tags
+        self._tags = set(self.annotations.setdefault('tags',[]))
     
     def _init_with_SeqRecord(self,record):
         # Initialize self using existing SeqRecord object
