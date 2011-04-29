@@ -100,7 +100,7 @@ class vdj_aligner(object):
             # copy features from ref to query
             Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
-            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'])
+            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=True)
             
             # perform some curating; esp, CDR3-IMGT is annotated in V
             # references, though it's not complete. I will recreate that
@@ -115,7 +115,7 @@ class vdj_aligner(object):
             # update codon_start of V-REGION anchored to the CDR3 2nd-CYS
             cys = chain.features[ chain._features['2nd-CYS'][0] ]
             v_reg = chain.features[ chain._features['V-REGION'][0] ]
-            v_reg.qualifiers['codon_start'] = cys.location.start.position % 3 + 1
+            v_reg.qualifiers['codon_start'] = [cys.location.start.position % 3 + 1]
         
         return bestVscore
     
@@ -148,7 +148,7 @@ class vdj_aligner(object):
             # copy features from ref to query
             Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
-            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'])
+            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=True)
             chain._update_feature_dict()
         
         return bestJscore
