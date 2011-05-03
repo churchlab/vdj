@@ -55,10 +55,13 @@ class ImmuneChain(SeqRecord):
         if 'source' in self._features:
             if len(self._features['source']) > 1:
                 raise ValueError, "Found more than one `source` feature in %s" % self.id
-            self.annotations.update( self.features[self._features['source'][0]].qualifiers )
+            
+            for (k,v) in self.features[self._features['source'][0]].qualifiers.iteritems():
+                if k != 'tags' and isinstance(v,types.ListType) and len(v) == 1: v = v[0]
+                self.annotations[k] = v
+            
             self.features.pop(self._features['source'][0])
             self._features.pop('source')
-    
     
     def __getattribute__(self,name):
         """Look for attributes in annotations and features."""
@@ -73,6 +76,7 @@ class ImmuneChain(SeqRecord):
             pass
         
         try:
+            if len(self._features[name]) > 1: raise AttributeError, "%s is not a unique feature" % name
             return self.features[self._features[name][0]]
         except KeyError:
             pass
@@ -133,7 +137,7 @@ class ImmuneChain(SeqRecord):
     
     @property
     def junction(self):
-        return self.features[self._features['CDR3-IMGT'][0]].extract(self.seq.tostring())
+        return self.__getattribute__('CDR3-IMGT').extract(self.seq.tostring())
     
     @property
     def cdr3(self):
@@ -141,7 +145,7 @@ class ImmuneChain(SeqRecord):
     
     @property
     def v(self):
-        return self.features[self._features['V-REGION'][0]].qualifiers['allele'][0]
+        return self.__getattribute__('V-REGION').qualifiers['allele'][0]
     
     @property
     def d(self):
@@ -150,7 +154,7 @@ class ImmuneChain(SeqRecord):
     
     @property
     def j(self):
-        return self.features[self._features['J-REGION'][0]].qualifiers['allele'][0]
+        return self.__getattribute__('J-REGION').qualifiers['allele'][0]
     
     @property
     def vj(self):

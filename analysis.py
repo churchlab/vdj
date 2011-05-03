@@ -14,7 +14,7 @@ import vdj
 def vdjxml2countdict(inhandle,features,count='read'):
     counts = pyutils.nesteddict()
     uniq_feature_values = dict([(f,set()) for f in features])
-    for chain in vdj.parse_VDJXML(inhandle):
+    for chain in vdj.parse_imgt(inhandle):
         try:    # get the feature tuple
             feature_list = [chain.__getattribute__(f) for f in features]
             for (feature,value) in zip(features,feature_list): uniq_feature_values[feature].add(value)
