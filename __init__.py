@@ -137,7 +137,15 @@ class ImmuneChain(SeqRecord):
     
     @property
     def junction(self):
+        return self.junction_nt
+    
+    @property
+    def junction_nt(self):
         return self.__getattribute__('CDR3-IMGT').extract(self.seq.tostring())
+    
+    @property
+    def junction_aa(self):
+        return self.__getattribute__('CDR3-IMGT').qualifiers['translation'][0]
     
     @property
     def cdr3(self):
