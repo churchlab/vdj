@@ -1,30 +1,31 @@
-# base name for all data files
-basename = 
+# base name for all final data files
+basename	
 
-# location of vdj installation (for scripts)
-# NOTE: this should be eliminated with proper install of package
-vdj_package_dir = 
 
-# input files (full paths)
-input_fasta   =    # the initial fasta data
-barcode_fasta =    # barcode identifiers
-isotype_fasta =    # isotype identifiers
+# work directory
+# all work and results in this directory. Must be a unique name in the current
+# directory
+workdir	    
 
-# working directories
-analysis_dir =     # full path; base directory for results
-work_dir =         # full path; directory to put intermediate files in (can be same as analysis_dir)
+
+# input files
+input_fasta	    # the initial fasta data
+barcode_fasta	# barcode identifiers
+isotype_fasta	# isotype identifiers
+
 
 # LSF parameters
-short_queue = 'normal_serial'
-long_queue  = 'long_serial'
+short_queue	normal_serial
+long_queue	long_serial
 
 # analysis parameters
-min_size = 
-max_size = 
-packet_size = 10000
-loci = 
-clustering_cutoff = 4.5
-clustering_linkage = 'single'
+min_size	
+max_size	
+packet_size	10000
+locus	
+locus	
+clustering_cutoff	4.5
+clustering_linkage	single
 
 # derived output files
 raw_vdjxml = basename+'.raw.vdjxml'
