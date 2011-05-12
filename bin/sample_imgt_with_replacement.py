@@ -26,14 +26,12 @@ elif len(args) == 0:
     raise ValueError, "must provide at least an input file"
 
 # determine the total number of chains in the file (using unix grep and wc)
-p = subprocess.Popen('cat %s | grep "<ImmuneChain>" | wc -l' % args[0],shell=True,stdout=subprocess.PIPE)
+p = subprocess.Popen('cat %s | grep ^ID | wc -l' % args[0],shell=True,stdout=subprocess.PIPE)
 total_chains = int(p.stdout.read().strip())
-
-print >>outhandle, "<root>"
 
 random.seed()
 idxs = sorted(statstools.sample_with_replacement(xrange(total_chains),options.num))
-for (i,chain) in enumerate(vdj.parse_VDJXML(inhandle)):
+for (i,chain) in enumerate(vdj.parse_imgt(inhandle)):
     if len(idxs) == 0:
         break
     if i == idxs[0]:
@@ -41,4 +39,3 @@ for (i,chain) in enumerate(vdj.parse_VDJXML(inhandle)):
             print >>outhandle, chain
             idxs.pop(0)
 
-print >>outhandle, "</root>"

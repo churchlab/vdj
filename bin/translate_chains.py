@@ -3,8 +3,6 @@
 import sys
 import optparse
 
-import seqtools
-
 import vdj
 import vdj.pipeline
 
@@ -21,4 +19,6 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.pipeline.fasta2vdjxml(inhandle,outhandle)
+for chain in vdj.parse_imgt(inhandle):
+    vdj.pipeline.translate_chain(chain)
+    print >>outhandle, chain

@@ -21,4 +21,6 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.pipeline.size_select(inhandle,outhandle,options.min,options.max):
+for chain in vdj.parse_imgt(inhandle):
+    if len(chain) >= min_size and len(chain) <= max_size:
+        print >>outhandle, chain

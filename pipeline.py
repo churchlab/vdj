@@ -86,16 +86,6 @@ def imgt2fasta(inhandle,outhandle):
     for chain in vdj.parse_imgt(inhandle):
         outhandle.write( chain.format('fasta') )
 
-def size_select(inhandle,outhandle,min_size,max_size):
-    for chain in vdj.parse_imgt(inhandle):
-        if len(chain) >= min_size and len(chain) <= max_size:
-            print >>outhandle, chain
-
-def filter_VJ(inhandle,outhandle):
-    for chain in vdj.parse_imgt(inhandle):
-        if chain.v and chain.j:
-            print >>outhandle, chain
-
 def partition_VJ(inhandle,basename):
     # ignores allele numbers
     def vj_id_no_allele(chain):
@@ -117,3 +107,9 @@ def partition_VJ(inhandle,basename):
         outhandle.close()
     
     return [outname(basename,vj_id) for vj_id in outhandles.iterkeys()]
+
+def translate_chain( chain ):
+    chain.annotations['translation'] = chain.seq.translate()
+    for feature in chain.features:
+        offset = int(feature.qualifiers.get('codon_start',[1])[0]) - 1
+        feature.qualifiers['translation'] = feature.extract(chain.seq)[offset:].translate()

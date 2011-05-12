@@ -1,20 +1,22 @@
 Lots of scripts for performing vdj operations.
 
-fasta2vdjxml.py             Convert fasta file to vdjxml. Takes first white-space delim field for descr
+
 size_select.py              Size select reads
-vdjxml2parts.py             Split vdjxml file into parts
 barcode_id.py               Annotate barcode onto sequences
 coding_strand.py            Convert chains to coding sequence
 isotype_id.py               Annote isotypes
 align_vdj.py                Perform vdj classification
-cat_vdjxml.py               cat operation on vdjxml files (handles root elements)
 filter_VJ.py                Select only chains with V and J alignments
 cluster_cdr3.py             Perform hierarchical clustering of ImmuneChains using their junctions
 partition_VJ.py             Partitions vdjxml into files by VJ combo
-update_vdjxml.py            Update vdjxml from older version to newer version
+
 
 Older generation:
 
+update_vdjxml.py            Update vdjxml from older version to newer version
+fasta2vdjxml.py             Convert fasta file to vdjxml. Takes first white-space delim field for descr
+vdjxml2parts.py             Split vdjxml file into parts
+cat_vdjxml.py               cat operation on vdjxml files (handles root elements)
 cluster_split_VJ.py
 cluster_split_VJ_LSF.py
 filter_tags_and.py

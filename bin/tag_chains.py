@@ -19,6 +19,6 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-for chain in vdj.parse_VDJXML(inhandle):
+for chain in vdj.parse_imgt(inhandle):
     chain.add_tags(options.tags)
     print >>outhandle, chain

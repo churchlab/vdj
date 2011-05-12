@@ -25,8 +25,6 @@ elif len(args) == 0:
 # load isotypes
 isotypes = vdj.pipeline.load_isotypes(options.ighc_fasta)
 
-print >>outhandle, "<root>"
-for chain in vdj.parse_VDJXML(inhandle):
+for chain in vdj.parse_imgt(inhandle):
     vdj.pipeline.id_isotype(chain,isotypes)
     print >>outhandle, chain
-print >>outhandle, "</root>"

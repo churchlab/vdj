@@ -23,7 +23,7 @@ else:
     raise ValueError, "Must give an input and output argument"
 
 features = ['v','j']
-(uniq_feature_values,countdict) = vdj.analysis.vdjxml2countdict(inhandle,features,count=options.quantify)
+(uniq_feature_values,countdict) = vdj.analysis.imgt2countdict(inhandle,features,count=options.quantify)
 
 _jet_data =   {'red':   ((0., 0, 0),
                          (0.35, 0, 0),

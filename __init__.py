@@ -218,13 +218,3 @@ def filter_parse_imgt(inputfile,predicate):
         chain = ImmuneChain(record)
         if predicate(chain):
             yield chain
-
-# =======================
-# = Other manipulations =
-# =======================
-
-def translate_chain( chain ):
-    chain.annotations['translation'] = chain.seq.translate()
-    for feature in chain.features:
-        offset = int(feature.qualifiers.get('codon_start',[1])[0]) - 1
-        feature.qualifiers['translation'] = feature.extract(chain.seq)[offset:].translate()

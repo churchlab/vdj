@@ -11,7 +11,7 @@ import numpy as np
 import pyutils
 import vdj
 
-def vdjxml2countdict(inhandle,features,count='read'):
+def imgt2countdict(inhandle,features,count='read'):
     counts = pyutils.nesteddict()
     uniq_feature_values = dict([(f,set()) for f in features])
     for chain in vdj.parse_imgt(inhandle):

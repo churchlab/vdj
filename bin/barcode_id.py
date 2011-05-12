@@ -27,8 +27,6 @@ elif len(args) == 0:
 barcodes = vdj.pipeline.load_barcodes(options.barcodes_fasta)
 
 # iterate through chains
-print >>outhandle, "<root>"
-for chain in vdj.parse_VDJXML(inhandle):
+for chain in vdj.parse_imgt(inhandle):
     vdj.pipeline.id_barcode(chain,barcodes)
     print >>outhandle, chain
-print >>outhandle, "</root>"

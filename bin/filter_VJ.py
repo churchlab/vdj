@@ -19,4 +19,6 @@ elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
 
-vdj.pipeline.filter_VJ(inhandle,outhandle)
+for chain in vdj.parse_imgt(inhandle):
+    if chain.v and chain.j:
+        print >>outhandle, chain

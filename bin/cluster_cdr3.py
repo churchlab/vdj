@@ -31,7 +31,7 @@ elif len(args) == 0:
 # load data
 chains = []
 junctions = []
-for chain in vdj.parse_VDJXML(inhandle):
+for chain in vdj.parse_imgt(inhandle):
     # check for presence of V, J, and non-trivial junction
     if not hasattr(chain,'v') or not hasattr(chain,'j') or not hasattr(chain,'junction'):
         raise ValueError, "Chain %s has no junction of V-J aln." % chain.descr
@@ -47,9 +47,7 @@ if options.tag == '':
 else:
     tag = options.tag+'|'
 
-print >>outhandle, "<root>"
 for (i,chain) in enumerate(chains):
     cloneID = '%s%s' % (tag,T[seq_idxs[chain.junction]])
-    chain.clone = cloneID
+    chain.annotations['clone'] = cloneID
     print >>outhandle, chain
-print >>outhandle, "</root>"
