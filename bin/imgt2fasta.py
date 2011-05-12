@@ -4,7 +4,6 @@ import sys
 import optparse
 
 import vdj
-import vdj.pipeline
 
 parser = optparse.OptionParser()
 (options, args) = parser.parse_args()
@@ -18,5 +17,8 @@ elif len(args) == 1:
 elif len(args) == 0:
     inhandle = sys.stdin
     outhandle = sys.stdout
+else:
+    raise Exception, "Wrong number of arguments."
 
-vdj.pipeline.vdjxml2fasta(inhandle,outhandle)
+for chain in vdj.parse_imgt(inhandle):
+    print >>outhandle, chain.format('fasta')

@@ -33,7 +33,7 @@ ip.close()
 
 # compute counts
 features = [options.quantify,'barcode']
-(uniq_feature_values,countdict) = vdj.analysis.vdjxml2countdict(inhandle,features,options.count)
+(uniq_feature_values,countdict) = vdj.analysis.imgt2countdict(inhandle,features,options.count)
 times = np.array([timedict[bc] for bc in uniq_feature_values['barcode']])
 timesort = np.argsort(times)
 times = times[timesort]

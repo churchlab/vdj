@@ -18,11 +18,9 @@ elif len(args) == 0:
 else:
     raise Exception, "Too many arguments."
 
-parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(inhandle),
+parts = vdj.pipeline.iterator2parts( vdj.parse_imgt(inhandle),
                                      options.basename,
-                                     options.packetsize,
-                                     prefix='<root>',
-                                     suffix='</root>')
+                                     options.packetsize)
 
 for part in parts:
     print part

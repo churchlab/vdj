@@ -29,7 +29,7 @@ for line in ip:
 ip.close()
 
 features = ['barcode',options.quantify]
-(uniq_feature_values,countdict) = vdj.analysis.vdjxml2countdict(inhandle,features)
+(uniq_feature_values,countdict) = vdj.analysis.imgt2countdict(inhandle,features)
 max_size = max([max(cd.itervalues()) for cd in countdict.itervalues()])
 
 # make the plots
