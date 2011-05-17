@@ -6,6 +6,23 @@ import vdj
 import vdj.clustering
 import seqtools
 
+def parse_jobfile(filename):
+    parameters = {}
+    ip = open(filename,'r')
+    for line in ip:
+        data = line.split('#')[0].strip()
+        if data == '': continue
+        data = data.split('\t')
+        name = data[0].strip()
+        value = data[1].strip()
+        if value == '': continue
+        
+        if name == 'locus':
+            parameters.setdefault(name,[]).append(value)
+        parameters[name] = value
+    ip.close()
+    return parameters
+
 def iterator2parts(iterator,basename,packetsize,prefix='',suffix=''):
     """Split data from iterator into multiple files"""
     parts = []

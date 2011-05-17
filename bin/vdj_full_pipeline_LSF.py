@@ -4,51 +4,116 @@ import os
 import sys
 import optparse
 
+from Bio import SeqIO
+
 import lsf
 import seqtools
 import vdj
 import vdj.pipeline
 
+
+
+# 0. SETUP
 join = os.path.join
+log = lambda x: sys.stdout.write(s); sys.stdout.flush()
 
 option_parser = optparse.OptionParser()
 # option_parser.add_option('-x','--xxx',dest='xxxx',type='int')
 (options,args) = option_parser.parse_args()
 
+# Read and process jobfile
 if len(args) != 1:
     raise ValueError, "Require a single input jobfile"
-
 jobfile = args[0]
+params = vdj.pipeline.parse_jobfile(jobfile)
+work_dir = os.path.abspath(params['work_dir'])
+basename = params['basename']
 
-# PARAMETER DEFINITION
+short_queue = params['short_queue']
+long_queue = params['long_queue']
 
-# process jobfile for input parameters
-# defines the following variables:
-    # basename               # unique base identifier for data
-    # vdj_package_dir        # directory to find scripts.  will be added to shell PATH
-    # input_fasta            # the initial fasta data
-    # barcode_fasta          # barcode identifiers
-    # isotype_fasta          # isotype identifiers
-    # analysis_dir           # full path; base directory for final products
-    # work_dir               # full path; base directory for intermediate parts and logs
-    # min_size               # min size selection
-    # max_size               # max size selection
-    # packet_size            # packet size for alignment jobs
-    # loci                   # the loci to use for VDJ aln
-    # raw_vdjxml             # derived file stored in analysis_dir
-    # aligned_file           # derived file stored in analysis_dir
-    # vj_filtered_file       # derived file stored in analysis_dir
-    # size_selected_file     # derived file stored in analysis_dir
-    # clustered_file         # derived file stored in analysis_dir
-    # parts_dir              # derived intermediate work directories (rel. to work_dir)
-    # log_dir                # derived intermediate work directories (rel. to work_dir)
-    # partition_dir          # derived intermediate work directories (rel. to work_dir)
+# Create working directories
+assert not os.path.exists(params['work_dir'])
+os.mkdir(work_dir,0755)
+os.mkdir(join(work_dir,'parts'),0755)
+os.mkdir(join(work_dir,'logs'),0755)
+os.mkdir(join(work_dir,'partitions'),0755)
 
 
-execfile(jobfile)
 
-# add script directory to path
-os.environ['PATH'] = join(vdj_package_dir,'bin') + ':' + os.environ['PATH']
+# 1. SIZE SELECTION
+log("Performing size selection on reads...")
+min_size = params['min_size']
+max_size = params['max_size']
+size_selected_file = join(work_dir,basename + '.size%i-%i' % (min_size,max_size) + '.imgt')
+with open(size_selected_file,'w') as outhandle:
+    for seq in SeqIO.parse(params['input_fasta'],'fasta'):
+        if len(seq) >= min_size and len(seq) <= max_size:
+            chain = vdj.ImmuneChain(seq)
+            print >>outhandle, chain
+log("finished\n")
+
+
+
+# 2. SPLIT INTO PARTS
+log("Splitting input into small parts...")
+parts = vdj.pipeline.iterator2parts( vdj.parse_VDJXML(size_selected_file),
+                                     join(work_dir,'parts/size_selected.imgt'),
+                                     params['packet_size'])
+log("finished\n")
+
+
+
+# 3-7. BARCODE ID, CODING STRAND, ISOTYPE ID, VDJ CLASSIFICATION, TRANSLATION via LSF
+log("Setting up LSF command...\n")
+locus_options = ' '.join([' --locus %s' % locus for locus in params['locus']])
+cmd = 'barcode_id.py --barcodes %s ' % params['barcode_fasta']      # 3. BARCODE IDENTIFICATION
+cmd += ' | coding_strand.py' + locus_options                        # 4. CODING STRAND
+if 'IGH' in params['locus']:                                        # 5. ISOTYPE ID (heavy chain only)
+    cmd += ' | isotype_id.py --IGHC %s' % params['isotype_fasta']
+cmd += ' | align_vdj.py' + locus_options                            # 6. VDJ CLASSIFICATION
+cmd += ' | translate_chains.py'                                     # 7. TRANSLATION
+
+# submit cmd to LSF for each part
+log("Submitting jobs to LSF...")
+jobIDs = []
+logfiles = []
+outnames = []
+for part in parts:
+    partID = part.split('.')[-1]
+    partoutname = join(work_dir,'parts/aligned.imgt.'+partID)
+    outnames.append(partoutname)
+    curr_cmd = 'cat %s | ' + cmd + ' > %s'
+    curr_cmd = curr_cmd % (part,partoutname)
+    logfile = join(work_dir,'logs/alignment.log.'+partID)
+    jobID = lsf.submit_to_LSF(short_queue,logfile,curr_cmd)
+    logfiles.append(logfile)
+    jobIDs.append(jobID)
+log("finished\n")
+
+log("Waiting for LSF jobs...")
+lsf.wait_for_LSF_jobs(jobIDs,logfiles)
+log("finished\n")
+
+
+
+# 8. CONCAT PARTS
+log("Concatenating pieces...")
+outhandle = open(join(analysis_dir,aligned_file),'w')
+vdj.pipeline.cat_vdjxml(outnames,outhandle)
+outhandle.close()
+log("finished\n")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -63,16 +128,6 @@ locus_options = ' '.join([' --locus %s' % locus for locus in loci.split()])
 
 
 # PIPELINE STARTS HERE
-
-# 0. CONVERSION TO VDJXML
-
-sys.stdout.write("Converting FASTA to VDJXML..."); sys.stdout.flush()
-inhandle = open(input_fasta,'r')
-outhandle = open(join(analysis_dir,raw_vdjxml),'w')
-vdj.pipeline.fasta2vdjxml(inhandle,outhandle)
-inhandle.close()
-outhandle.close()
-sys.stdout.write("finished\n"); sys.stdout.flush()
 
 # 1. SIZE SELECTION
 sys.stdout.write("Performing size selection on reads..."); sys.stdout.flush()
