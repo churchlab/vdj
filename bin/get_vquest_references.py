@@ -11,7 +11,7 @@ url = sys.argv[1]
 page = urllib2.urlopen( url )
 soup = BeautifulSoup( page )
 pre = soup('pre')[-1]
-data = pre.contents[1].strip()+'\n'
+data = pre.contents[-1].strip()+'\n'
 record = SeqIO.parse(StringIO(data),'fasta').next()
 group = record.description.split('|')[1][:4]
 with open(group+'.fasta','w') as op:
