@@ -4,6 +4,7 @@ import sys
 import optparse
 
 from Bio import SeqIO
+from Bio.Alphabet import generic_dna
 
 import vdj
 
@@ -22,6 +23,6 @@ elif len(args) == 0:
 else:
     raise Exception, "Wrong number of arguments."
 
-for record in SeqIO.parse(inhandle,'fasta'):
+for record in SeqIO.parse(inhandle,'fasta',generic_dna):
     chain = vdj.ImmuneChain(record)
     print >>outhandle, chain

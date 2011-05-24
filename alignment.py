@@ -225,7 +225,7 @@ class vdj_aligner(object):
                 # if I am in a locus with D segments, try aligning that as well
                 if self.locus in ['IGH','TRB','TRD']:
                     scores['d'] = self.Dalign_chain(chain,verbose)
-        except KeyError:    # chain.v or chain.j raised an error
+        except AttributeError:    # chain.v or chain.j raised an error
             pass
         
         return scores
