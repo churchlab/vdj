@@ -100,7 +100,8 @@ class vdj_aligner(object):
             # copy features from ref to query
             Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
-            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=True)
+            # seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=True)
+            seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=False)
             
             # perform some curating; esp, CDR3-IMGT is annotated in V
             # references, though it's not complete. I will recreate that
@@ -148,7 +149,8 @@ class vdj_aligner(object):
             # copy features from ref to query
             Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
-            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=True)
+            # seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=True)
+            seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=False)
             chain._update_feature_dict()
         
         return bestJscore
