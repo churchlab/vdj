@@ -42,8 +42,8 @@ os.mkdir(join(work_dir,'partitions'),0755)
 
 # 1. SIZE SELECTION
 log("Performing size selection on reads...")
-min_size = params['min_size']
-max_size = params['max_size']
+min_size = int(params['min_size'])
+max_size = int(params['max_size'])
 size_selected_file = join(work_dir,basename + '.size%i-%i' % (min_size,max_size) + '.imgt')
 with open(size_selected_file,'w') as outhandle:
     for seq in SeqIO.parse(params['input_fasta'],'fasta'):
@@ -58,7 +58,7 @@ log("finished\n")
 log("Splitting input into small parts...")
 parts = vdj.pipeline.iterator2parts( vdj.parse_imgt(size_selected_file),
                                      join(work_dir,'parts/size_selected.imgt'),
-                                     params['packet_size'])
+                                     int(params['packet_size']))
 log("finished\n")
 
 
