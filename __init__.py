@@ -60,6 +60,9 @@ class ImmuneChain(SeqRecord):
                 raise ValueError, "Found more than one `source` feature in %s" % self.id
             
             for (k,v) in self.features[self._features['source'][0]].qualifiers.iteritems():
+                if k.startswith('__letter_annotations__'):
+                    self.letter_annotations[k.lstrip('__letter_annotations__.')] = v
+                    continue
                 if k != 'tags' and isinstance(v,types.ListType) and len(v) == 1: v = v[0]
                 self.annotations[k] = v
             
@@ -187,10 +190,12 @@ class ImmuneChain(SeqRecord):
             assert( len(self._features['source']) == 1 )
             feature = self.features[ self._features['source'][0] ]
             feature.qualifiers.update(self.annotations)
+            for (k,v) in self.letter_annotations.iteritems(): feature.qualifiers['__letter_annotations__.'+k] = v
         else:
             feature = SeqFeature( type='source',
                                   location=FeatureLocation(0,len(self)),
                                   qualifiers=self.annotations )
+            for (k,v) in self.letter_annotations.iteritems(): feature.qualifiers['__letter_annotations__.'+k] = v
             self.features.append(feature)
         return SeqRecord.format(self,*args,**kw)
     
