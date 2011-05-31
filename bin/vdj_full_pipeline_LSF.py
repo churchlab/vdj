@@ -5,6 +5,7 @@ import sys
 import optparse
 
 from Bio import SeqIO
+from Bio.Alphabet import generic_dna
 
 import lsf
 import seqtools
@@ -46,7 +47,7 @@ min_size = int(params['min_size'])
 max_size = int(params['max_size'])
 size_selected_file = join(work_dir,basename + '.size%i-%i' % (min_size,max_size) + '.imgt')
 with open(size_selected_file,'w') as outhandle:
-    for seq in SeqIO.parse(params['input_fasta'],'fasta'):
+    for seq in SeqIO.parse(params['input_fasta'],'fasta',generic_dna):
         if len(seq) >= min_size and len(seq) <= max_size:
             chain = vdj.ImmuneChain(seq)
             print >>outhandle, chain
