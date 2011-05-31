@@ -243,7 +243,7 @@ class vdj_aligner(object):
                 
                 # erase alignment annotations in CDR3.  can't tell SHM from TdT at this point
                 curr_annot = chain.letter_annotations['alignment']
-                chain.letter_annotations['alignment'] = curr_annot[:cdr3_start] + 'C' * (cdr3_end-cdr3_start) + curr_annot[cdr3_end:]
+                chain.letter_annotations['alignment'] = curr_annot[:cdr3_start] + '3' * (cdr3_end-cdr3_start) + curr_annot[cdr3_end:]
                 
                 # if I am in a locus with D segments, try aligning that as well
                 if self.locus in ['IGH','TRB','TRD']:
