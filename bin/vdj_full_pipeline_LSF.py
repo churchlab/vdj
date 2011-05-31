@@ -108,7 +108,7 @@ log("finished\n")
 # 9. FILTER VJ
 log("Filtering for chains with VJ alignments...")
 vj_filtered_file = join(work_dir,basename+'.VJ_filtered.imgt')
-with as outhandle:
+with open(vj_filtered_file,'w') as outhandle:
     for chain in vdj.parse_imgt(aligned_file):
         if hasattr(chain,'v') and hasattr(chain,'j'):
             print >>outhandle, chain
