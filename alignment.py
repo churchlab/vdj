@@ -103,6 +103,13 @@ class vdj_aligner(object):
             # seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=True)
             seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=False)
             
+            # annotate mutations
+            curr_annot = chain.letter_annotations['alignment']
+            aln_annot = vdj_aligner.alignment_annotation(Vrefaln,Vqueryaln)
+            left_pad  = len(aln_annot) - len(aln_annot.lstrip('_'))
+            right_pad = len(aln_annot) - len(aln_annot.rstrip('_'))
+            chain.letter_annotations['alignment'] = aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
+            
             # perform some curating; esp, CDR3-IMGT is annotated in V
             # references, though it's not complete. I will recreate that
             # annotation manually.
@@ -152,6 +159,13 @@ class vdj_aligner(object):
             # seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=True)
             seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=False)
             chain._update_feature_dict()
+            
+            # annotate mutations
+            curr_annot = chain.letter_annotations['alignment']
+            aln_annot = vdj_aligner.alignment_annotation(Jrefaln,Jqueryaln)
+            left_pad  = len(aln_annot) - len(aln_annot.lstrip('_'))
+            right_pad = len(aln_annot) - len(aln_annot.rstrip('_'))
+            chain.letter_annotations['alignment'] = curr_annot[:second_cys_offset+left_pad] + aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
         
         return bestJscore
     
@@ -206,6 +220,9 @@ class vdj_aligner(object):
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.id)
         
+        # insert letter annotations for alignment annotation
+        chain.letter_annotations["alignment"] = '_' * len(chain)
+        
         scores = {}
         
         scores['v'] = self.Valign_chain(chain,verbose)
@@ -223,6 +240,10 @@ class vdj_aligner(object):
                 cdr3_feature = SeqFeature(location=FeatureLocation(cdr3_start,cdr3_end),type='CDR3-IMGT',strand=1)
                 chain.features.append(cdr3_feature)
                 chain._update_feature_dict()
+                
+                # erase alignment annotations in CDR3.  can't tell SHM from TdT at this point
+                curr_annot = chain.letter_annotations['alignment']
+                chain.letter_annotations['alignment'] = curr_annot[:cdr3_start] + 'C' * (cdr3_end-cdr3_start) + curr_annot[cdr3_end:]
                 
                 # if I am in a locus with D segments, try aligning that as well
                 if self.locus in ['IGH','TRB','TRD']:
@@ -360,6 +381,32 @@ class vdj_aligner(object):
                 besttracemat = trace
         
         return (bestseg,bestscore,bestscoremat,besttracemat)
+    
+    
+    @staticmethod
+    def alignment_annotation(aln_ref,aln_query):
+        assert len(aln_query) == len(aln_ref)
+        len_aln = len(aln_ref)
+        
+        query_leading_indels  = len_aln - len(aln_query.lstrip('-'))
+        query_trailing_indels = len_aln - len(aln_query.rstrip('-'))
+        ref_leading_indels  = len_aln - len(aln_ref.lstrip('-'))
+        ref_trailing_indels = len_aln - len(aln_ref.rstrip('-'))
+        
+        start = max(query_leading_indels,ref_leading_indels)
+        end = len_aln - max(query_trailing_indels,ref_trailing_indels)
+        annot = ''
+        for (ref_letter,query_letter) in zip(aln_ref[start:end],aln_query[start:end]):
+            if query_letter == '-':
+                continue
+            elif ref_letter == '-':
+                annot += 'I'
+            elif query_letter == ref_letter:
+                annot += '.'
+            else:
+                annot += 'S'
+        
+        return '_' * start + annot + '_' * (len_aln - end)
     
     
     @staticmethod
