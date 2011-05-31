@@ -4,7 +4,7 @@ basename
 
 # work directory
 # all work and results in this directory. Must be a unique name in the current
-# directory
+# directory and not exist already
 work_dir	    
 
 
@@ -27,14 +27,17 @@ locus
 clustering_cutoff	4.5
 clustering_linkage	single
 
+
+# ###################################################
+# 
 # derived output files
-raw_vdjxml = basename+'.raw.vdjxml'
-aligned_file = basename+'.aligned.vdjxml'
-vj_filtered_file = basename+'.VJ_filtered.vdjxml'
-size_selected_file = basename + '.size%i-%i' % (min_size,max_size) + '.vdjxml'
-clustered_file = basename+'.clustered.vdjxml'
+# raw_vdjxml = basename+'.raw.vdjxml'
+# aligned_file = basename+'.aligned.vdjxml'
+# vj_filtered_file = basename+'.VJ_filtered.vdjxml'
+# size_selected_file = basename + '.size%i-%i' % (min_size,max_size) + '.vdjxml'
+# clustered_file = basename+'.clustered.vdjxml'
 
 # derived working directories
-parts_dir = 'parts'
-log_dir = 'logs'
-partition_dir = 'partitions'
+# parts_dir = 'parts'
+# log_dir = 'logs'
+# partition_dir = 'partitions'
