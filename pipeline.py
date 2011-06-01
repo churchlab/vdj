@@ -127,9 +127,6 @@ def partition_VJ(inhandle,basename):
     return [outname(basename,vj_id) for vj_id in outhandles.iterkeys()]
 
 def translate_chain( chain ):
-    # DEBUG
-    # import pdb
-    # pdb.set_trace()
     chain.annotations['translation'] = chain.seq.translate().tostring()
     for feature in chain.features:
         offset = int(feature.qualifiers.get('codon_start',[1])[0]) - 1
