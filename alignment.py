@@ -108,7 +108,7 @@ class vdj_aligner(object):
             aln_annot = vdj_aligner.alignment_annotation(Vrefaln,Vqueryaln)
             left_pad  = len(aln_annot) - len(aln_annot.lstrip('_'))
             right_pad = len(aln_annot) - len(aln_annot.rstrip('_'))
-            chain.letter_annotations['alignment'] = aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
+            chain.letter_annotations['alignment'] = curr_annot[:left_pad] + aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
             
             # perform some curating; esp, CDR3-IMGT is annotated in V
             # references, though it's not complete. I will recreate that
