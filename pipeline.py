@@ -19,6 +19,7 @@ def parse_jobfile(filename):
         
         if name == 'locus':
             parameters.setdefault(name,[]).append(value)
+            continue
         parameters[name] = value
     ip.close()
     return parameters
