@@ -61,7 +61,7 @@ class ImmuneChain(SeqRecord):
             
             for (k,v) in self.features[self._features['source'][0]].qualifiers.iteritems():
                 if k.startswith('__letter_annotations__'):
-                    self.letter_annotations[k.lstrip('__letter_annotations__.')] = v
+                    self.letter_annotations['.'.join(k.split('.')[1:])] = ''.join(v[0].split())
                     continue
                 if k != 'tags' and isinstance(v,types.ListType) and len(v) == 1: v = v[0]
                 self.annotations[k] = v
@@ -187,6 +187,8 @@ class ImmuneChain(SeqRecord):
         self._update_feature_dict()
         
         if 'source' in self._features:
+            # TODO: elim this whole if statement and only leave the else
+            raise ValueError, "I should never get here"
             assert( len(self._features['source']) == 1 )
             feature = self.features[ self._features['source'][0] ]
             feature.qualifiers.update(self.annotations)
@@ -197,7 +199,11 @@ class ImmuneChain(SeqRecord):
                                   qualifiers=self.annotations )
             for (k,v) in self.letter_annotations.iteritems(): feature.qualifiers['__letter_annotations__.'+k] = v
             self.features.append(feature)
-        return SeqRecord.format(self,*args,**kw)
+        
+        output = SeqRecord.format(self,*args,**kw)
+        self.features.pop() # the last one, which is the 'source' feat I just added
+        # self._features.pop('source')
+        return output
     
     def __len__(self):
         return len(self.seq)
