@@ -3,6 +3,7 @@
 import os
 import sys
 import optparse
+import subprocess
 
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
@@ -100,8 +101,9 @@ log("finished\n")
 # 8. CONCAT PARTS
 log("Concatenating pieces...")
 aligned_file = join(work_dir,basename+'.aligned.imgt')
-with open(aligned_file,'w') as outhandle:
-    vdj.pipeline.cat_vdjxml(outnames,outhandle)
+cmd = 'find %s -name "aligned.imgt.*" | xargs cat > %s' % (join(work_dir,'parts'),aligned_file)
+p = subprocess.Popen(cmd,shell=True)
+p.wait()
 log("finished\n")
 
 
