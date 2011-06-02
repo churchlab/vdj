@@ -3,7 +3,6 @@
 import warnings
 
 import vdj
-import vdj.clustering
 import seqtools
 
 def parse_jobfile(filename):
