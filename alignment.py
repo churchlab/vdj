@@ -106,9 +106,10 @@ class vdj_aligner(object):
             # annotate mutations
             curr_annot = chain.letter_annotations['alignment']
             aln_annot = vdj_aligner.alignment_annotation(Vrefaln,Vqueryaln)
-            left_pad  = len(aln_annot) - len(aln_annot.lstrip('_'))
-            right_pad = len(aln_annot) - len(aln_annot.rstrip('_'))
-            chain.letter_annotations['alignment'] = aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
+            aln_annot = aln_annot.translate(None,'D')
+            lNER = len(aln_annot) - len(aln_annot.lstrip('I'))
+            rNER = len(aln_annot.rstrip('I'))
+            chain.letter_annotations['alignment'] = curr_annot[:lNER] + aln_annot[lNER:rNER] + curr_annot[rNER:]
             
             # perform some curating; esp, CDR3-IMGT is annotated in V
             # references, though it's not complete. I will recreate that
@@ -163,9 +164,10 @@ class vdj_aligner(object):
             # annotate mutations
             curr_annot = chain.letter_annotations['alignment']
             aln_annot = vdj_aligner.alignment_annotation(Jrefaln,Jqueryaln)
-            left_pad  = len(aln_annot) - len(aln_annot.lstrip('_'))
-            right_pad = len(aln_annot) - len(aln_annot.rstrip('_'))
-            chain.letter_annotations['alignment'] = curr_annot[:second_cys_offset+left_pad] + aln_annot[left_pad:len(aln_annot)-right_pad] + curr_annot[len(curr_annot)-right_pad:]
+            aln_annot = aln_annot.translate(None,'D')
+            lNER = len(aln_annot) - len(aln_annot.lstrip('I'))
+            rNER = len(aln_annot.rstrip('I'))
+            chain.letter_annotations['alignment'] = curr_annot[:second_cys_offset+lNER] + aln_annot[lNER:rNER] + curr_annot[second_cys_offset+rNER:]
         
         return bestJscore
     
@@ -385,20 +387,12 @@ class vdj_aligner(object):
     
     @staticmethod
     def alignment_annotation(aln_ref,aln_query):
+        # should be given equivalenced region
         assert len(aln_query) == len(aln_ref)
-        len_aln = len(aln_ref)
-        
-        query_leading_indels  = len_aln - len(aln_query.lstrip('-'))
-        query_trailing_indels = len_aln - len(aln_query.rstrip('-'))
-        ref_leading_indels  = len_aln - len(aln_ref.lstrip('-'))
-        ref_trailing_indels = len_aln - len(aln_ref.rstrip('-'))
-        
-        start = max(query_leading_indels,ref_leading_indels)
-        end = len_aln - max(query_trailing_indels,ref_trailing_indels)
         annot = ''
-        for (ref_letter,query_letter) in zip(aln_ref[start:end],aln_query[start:end]):
+        for (ref_letter,query_letter) in zip(aln_ref,aln_query):
             if query_letter == '-':
-                continue
+                annot += 'D'
             elif ref_letter == '-':
                 annot += 'I'
             elif query_letter == ref_letter:
@@ -406,7 +400,7 @@ class vdj_aligner(object):
             else:
                 annot += 'S'
         
-        return '_' * start + annot + '_' * (len_aln - end)
+        return annot
     
     
     @staticmethod

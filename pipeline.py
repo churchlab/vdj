@@ -3,7 +3,6 @@
 import warnings
 
 import vdj
-import vdj.clustering
 import seqtools
 
 def parse_jobfile(filename):
@@ -19,6 +18,7 @@ def parse_jobfile(filename):
         
         if name == 'locus':
             parameters.setdefault(name,[]).append(value)
+            continue
         parameters[name] = value
     ip.close()
     return parameters
@@ -75,7 +75,7 @@ def id_barcode(chain,barcodes):
     except KeyError:    # barcode not found; chain unchanged
         return    # chain remains unchanged
     chain.__init__(chain[barcode_len:])
-    chain.barcode = curr_barcode
+    chain.annotations['barcode'] = curr_barcode
 
 def load_isotypes(isotype_file):
     ighcip = open(isotype_file,'r')
@@ -126,7 +126,7 @@ def partition_VJ(inhandle,basename):
     return [outname(basename,vj_id) for vj_id in outhandles.iterkeys()]
 
 def translate_chain( chain ):
-    chain.annotations['translation'] = chain.seq.translate()
+    chain.annotations['translation'] = chain.seq.translate().tostring()
     for feature in chain.features:
         offset = int(feature.qualifiers.get('codon_start',[1])[0]) - 1
-        feature.qualifiers['translation'] = feature.extract(chain.seq)[offset:].translate()
+        feature.qualifiers['translation'] = feature.extract(chain.seq)[offset:].translate().tostring()
