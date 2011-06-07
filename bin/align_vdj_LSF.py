@@ -7,7 +7,7 @@ argparser.add_argument('inputfile')
 argparser.add_argument('--work_dir')
 argparser.add_argument('--packet_size',type=int)
 argparser.add_argument('--locus',action='append')
-argparser.add_argument('--option',dest='xxx',action='store_const',default=5)
+argparser.add_argument('--queue')
 args = argparser.parse_args()
 
 
@@ -37,7 +37,6 @@ log("Setting up LSF command...\n")
 locus_options = ' '.join([' --locus %s' % locus for locus in params['locus']])
 cmd = 'align_vdj.py' + locus_options                            # 6. VDJ CLASSIFICATION
 
-
 # submit cmd to LSF for each part
 log("Submitting jobs to LSF...")
 jobIDs = []
@@ -50,7 +49,7 @@ for part in parts:
     curr_cmd = 'cat %s | ' + cmd + ' > %s'
     curr_cmd = curr_cmd % (part,partoutname)
     logfile = join(work_dir,'logs/alignment.log.'+partID)
-    jobID = lsf.submit_to_LSF(short_queue,logfile,curr_cmd)
+    jobID = lsf.submit_to_LSF(queue,logfile,curr_cmd)
     logfiles.append(logfile)
     jobIDs.append(jobID)
 log("finished\n")
@@ -63,7 +62,7 @@ log("finished\n")
 
 # 8. CONCAT PARTS
 log("Concatenating pieces...")
-aligned_file = join(work_dir,basename+'.aligned.imgt')
+aligned_file = join(work_dir,'aligned.imgt')
 with open(aligned_file,'w') as outhandle:
     vdj.pipeline.cat_vdjxml(outnames,outhandle)
 log("finished\n")
