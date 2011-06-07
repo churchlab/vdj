@@ -178,6 +178,11 @@ class ImmuneChain(SeqRecord):
     def vdj(self):
         return '|'.join([self.v,self.d,self.j])
     
+    @property
+    def num_mutations(self):
+        aln = self.letter_annotations['alignment']
+        return aln.count('S') + aln.count('I')
+    
     def format(self,*args,**kw):
         """Format SeqRecord using any supported format.
         
