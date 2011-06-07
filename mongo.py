@@ -1,23 +1,36 @@
-from pymongo.son_manipulator import SONManipulator
-from Bio.SeqRecord import SeqRecord
+import pymongo
 
 from seqtools import simplifySeqRecord, complicateSeqRecord
 from vdj import ImmuneChain
 
-encode_chain = simplifySeqRecord
+def encode_chain(chain):
+    document = simplifySeqRecord(chain)
+    if hasattr(chain,'v'): document['v'] = chain.v
+    if hasattr(chain,'d'): document['d'] = chain.d
+    if hasattr(chain,'j'): document['j'] = chain.j
+    if hasattr(chain,'junction_nt'): document['junction_nt'] = chain.junction_nt
+    if hasattr(chain,'junction_aa'): document['junction_aa'] = chain.junction_aa
+    if hasattr(chain,'num_mutations'): document['num_mutations'] = chain.num_mutations
+    return document
+
 def decode_chain(document):
     assert document["__SeqRecord__"]
     return ImmuneChain(complicateSeqRecord(document))
 
-
-
-
+def connect_to_spleen():
+    connection = pymongo.Connection('134.174.161.59',27017)
+    db = connection.vaccination
+    db.authenticate("mongodbuser","asdffdsa")
+    return db
 
 
 ##############################################################################
 # doesn't work if trying to insert an ImmuneChain only.  This will work if you
 # try to insert a SON object that has an ImmuneChain as one of the values.  So
 # you'd have to wrap the object in something like: {"chain": chain_obj}
+
+from pymongo.son_manipulator import SONManipulator
+from Bio.SeqRecord import SeqRecord
 
 class ImmuneChainTransform(SONManipulator):
     def transform_incoming(self,son,collection):
