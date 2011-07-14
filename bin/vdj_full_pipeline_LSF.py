@@ -108,6 +108,18 @@ log("finished\n")
 
 
 
+# 9. LEARN GERMLINE
+if params['learn_germline']:
+    os.mkdir(join(work_dir,'germline'),0755)
+    cmd = 'learn_germline.py '  # FINISH ME
+    p = subprocess.Popen(cmd,shell=True)
+    p.wait()
+    
+    
+    
+
+
+
 # 9. FILTER VJ
 log("Filtering for chains with VJ alignments...")
 vj_filtered_file = join(work_dir,basename+'.VJ_filtered.imgt')
