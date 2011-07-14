@@ -100,8 +100,11 @@ class vdj_aligner(object):
             # copy features from ref to query
             Vrefaln,Vqueryaln = vdj_aligner.construct_alignment( self.refV[bestVseg].seq.tostring(), chain.seq.tostring(), bestVscoremat, bestVtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Vrefaln, Vqueryaln)
-            # seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=True)
             seqtools.copy_features(self.refV[bestVseg], chain, coord_mapping, erase=['translation'], replace=False)
+            
+            # store gapped aln
+            chain.annotations['gapped_query'] = Vqueryaln
+            chain.annotations['gapped_reference'] = Vrefaln
             
             # annotate mutations
             curr_annot = chain.letter_annotations['alignment']
@@ -157,9 +160,16 @@ class vdj_aligner(object):
             # copy features from ref to query
             Jrefaln,Jqueryaln = vdj_aligner.construct_alignment( self.refJ[bestJseg].seq.tostring(), query, bestJscoremat, bestJtracemat )
             coord_mapping = vdj_aligner.ungapped_coord_mapping(Jrefaln, Jqueryaln)
-            # seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=True)
             seqtools.copy_features(self.refJ[bestJseg], chain, coord_mapping, offset=second_cys_offset, erase=['translation'], replace=False)
             chain._update_feature_dict()
+            
+            # update gapped aln
+            gapped_query = chain.annotations.get('gapped_query','')
+            gapped_reference = chain.annotations.get('gapped_reference','')
+            gapped_CDR3_offset = vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(),gapped_query,second_cys_offset)
+            gapped_Vref_aln_end = len(gapped_reference.rstrip('-'))
+            chain.annotations['gapped_query'] = gapped_query[:gapped_Vref_aln_end] + Jqueryaln[gapped_Vref_aln_end-gapped_CDR3_offset:]
+            chain.annotations['gapped_reference'] = gapped_reference[:gapped_Vref_aln_end] + Jrefaln[gapped_Vref_aln_end-gapped_CDR3_offset:]
             
             # annotate mutations
             curr_annot = chain.letter_annotations['alignment']
@@ -428,6 +438,17 @@ class vdj_aligner(object):
         mapping.setdefault(coord_from,[]).append(coord_to)
         
         return mapping
+    
+    
+    @staticmethod
+    def ungapped2gapped_coord(ungapped,gapped,ungapped_coord):
+        left_gaps = len(gapped) - len(gapped.lstrip('-'))
+        gapped_coord = ungapped_coord + left_gaps
+        gaps = gapped.count('-',0,gapped_coord)
+        while gapped_coord - gaps < ungapped_coord:
+            gapped_coord += gaps
+            gaps = gapped.count('-',0,gapped_coord)
+        return gapped_coord
     
     
     @staticmethod
