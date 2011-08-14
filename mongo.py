@@ -17,9 +17,9 @@ def decode_chain(document):
     assert document["__SeqRecord__"]
     return ImmuneChain(complicateSeqRecord(document))
 
-def connect_to_spleen():
+def connect_to_spleen(connect_to='vaccination'):
     connection = pymongo.Connection('spleen.res.med.harvard.edu',27017)
-    db = connection.vaccination
+    db = connection[connect_to]
     db.authenticate("mongodbuser","asdffdsa")
     return db
 
