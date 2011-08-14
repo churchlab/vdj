@@ -16,7 +16,7 @@ argparser.add_argument('-i','--input')
 args = argparser.parse_args()
 
 inputfile = args.input
-db = vdj.mongo.connect_to_spleen(db=args.db)
+db = vdj.mongo.connect_to_spleen(connect_to=args.db)
 chains = db[args.collection]
 for (i,chain) in enumerate(vdj.parse_imgt(inputfile)):
     if i%1000 == 0:
