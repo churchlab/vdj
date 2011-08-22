@@ -229,6 +229,9 @@ class vdj_aligner(object):
         # import pdb
         # pdb.set_trace()
         
+        if chain.seq.tostring() != chain.seq.tostring().upper():
+            raise ValueError, "aligner requires all uppercase alphabet."
+        
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.id)
         
