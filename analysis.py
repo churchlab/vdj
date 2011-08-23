@@ -11,10 +11,10 @@ import numpy as np
 import pyutils
 import vdj
 
-def imgt2countdict(inhandle,features,count='read'):
+def iterator2countdict(iterable,features,count='read'):
     counts = pyutils.nesteddict()
     uniq_feature_values = dict([(f,set()) for f in features])
-    for chain in vdj.parse_imgt(inhandle):
+    for chain in iterable:
         try:    # get the feature tuple
             feature_list = [chain.__getattribute__(f) for f in features]
             for (feature,value) in zip(features,feature_list): uniq_feature_values[feature].add(value)
@@ -39,6 +39,9 @@ def imgt2countdict(inhandle,features,count='read'):
     for feature in features: uniq_feature_values[feature] = list(uniq_feature_values[feature])
     
     return (uniq_feature_values,counts)
+
+def imgt2countdict(inhandle,features,count='read'):
+    return iterator2countdict(vdj.parse_imgt(inhandle),features,count)
 
 def countdict2matrix(features,feature_values,countdict):
     # feature_values is a dict where keys are the features and the values are
