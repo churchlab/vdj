@@ -40,6 +40,9 @@ class ImmuneChain(SeqRecord):
         
         # define a set for uniq tags
         self._tags = set(self.annotations.setdefault('tags',[]))
+        
+        # force uppercase sequence
+        # self.seq = self.seq.upper()
     
     def _init_with_SeqRecord(self,record):
         # Initialize self using existing SeqRecord object
