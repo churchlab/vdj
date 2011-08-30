@@ -209,7 +209,7 @@ class vdj_aligner(object):
         return bestDscore
     
     
-    def align_chain(self,chain,verbose=False):
+    def align_chain(self,chain,verbose=False,debug=False):
         
         # DEBUG
         # import vdj
@@ -226,8 +226,9 @@ class vdj_aligner(object):
         # aligner.align_chain(a)
         # print a
         # 
-        # import pdb
-        # pdb.set_trace()
+        if debug:
+            import pdb
+            pdb.set_trace()
         
         if not chain.has_tag('positive') and not chain.has_tag('coding'):
             warnings.warn('chain %s may not be the correct strand' % chain.id)
@@ -560,11 +561,11 @@ class vdj_aligner_combined(object):
             self.posset.update(aligner.posset)
             self.negset.update(aligner.negset)
     
-    def align_chain(self,chain,verbose=False):
+    def align_chain(self,chain,verbose=False,debug=False):
         alignments = []
         for aligner in self.aligners:
             curr_chain = copy.deepcopy(chain)
-            curr_score = aligner.align_chain(curr_chain)
+            curr_score = aligner.align_chain(curr_chain,debug=debug)
             alignments.append((curr_chain,curr_score))
         alignments = sorted(filter(lambda a: hasattr(a[0],'v'),alignments),key=lambda a:a[1]['v'],reverse=True)
         if len(alignments) > 0:
