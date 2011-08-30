@@ -6,6 +6,7 @@ import optparse
 import seqtools
 
 import vdj
+import vdj.pipeline
 
 parser = optparse.OptionParser()
 parser.add_option('-b','--basename')
