@@ -3,6 +3,15 @@
 import sys
 import optparse
 
+# HACK
+# importing vdj.clustering will import scipy.cluster, which will import pylab,
+# if it's available.  By default, pylab will try to open some kind of
+# windowing device.  If I dispatch jobs to the batch system, this causes an
+# error.  But if I preempt this import by calling matplotlib and connecting it
+# to the non-windowing Agg backend, it should avoid the problem.
+import matplotlib as mpl
+mpl.use('agg')
+
 import vdj
 import vdj.clustering
 
