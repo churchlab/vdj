@@ -26,7 +26,7 @@ class vdj_aligner(object):
         self.minDscore = 4
         self.minJscore = 13
         
-        if if kw.has_key('rigorous') and kw['rigorous'] == True:
+        if kw.has_key('rigorous') and kw['rigorous'] == True:
             self.numCrudeVCandidates = 10000
             self.numCrudeDCandidates = 10000
             self.numCrudeJCandidates = 10000
