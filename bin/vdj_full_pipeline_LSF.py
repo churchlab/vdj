@@ -109,7 +109,7 @@ log("finished\n")
 
 
 # 9. LEARN GERMLINE
-if params['learn_germline']:
+if params.has_key('learn_germline') and params['learn_germline']:
     os.mkdir(join(work_dir,'germline'),0755)
     cmd = 'learn_germline.py '  # FINISH ME
     p = subprocess.Popen(cmd,shell=True)
