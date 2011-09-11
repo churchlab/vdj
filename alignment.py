@@ -600,26 +600,26 @@ class vdj_aligner_combined(object):
             strandid = -1
         return strandid
 
-def igh_aligner():
-    return vdj_aligner(locus='IGH')
+def igh_aligner(**kw):
+    return vdj_aligner(locus='IGH',**kw)
 
-def igk_aligner():
-    return vdj_aligner(locus='IGK')
+def igk_aligner(**kw):
+    return vdj_aligner(locus='IGK',**kw)
 
-def igl_aligner():
-    return vdj_aligner(locus='IGL')
+def igl_aligner(**kw):
+    return vdj_aligner(locus='IGL',**kw)
 
-def igkl_aligner():
-    return vdj_aligner_combined(loci=['IGK','IGL'])
+def igkl_aligner(**kw):
+    return vdj_aligner_combined(loci=['IGK','IGL'],**kw)
 
-def trb_aligner():
-    return vdj_aligner(locus='TRB')
+def trb_aligner(**kw):
+    return vdj_aligner(locus='TRB',**kw)
 
-def tra_aligner():
-    return vdj_aligner(locus='TRA')
+def tra_aligner(**kw):
+    return vdj_aligner(locus='TRA',**kw)
 
-def trd_aligner():
-    return vdj_aligner(locus='TRD')
+def trd_aligner(**kw):
+    return vdj_aligner(locus='TRD',**kw)
 
-def trg_aligner():
-    return vdj_aligner(locus='TRG')
+def trg_aligner(**kw):
+    return vdj_aligner(locus='TRG',**kw)
