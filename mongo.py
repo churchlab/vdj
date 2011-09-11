@@ -13,7 +13,7 @@ def encode_chain(chain):
     if hasattr(chain,'num_mutations'): document['num_mutations'] = chain.num_mutations
     return document
 
-def decode_chain(document):
+def decode_document(document):
     assert document["__SeqRecord__"]
     return ImmuneChain(complicateSeqRecord(document))
 
