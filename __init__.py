@@ -1,3 +1,4 @@
+import string
 import types
 import xml.etree.cElementTree as ElementTree    # for VDJXML parsing
 
@@ -67,6 +68,20 @@ class ImmuneChain(SeqRecord):
                     self.letter_annotations['.'.join(k.split('.')[1:])] = ''.join(v[0].split())
                     continue
                 if k != 'tags' and isinstance(v,types.ListType) and len(v) == 1: v = v[0]
+                
+                # HACK: To deal with feature qualifier values that break across lines, the
+                # SeqIO parser loads each line separately, joins them with \n, and then
+                # replaces the newlines with a space.  This is performed in
+                # `_feed_feature_table` in Scanner.py.  However, this inserts spurious spaces
+                # in sequences that are stored along with my SeqRecord, like alignment
+                # annotations, so here I delete this extra spaces.  Here I manually check for
+                # specific qualifiers that may be problematic.
+                if k == 'gapped_reference' or \
+                   k == 'gapped_query':
+                    self.annotations[k] = v.translate(None,string.whitespace)
+                    continue
+                
+                # for everything else
                 self.annotations[k] = v
             
             self.features.pop(self._features['source'][0])
