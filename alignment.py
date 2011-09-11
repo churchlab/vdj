@@ -22,6 +22,19 @@ class vdj_aligner(object):
         self.numCrudeDCandidates = 10
         self.numCrudeJCandidates = 2
         
+        self.minVscore = 100    # derived from calibration data 20090710
+        self.minDscore = 4
+        self.minJscore = 13
+        
+        if if kw.has_key('rigorous') and kw['rigorous'] == True:
+            self.numCrudeVCandidates = 10000
+            self.numCrudeDCandidates = 10000
+            self.numCrudeJCandidates = 10000
+
+            self.minVscore = 20
+            self.minDscore = 1
+            self.minJscore = 5
+        
         # Define seed patterns
         patternA='111011001011010111'
         patternB='1111000100010011010111'
@@ -31,10 +44,6 @@ class vdj_aligner(object):
         self.seedpatterns = [patternA,patternB,patternC,patternD,patternE]
         self.miniseedpatterns = ['111011','110111']
         self.patternPos = '111111111111'
-        
-        self.minVscore = 100    # derived from calibration data 20090710
-        self.minDscore = 4
-        self.minJscore = 13
         
         # set reference sequences (locus) and generate hashes from ref data
         self.locus = kw['locus']
@@ -555,7 +564,7 @@ class vdj_aligner_combined(object):
     """
     def __init__(self,**kw):
         self.loci = kw['loci']
-        self.aligners = [vdj_aligner(locus=locus) for locus in self.loci]
+        self.aligners = [vdj_aligner(locus=locus,**kw) for locus in self.loci]
         
         self.patternPos = '111111111111'
         self.posset = set()
