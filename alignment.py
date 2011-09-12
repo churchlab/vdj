@@ -130,6 +130,7 @@ class vdj_aligner(object):
             try:    # some reference entries do not have CDR3 annotations
                 chain.features.pop(chain._features['CDR3-IMGT'][0])
                 chain._features.pop('CDR3-IMGT')
+                chain._update_feature_dict()
             except KeyError:
                 pass
             
