@@ -38,7 +38,7 @@ assert not os.path.exists(work_dir)
 os.mkdir(work_dir,0755)
 os.mkdir(join(work_dir,'parts'),0755)
 os.mkdir(join(work_dir,'logs'),0755)
-os.mkdir(join(work_dir,'partitions'),0755)
+# os.mkdir(join(work_dir,'partitions'),0755)
 
 
 
