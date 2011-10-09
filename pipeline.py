@@ -112,7 +112,7 @@ def partition_VJ(inhandle,basename):
         return seqtools.cleanup_id(chain.v.split('*')[0]) + '_' + seqtools.cleanup_id(chain.j.split('*')[0])
     
     def outname(basename,vj_id):
-        return "%s.%s.vdjxml" % (basename,vj_id)
+        return "%s.%s.imgt" % (basename,vj_id)
     
     outhandles = {}
     for chain in vdj.parse_imgt(inhandle):
