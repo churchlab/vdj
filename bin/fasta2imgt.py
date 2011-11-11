@@ -24,5 +24,5 @@ else:
     raise Exception, "Wrong number of arguments."
 
 for record in SeqIO.parse(inhandle,'fasta',generic_dna):
-    chain = vdj.ImmuneChain(record)
+    chain = vdj.ImmuneChain(record.upper())
     print >>outhandle, chain
