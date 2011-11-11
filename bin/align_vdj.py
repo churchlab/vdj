@@ -8,6 +8,7 @@ import vdj.alignment
 
 parser = optparse.OptionParser()
 parser.add_option('-L','--locus',action='append',dest='loci')
+parser.add_option('-R','--rigorous',action='store_true',default=False)
 parser.add_option('-D','--debug',action='store_true',default=False)
 (options, args) = parser.parse_args()
 
@@ -27,7 +28,7 @@ if options.debug:
     import pdb
     pdb.set_trace()
 
-aligner = vdj.alignment.vdj_aligner_combined(loci=options.loci)
+aligner = vdj.alignment.vdj_aligner_combined(loci=options.loci,rigorous=options.rigorous)
 for chain in vdj.parse_imgt(inhandle):
     aligner.align_chain(chain)
     print >>outhandle, chain

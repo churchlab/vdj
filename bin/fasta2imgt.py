@@ -9,6 +9,7 @@ from Bio.Alphabet import generic_dna
 import vdj
 
 parser = optparse.OptionParser()
+parser.add_option('-D','--debug',action='store_true')
 (options, args) = parser.parse_args()
 
 if len(args) == 2:
