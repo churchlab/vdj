@@ -172,6 +172,12 @@ class ImmuneChain(SeqRecord):
         return self.__getattribute__('CDR3-IMGT').qualifiers['translation'][0]
     
     @property
+    def full_chain(self):
+        start = self.__getattribute__('V-REGION').location.nofuzzy_start
+        end = self.__getattribute__('J-REGION').location.nofuzzy_end
+        return self[start:end]
+    
+    @property
     def cdr3(self):
         return len(self.junction)
     
@@ -208,6 +214,15 @@ class ImmuneChain(SeqRecord):
     def num_mutations(self):
         aln = self.letter_annotations['alignment']
         return aln.count('S') + aln.count('I')
+    
+    @property
+    def num_substitutions(self):
+        return self.letter_annotations['alignment'].count('S')
+    
+    @property
+    def num_germline(self):
+        aln = self.letter_annotations['alignment']
+        return len(aln) - aln.count('3') - aln.count('_') - aln.count('I')
     
     def format(self,*args,**kw):
         """Format SeqRecord using any supported format.
