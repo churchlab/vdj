@@ -22,5 +22,5 @@ elif len(args) == 0:
     outhandle = sys.stdout
 
 for chain in vdj.parse_imgt(inhandle):
-    if len(chain) >= min_size and len(chain) <= max_size:
+    if len(chain) >= options.min and len(chain) <= options.max:
         print >>outhandle, chain
