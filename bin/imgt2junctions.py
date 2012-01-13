@@ -5,9 +5,6 @@ import argparse
 
 import vdj
 
-infile = sys.argv[1]
-outfile = sys.argv[2]
-
 argparser = argparse.ArgumentParser(description=None)
 argparser.add_argument('positional',type=int,nargs='+')
 args = argparser.parse_args()
