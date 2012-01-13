@@ -21,7 +21,7 @@ elif len(args.positional) == 0:
 
 for chain in vdj.parse_imgt(inhandle):
     try:
-        op.write( ">%s\n%s\n" % (chain.id,chain.junction_nt) )
+        outhandle.write( ">%s\n%s\n" % (chain.id,chain.junction_nt) )
     except AttributeError:
         pass
 
