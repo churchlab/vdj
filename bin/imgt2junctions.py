@@ -6,7 +6,7 @@ import argparse
 import vdj
 
 argparser = argparse.ArgumentParser(description=None)
-argparser.add_argument('positional',type=int,nargs='+')
+argparser.add_argument('positional',nargs='+')
 args = argparser.parse_args()
 
 if len(args.positional) == 2:
