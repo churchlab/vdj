@@ -20,5 +20,5 @@ elif len(args) == 0:
     outhandle = sys.stdout
 
 for chain in vdj.parse_imgt(inhandle):
-    if chain.v and chain.j:
+    if hasattr(chain,'v') and hasattr(chain,'j'):
         print >>outhandle, chain
