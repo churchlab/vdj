@@ -21,4 +21,5 @@ else:
     raise Exception, "Wrong number of arguments."
 
 for chain in vdj.parse_imgt(inhandle):
-    print >>outhandle, chain.format('fasta')
+    # print >>outhandle, chain.format('fasta')  # causes chain.description output instead of chain.id
+    print >>outhandle, ">%s\n%s" % (chain.id,chain.seq)
