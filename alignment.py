@@ -5,8 +5,6 @@ import numpy as np
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
-import seqtools
-
 import vdj
 import refseq
 import seqtools
@@ -624,3 +622,10 @@ def trd_aligner(**kw):
 
 def trg_aligner(**kw):
     return vdj_aligner(locus='TRG',**kw)
+
+
+# perform alignment to gapped germlines with known alleles
+def align_with_gaps(query,allele):
+    pass
+# pairwise2.align.globalms(seq1,seq2,0.5,-0.75,-2.,-1.5,one_alignment_only=True)[0]
+# warnings.warn('blah')
