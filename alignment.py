@@ -556,9 +556,9 @@ class vdj_aligner(object):
 
 
 class vdj_aligner_combined(object):
-    """vdj aligner for 'light' chains
+    """vdj aligner for multiple loci
     
-    this class will perform alignment for both loci, e.g., IGK and IGL
+    this class will perform alignment for all specified loci, e.g., IGK and IGL
     and pick the one with the better V score
     """
     def __init__(self,**kw):
@@ -578,7 +578,7 @@ class vdj_aligner_combined(object):
             curr_chain = copy.deepcopy(chain)
             curr_score = aligner.align_chain(curr_chain,debug=debug)
             alignments.append((curr_chain,curr_score))
-        alignments = sorted(filter(lambda a: hasattr(a[0],'v'),alignments),key=lambda a:a[1]['v'],reverse=True)
+        alignments = sorted(filter(lambda a: hasattr(a[0], 'v'), alignments), key=lambda a: a[1]['v'], reverse=True)
         if len(alignments) > 0:
             bestchain = alignments[0][0]
             chain.__init__(bestchain)
@@ -609,7 +609,10 @@ def igl_aligner(**kw):
     return vdj_aligner(locus='IGL',**kw)
 
 def igkl_aligner(**kw):
-    return vdj_aligner_combined(loci=['IGK','IGL'],**kw)
+    return vdj_aligner_combined(loci=['IGK', 'IGL'],**kw)
+
+def ighkl_aligner(**kw):
+    return vdj_aligner_combined(loci=['IGH', 'IGK', 'IGL'],**kw)
 
 def trb_aligner(**kw):
     return vdj_aligner(locus='TRB',**kw)
