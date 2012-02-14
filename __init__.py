@@ -260,6 +260,19 @@ class ImmuneChain(SeqRecord):
     def __repr__(self):
         return self.format('imgt')
 
+def seq2chain(*args):
+    """Convert raw sequence into ImmuneChain object"""
+    if len(args) == 1:
+        name = 'seq'
+        seq = args[0]
+    elif len(args) == 2:
+        name = args[0]
+        seq = args[1]
+    else:
+        raise ValueError("Give either name,seq or just seq")
+    
+    return ImmuneChain(seq=Seq(seq,generic_dna),id=name)
+
 # ================
 # = INPUT/OUTPUT =
 # ================
@@ -278,7 +291,6 @@ def filter_parse_imgt(inputfile,predicate):
         chain = ImmuneChain(record)
         if predicate(chain):
             yield chain
-
 
 # ==========================================================================
 
