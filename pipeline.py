@@ -138,36 +138,29 @@ def translate_chain( chain ):
         offset = int(feature.qualifiers.get('codon_start',[1])[0]) - 1
         feature.qualifiers['translation'] = feature.extract(chain.seq)[offset:].translate().tostring()
 
-def translate_chain_force_in_frame(chain):
+def sequence_force_in_frame(chain,replace=False):
     nt = ''
     cdr3_start = alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(),chain.annotations['gapped_query'],chain.__getattribute__('CDR3-IMGT').location.nofuzzy_start)
     cdr3_len = len(chain.junction_nt)
     extra_junction = cdr3_len % 3
     for (i,(r,q)) in enumerate(zip(chain.annotations['gapped_reference'],chain.annotations['gapped_query'])):
+        # am I in the CDR3?
         if i >= cdr3_start and i < cdr3_start + cdr3_len:
-            nt += q
-            if i == cdr3_start + cdr3_len - 1:
-                nt += '' if cdr3_len % 3 == 0 else '-' * (3 - (cdr3_len % 3))
-        elif r == '-':
-            nt += ''
+            in_cdr3 = True
+        elif i == cdr3_start + cdr3_len:
+            in_cdr3 = False
+            nt += '-' * ((3 - (cdr3_len % 3)) % 3)
         else:
-            nt += q
-    return Seq(nt.replace('-','N'),DNAAlphabet()).translate().tostring()
-
-def sequence_force_in_frame(chain):
-    nt = ''
-    cdr3_start = alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(),chain.annotations['gapped_query'],chain.__getattribute__('CDR3-IMGT').location.nofuzzy_start)
-    cdr3_len = len(chain.junction_nt)
-    extra_junction = cdr3_len % 3
-    for (i,(r,q)) in enumerate(zip(chain.annotations['gapped_reference'],chain.annotations['gapped_query'])):
-        if i >= cdr3_start and i < cdr3_start + cdr3_len:
-            nt += q.upper()
-            if i == cdr3_start + cdr3_len - 1:
-                nt += '' if cdr3_len % 3 == 0 else '-' * (3 - (cdr3_len % 3))
-        elif r == '-':
-            nt += ''
-        elif q == '-':
-            nt += r.lower()
+            in_cdr3 = False
+        
+        if r == '-':    # insertion in the query
+            nt += '' if not in_cdr3 else q.upper()
+        elif q == '-':  # deletion in query
+            nt += r.lower() if replace else q
         else:
             nt += q.upper()
     return nt
+
+def translate_chain_force_in_frame(chain):
+    nt = sequence_force_in_frame(chain,replace=False)
+    return Seq(nt.replace('-','N'),DNAAlphabet()).translate().tostring()
