@@ -23,6 +23,12 @@ def connect_to_spleen(connect_to='vaccination'):
     db.authenticate("mongodbuser","asdffdsa")
     return db
 
+def connect_to_lymph(connect_to='vaccination'):
+    connection = pymongo.Connection('hero1614.rc.fas.harvard.edu',27017)
+    db = connection[connect_to]
+    return db
+
+
 
 ##############################################################################
 # doesn't work if trying to insert an ImmuneChain only.  This will work if you
