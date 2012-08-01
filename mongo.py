@@ -28,8 +28,8 @@ def connect_to_lymph(connect_to='vaccination'):
     db = connection[connect_to]
     return db
 
-def connect_to_localhost(port, connect_to='vaccination'):
-    connection = pymongo.Connection('localhost',port)
+def connect_to_localhost(connect_to='vaccination'):
+    connection = pymongo.Connection('localhost',27017)
     db = connection[connect_to]
     return db
 
