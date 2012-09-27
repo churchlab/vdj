@@ -46,6 +46,12 @@ class ImmuneChain(SeqRecord):
         # self.seq = self.seq.upper()
     
     def _init_with_SeqRecord(self,record):
+        # Check if record has phred_quality letter annotations and convert to
+        # ASCII string
+        if 'phred_quality' in record.letter_annotations and isinstance(record.letter_annotations['phred_quality'], types.ListType):
+            qual = ''.join([chr(q+33) for q in record.letter_annotations['phred_quality']])
+            record.letter_annotations['phred_quality'] = qual
+        
         # Initialize self using existing SeqRecord object
         SeqRecord.__init__(self, seq=record.seq, id=record.id,
                             name=record.name, description=record.description,
