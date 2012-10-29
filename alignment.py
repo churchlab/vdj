@@ -426,6 +426,49 @@ class vdj_aligner(object):
     
     
     @staticmethod
+    def gapped_alignment_masked_annotation(chain, debug=False):
+        """Returns full-chain/CDR3 masked annotation of fully gapped aln, including insertions and deletions."""
+        gapped_ref = chain.annotations['gapped_reference']
+        gapped_query = chain.annotations['gapped_query']
+        gapped_annot = vdj_aligner.alignment_annotation(gapped_ref, gapped_query)
+        
+        ungapped_v_start = chain.__getattribute__('V-REGION').location.nofuzzy_start
+        ungapped_j_end = chain.__getattribute__('J-REGION').location.nofuzzy_end
+        ungapped_cdr3_start = chain.__getattribute__('2nd-CYS').location.end.position
+        try:
+            ungapped_cdr3_end = chain.__getattribute__('J-PHE').location.start.position
+        
+        except AttributeError:
+            ungapped_cdr3_end = chain.__getattribute__('J-TRP').location.start.position
+        
+        gapped_v_start = vdj.alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(), gapped_query, ungapped_v_start)
+        gapped_j_end = vdj.alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(), gapped_query, ungapped_j_end)
+        gapped_cdr3_start = vdj.alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(), gapped_query, ungapped_cdr3_start)
+        gapped_cdr3_end = vdj.alignment.vdj_aligner.ungapped2gapped_coord(chain.seq.tostring(), gapped_query, ungapped_cdr3_end)
+        
+        masked_annot = '_' * gapped_v_start + \
+                       gapped_annot[gapped_v_start:gapped_cdr3_start] + \
+                       '3' * (gapped_cdr3_end - gapped_cdr3_start) + \
+                       gapped_annot[gapped_cdr3_end:gapped_j_end] + \
+                       '_' * (len(gapped_annot) - gapped_j_end)
+        
+        if debug:
+            s = []
+            s.append(''.join(["/%-9i" % i for i in range(0, 500, 10)]))
+            s.append("%s    %s" % (gapped_ref, 'gapped_ref'))
+            s.append("%s    %s" % (gapped_query, 'gapped_query'))
+            s.append("%s    %s" % (gapped_annot, 'gapped_annot'))
+            s.append("%s    %s" % (masked_annot, 'masked_annot'))
+            s.append(' ' * (gapped_v_start-1) + '/' + ' ' * (gapped_cdr3_start-gapped_v_start-1) + '/' + ' ' * (gapped_cdr3_end-gapped_cdr3_start-1) + '/' + ' ' * (gapped_j_end-gapped_cdr3_end-1) + '/')
+            s.append('')
+            s.append(chain.seq.tostring())
+            s.append(chain.letter_annotations['alignment'])
+            print '\n'.join(s)
+        
+        return masked_annot
+    
+    
+    @staticmethod
     def ungapped_coord_mapping(aln_from, aln_to):
         if len(aln_from) != len(aln_to):
             raise ValueError, "from and to strings must be same length"
