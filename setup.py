@@ -13,7 +13,8 @@
 # limitations under the License.
 
 # setup.py
-from numpy.distutils.core import setup, Extension
+from setuptools import setup
+from numpy.distutils.core import Extension
 from numpy.distutils.misc_util import get_numpy_include_dirs
 
 alignmentcoreext = Extension(
@@ -29,6 +30,6 @@ clusteringcoreext = Extension(
                         )
 
 setup(  name = "vdj",
-        version = "0.1",
+        version = "1.6.0",
         ext_modules = [alignmentcoreext,clusteringcoreext]
     )
